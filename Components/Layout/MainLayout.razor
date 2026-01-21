@@ -126,7 +126,7 @@ else
             
             <MudDivider Class="my-2" />
             
-            <NavMenuV2 />
+            <NavMenu/>
             
             <MudSpacer />
             
@@ -175,7 +175,7 @@ else
             if (!UserState.IsAuthenticated)
             {
                 // Redirect to Login V2 if not authenticated
-                NavigationManager.NavigateTo("/login-v2", forceLoad: true);
+                NavigationManager.NavigateTo("/login", forceLoad: true);
                 return;
             }
 
@@ -186,7 +186,7 @@ else
             if (currentUser == null)
             {
                 await UserState.Logout();
-                NavigationManager.NavigateTo("/login-v2", forceLoad: true);
+                NavigationManager.NavigateTo("/login", forceLoad: true);
                 return;
             }
 
@@ -218,7 +218,7 @@ else
     private async Task Logout()
     {
         await UserState.Logout();
-        NavigationManager.NavigateTo("/login-v2", forceLoad: true);
+        NavigationManager.NavigateTo("/login", forceLoad: true);
     }
 
     public void Dispose()

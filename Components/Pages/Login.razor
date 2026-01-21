@@ -1,11 +1,10 @@
 ﻿@page "/login"
-@layout PDTActivityTracker.Components.Layout.LoginLayoutV2
+@layout PDTActivityTracker.Components.Layout.LoginLayout
 
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Model
 @using PDTActivityTracker.Components.Model
-@using PDTActivityTracker.Services
 @using System.Security.Cryptography
 @using PDTActivityTracker.Components.Pages.Dialogs
 @using System.Text
@@ -350,7 +349,7 @@
             // V2 Redirection Logic
             if (user.Role == "Admin")
             {
-                NavigationManager.NavigateTo("/admin/users-v2", forceLoad: true);
+                NavigationManager.NavigateTo("/", forceLoad: true);
             }
             else
             {

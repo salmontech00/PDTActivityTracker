@@ -5,11 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using OfficeOpenXml;
 using PDTActivityTracker.Components;
-using PDTActivityTracker.Model;
-using PDTActivityTracker.Components;
 using PDTActivityTracker.Components.Services;
 using PDTActivityTracker.Model;
-using PDTActivityTracker.Services;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +17,7 @@ ExcelPackage.License.SetNonCommercialPersonal("TuitionValidation");
 
 builder.Services.AddMudServices();
 builder.Services.AddBlazoredSessionStorage();
-builder.Services.AddScoped<TuitionValidation.Components.Services.ThemeService>();
+builder.Services.AddScoped<PDTActivityTracker.Components.Services.ThemeService>();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -59,11 +57,13 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
 
     using var db = await dbFactory.CreateDbContextAsync();
 
+    await db.Database.EnsureCreatedAsync();
+
     if (!await db.Users.AnyAsync())
     {
         var hashedPassword = HashPassword("admin123");
 
-        var defaultAdmin = new TuitionValidation.Components.Model.User
+        var defaultAdmin = new PDTActivityTracker.Components.Model.User
         {
             Username = "admin",
             Password = hashedPassword,

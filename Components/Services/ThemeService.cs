@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace TuitionValidation.Components.Services
+namespace PDTActivityTracker.Components.Services
 {
     public enum ThemeMode
     {

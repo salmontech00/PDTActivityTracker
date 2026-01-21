@@ -1,6 +1,6 @@
 ﻿using Blazored.SessionStorage;
 
-namespace TuitionValidation.Components.Services
+namespace PDTActivityTracker.Components.Services
 {
     public class UserStateService(ISessionStorageService sessionStorage)
     {

@@ -1,0 +1,479 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Model
+@using System.Security.Cryptography
+@using System.Text
+@using System.Text.RegularExpressions
+@using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Processing
+@using SixLabors.ImageSharp.Formats.Jpeg
+@using SixLabors.ImageSharp.Formats.Png
+@using Microsoft.EntityFrameworkCore
+@inject ISnackbar Snackbar
+@inject AppDbContext Db
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    /* OTP-style dialog */
+    .mud-dialog-card {
+        background: #1e3a6f !important;
+        border-top: 5px solid #667fb5;
+        border-left: 3px solid #667fb5;
+        border-radius: 4px;
+    }
+
+        .mud-dialog-card.dark {
+            background: #0f172a !important;
+        }
+
+    .mud-dialog-title {
+        color: #ffffff !important;
+    }
+
+    /* Form styling matching OTP dialog */
+    .edit-user-form .mud-input-root {
+        margin-bottom: 14px;
+    }
+
+    .edit-user-form .mud-input-outlined {
+    }
+
+        .edit-user-form .mud-input-outlined .mud-input-root {
+        }
+
+    .edit-user-form .mud-input-slot {
+    }
+
+    /* Input labels and text */
+    .edit-user-form .mud-input-label {
+        color: #6b7ed8 !important;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .edit-user-form .mud-input-outlined .mud-input-slot {
+        color: #6b7ed8;
+    }
+
+    .edit-user-form .mud-input-outlined-border {
+        border-color: #667fb5 !important;
+        border-width: 2px !important;
+    }
+
+    /* Focused state */
+    .edit-user-form .mud-input-outlined:hover .mud-input-outlined-border {
+        border-color: #667fb5 !important;
+        border-width: 2px !important;
+    }
+
+    .edit-user-form .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
+        border-color: #667fb5 !important;
+        border-width: 2px !important;
+    }
+
+    .edit-user-form .mud-input-outlined.mud-input-focused .mud-input-label {
+        color: #667fb5 !important;
+    }
+
+    /* Input text color */
+    .edit-user-form .mud-input-control {
+        font-size: 0.9rem;
+        color: #667fb5 !important;
+        background-color: transparent !important;
+    }
+
+    .edit-user-form .mud-input {
+        color: #667fb5 !important;
+        background-color: transparent !important;
+    }
+
+        .edit-user-form .mud-input::placeholder {
+            color: #667fb5;
+            opacity: 0.6;
+        }
+
+    /* Adornment icons */
+    .edit-user-form .mud-input-adornment .mud-icon-root {
+        color: #667fb5 !important;
+    }
+
+    /* Select dropdowns */
+    .edit-user-form .mud-select {
+        color: #667fb5 !important;
+    }
+
+    .edit-user-form .mud-select-input {
+        color: #667fb5 !important;
+    }
+
+    /* Upload section */
+    .upload-section {
+        text-align: center;
+        color: #6b7ed8;
+    }
+
+        .upload-section .mud-icon-root {
+            color: #667fb5 !important;
+        }
+
+    /* Action buttons */
+    .edit-user-dialog-button {
+        height: 40px;
+        font-weight: 500;
+        text-transform: none;
+        font-size: 0.9rem;
+        background-color: #2b467f !important;
+        border: 2px solid #667fb5 !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+        .edit-user-dialog-button:hover {
+            background-color: #1e3161 !important;
+            border: 2px solid #667fb5 !important;
+        }
+
+        .edit-user-dialog-button:disabled {
+            background-color: #2b467f !important;
+            border: 2px solid #667fb5 !important;
+            opacity: 0.7;
+        }
+
+    @@media (max-width: 600px) {
+        .edit-user-form .mud-input-label {
+            font-size: 0.8rem;
+        }
+
+        .edit-user-form .mud-input-control {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@($"mud-dialog-card {(ThemeService.IsDarkMode ? "dark" : "")}")">
+    <TitleContent>
+        Edit User
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="_form" Model="_editingUser" Class="edit-user-form">
+            <div class="upload-section">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Upload Profile Image</MudText>
+
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; margin-bottom: 16px;">
+                    @if (!string.IsNullOrEmpty(_imagePreviewUrl))
+                    {
+                        <label for="upload-image" style="position: absolute; top: 10px; z-index: 2; opacity: 0.5; cursor: pointer;">
+                            <MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                        </label>
+
+                        <img src="@_imagePreviewUrl"
+                             alt="Preview"
+                             style="max-height: 150px; max-width:150px; border-radius: 6px;" />
+                    }
+                    else
+                    {
+                        <label for="upload-image" style="cursor: pointer;">
+                            <MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                        </label>
+                    }
+
+                    <InputFile id="upload-image"
+                               OnChange="OnFileChanged"
+                               accept="image/*"
+                               style="display: none;" />
+                </div>
+            </div>
+
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Full Name"
+                                  @bind-Value="_editingUser.Fullname"
+                                  Required="true"
+                                  RequiredError="Full name is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Username"
+                                  @bind-Value="_editingUser.Username"
+                                  Required="true"
+                                  RequiredError="Username is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Email"
+                                  @bind-Value="_editingUser.Email"
+                                  Required="true"
+                                  RequiredError="Email is required"
+                                  Validation="@(new Func<string, string?>(ValidateEmail))"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string"
+                               Label="Role"
+                               @bind-Value="_editingUser.Role"
+                               Required="true"
+                               RequiredError="Role is required"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
+                        <MudSelectItem Value="@("Cashier")">Cashier</MudSelectItem>
+                        <MudSelectItem Value="@("Faculty")">Faculty</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Password"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="@TogglePasswordVisibility"
+                                  @bind-Value="_password"
+                                  Immediate="true"
+                                  Validation="@(new Func<string, string?>(ValidatePassword))"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Placeholder="Leave blank to keep current password" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Confirm Password"
+                                  InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="@ToggleConfirmPasswordVisibility"
+                                  @bind-Value="_confirmPassword"
+                                  Immediate="true"
+                                  Validation="@(new Func<string, string?>(ValidateConfirmPassword))"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Style="color: #ffffff;">Cancel</MudButton>
+        <MudButton Color="MudBlazor.Color.Primary" OnClick="Submit" Disabled="@_isSaving" Class="edit-user-dialog-button">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Updating...</span>
+            }
+            else
+            {
+                <span>Update</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm _form = default!;
+    private bool _isSaving = false;
+
+    private User _editingUser = new();
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+
+    private bool _showPassword = false;
+    private bool _showConfirmPassword = false;
+
+    private string? _imagePreviewUrl;
+    private byte[]? _imageBytes;
+    private string? _imageMimeType;
+
+    [Parameter]
+    public User UserToEdit { get; set; } = default!;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        _editingUser = new User
+        {
+            Id = UserToEdit.Id,
+            Username = UserToEdit.Username,
+            Email = UserToEdit.Email,
+            Password = UserToEdit.Password,
+            Fullname = UserToEdit.Fullname,
+            Role = UserToEdit.Role,
+            ImageData = UserToEdit.ImageData,
+            ImageMimeType = UserToEdit.ImageMimeType
+        };
+
+        if (_editingUser.ImageData != null && !string.IsNullOrEmpty(_editingUser.ImageMimeType))
+        {
+            _imagePreviewUrl = $"data:{_editingUser.ImageMimeType};base64,{Convert.ToBase64String(_editingUser.ImageData)}";
+        }
+    }
+
+    private string? ValidateEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "Email is required";
+
+        var emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+        if (!Regex.IsMatch(email, emailPattern, RegexOptions.IgnoreCase))
+            return "Enter a valid email address";
+
+        return null;
+    }
+
+    private string? ValidatePassword(string password)
+    {
+        if (!string.IsNullOrEmpty(password) && password.Length < 6)
+            return "Password must be at least 6 characters";
+        return null;
+    }
+
+    private string? ValidateConfirmPassword(string confirmPassword)
+    {
+        if (!string.IsNullOrEmpty(_password) && confirmPassword != _password)
+            return "Passwords do not match";
+        return null;
+    }
+
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _isSaving = true;
+
+        try
+        {
+            var existingUsername = Db.Users
+                .FirstOrDefault(u => u.Id != _editingUser.Id &&
+                                   u.Username != null &&
+                                   u.Username.ToLower() == _editingUser.Username.ToLower());
+
+            if (existingUsername != null)
+            {
+                Snackbar.Add("Username already exists.", Severity.Warning);
+                _isSaving = false;
+                return;
+            }
+
+            var existingEmail = Db.Users
+                .FirstOrDefault(u => u.Id != _editingUser.Id &&
+                                   u.Email != null &&
+                                   u.Email.ToLower() == (_editingUser.Email ?? "").ToLower());
+
+            if (existingEmail != null)
+            {
+                Snackbar.Add("Email already exists.", Severity.Warning);
+                _isSaving = false;
+                return;
+            }
+
+            if (!string.IsNullOrEmpty(_password))
+            {
+                _editingUser.Password = HashPassword(_password);
+            }
+
+            var userInDb = await Db.Users.FindAsync(_editingUser.Id);
+            if (userInDb != null)
+            {
+                userInDb.Username = _editingUser.Username;
+                userInDb.Email = _editingUser.Email;
+                userInDb.Password = _editingUser.Password;
+                userInDb.Fullname = _editingUser.Fullname;
+                userInDb.Role = _editingUser.Role;
+
+                if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
+                {
+                    userInDb.ImageData = _imageBytes;
+                    userInDb.ImageMimeType = _imageMimeType;
+                }
+
+                await Db.SaveChangesAsync();
+                Snackbar.Add("User updated successfully!", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            _isSaving = false;
+        }
+    }
+
+    private void TogglePasswordVisibility() => _showPassword = !_showPassword;
+    private void ToggleConfirmPasswordVisibility() => _showConfirmPassword = !_showConfirmPassword;
+
+    private async Task OnFileChanged(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            Snackbar.Add("Image size must be less than 5MB", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            using var inputStream = file.OpenReadStream(5 * 1024 * 1024);
+            using var image = await Image.LoadAsync(inputStream);
+
+            image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
+            {
+                Size = new SixLabors.ImageSharp.Size(300, 300),
+                Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max
+            }));
+
+            using var ms = new MemoryStream();
+
+            var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+            bool isPng = extension == ".png";
+
+            if (isPng)
+            {
+                var encoder = new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression };
+                await image.SaveAsync(ms, encoder);
+                _imageMimeType = "image/png";
+                _imagePreviewUrl = $"data:image/png;base64,{Convert.ToBase64String(ms.ToArray())}";
+            }
+            else
+            {
+                var encoder = new JpegEncoder { Quality = 70 };
+                await image.SaveAsync(ms, encoder);
+                _imageMimeType = "image/jpeg";
+                _imagePreviewUrl = $"data:image/jpeg;base64,{Convert.ToBase64String(ms.ToArray())}";
+            }
+
+            _imageBytes = ms.ToArray();
+
+            Snackbar.Add($"Image uploaded ({_imageBytes.Length / 1024}KB)", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error processing image: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

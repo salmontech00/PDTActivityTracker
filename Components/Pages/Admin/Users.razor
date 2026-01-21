@@ -1,5 +1,5 @@
-﻿@page "/admin/users"
-@layout PDTActivityTracker.Components.Layout.MainLayoutV2
+﻿@page "/"
+@layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
@@ -29,10 +29,10 @@
         transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .v2-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    }
+        .v2-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
     .v2-table-header {
         background-color: #f8fafc;
@@ -239,7 +239,7 @@
     private async Task OpenAddUserDialog()
     {
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AddUserForm>("Add New User", options);
+        var dialog = await DialogService.ShowAsync<AddUser>("Add New User", options);
         var result = await dialog.Result;
 
         if (!(result?.Canceled ?? true))
@@ -254,7 +254,7 @@
         var parameters = new DialogParameters { { "UserToEdit", user } };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
-        var dialog = await DialogService.ShowAsync<EditUserForm>("Edit User", parameters, options);
+        var dialog = await DialogService.ShowAsync<EditUser>("Edit User", parameters, options);
         var result = await dialog.Result;
 
         if (!(result?.Canceled ?? true))
@@ -270,6 +270,7 @@
         {
             using var db = await DbFactory.CreateDbContextAsync();
 
+            /*
             // Check for related records
             var hasSubjectAssignments = await db.SubjectAssignments.AnyAsync(sa => sa.FacultyId == user.Id);
 
@@ -278,6 +279,7 @@
                 Snackbar.Add($"Cannot delete {user.Fullname} because they have subject assignments.", Severity.Warning);
                 return;
             }
+            */
 
             var parameters = new DialogParameters {
                 { "ContentText", $"Are you sure you want to delete {user.Fullname}?" },

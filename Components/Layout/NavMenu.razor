@@ -32,7 +32,7 @@
 <MudNavMenu>
     @if (UserState.Role == "Admin")
     {
-        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor()">Admin V2</div>
+        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor();">Admin V2</div>
 
         <!-- Placeholder for V2 Dashboard if created later, or link to V1 -->
         <MudNavLink Href="/admin/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Dashboard">
@@ -56,7 +56,7 @@
     }
     else if (UserState.Role == "Cashier")
     {
-        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor()">Cashier</div>
+        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor();">Cashier</div>
         <MudNavLink Href="/cashier/students" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.School">
             Students
         </MudNavLink>
@@ -69,7 +69,7 @@
     }
     else
     {
-        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor()">Faculty</div>
+        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor();">Faculty</div>
         <MudNavLink Href="/faculty/validate-exam-permit" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.VerifiedUser">
             Validate Permit
         </MudNavLink>

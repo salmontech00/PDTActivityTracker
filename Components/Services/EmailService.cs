@@ -3,7 +3,7 @@ using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Configuration;
 
-namespace TuitionValidation.Services
+namespace PDTActivityTracker.Components.Services
 {
     public interface IEmailService
     {
