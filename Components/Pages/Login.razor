@@ -1,0 +1,387 @@
+﻿@page "/login"
+@layout PDTActivityTracker.Components.Layout.LoginLayoutV2
+
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Model
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Services
+@using System.Security.Cryptography
+@using PDTActivityTracker.Components.Pages.Dialogs
+@using System.Text
+
+@inject NavigationManager NavigationManager
+@inject AppDbContext Db
+@inject UserStateService UserState
+@inject IDialogService DialogService
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<PageTitle>Login</PageTitle>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .login-card-wrapper {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .login-paper {
+        padding: 40px 32px;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+        background-color: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+        .login-paper.lightest {
+            background-color: rgba(255, 255, 255, 0.9);
+            border: 1px solid #e2e8f0;
+        }
+
+        .login-paper.light {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .login-paper.dark {
+            background-color: rgba(30, 41, 59, 0.7);
+            border: 1px solid #334155;
+        }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+        .login-header img {
+            width: 80px !important;
+            height: 80px !important;
+            object-fit: contain;
+            margin-bottom: 16px !important;
+            background-color: white !important;
+            border-radius: 16px !important;
+            padding: 8px !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+    .login-title {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        letter-spacing: -0.02em;
+    }
+
+    .login-subtitle {
+        font-size: 0.95rem;
+        font-weight: 400;
+        line-height: 1.5;
+        opacity: 0.9;
+    }
+
+    .login-form .mud-input-root {
+        margin-bottom: 20px;
+    }
+
+    .login-button {
+        height: 48px;
+        font-weight: 600;
+        text-transform: none;
+        font-size: 1rem;
+        border-radius: 8px;
+        margin-top: 24px;
+        box-shadow: 0 4px 12px rgba(0, 114, 207, 0.3) !important;
+        background-color: #0072cf !important;
+        color: white !important;
+    }
+
+        .login-button:hover {
+            box-shadow: 0 6px 16px rgba(0, 114, 207, 0.4) !important;
+            background-color: #005bb5 !important;
+        }
+
+    .forgot-password-link {
+        text-align: center;
+        margin-top: 24px;
+    }
+
+        .forgot-password-link .mud-link {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+    .theme-toggle-wrapper {
+        display: flex;
+        justify-content: center;
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+        .theme-toggle-wrapper.lightest {
+            border-top: 1px solid #e2e8f0;
+        }
+
+    /* Custom Input Styling to match V2 theme */
+    .mud-input-outlined-border {
+        border-width: 1px !important;
+    }
+
+    .mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+</style>
+
+<div class="login-container">
+    <div class="login-card-wrapper">
+        <MudPaper Class="@GetPaperClass()" Elevation="0">
+            <div class="login-header">
+                <div>
+                    <img src="/PITALOGO.png" alt="PITA Logo" />
+                </div>
+                <div class="login-title" style="color: @GetTextColor()">Welcome Back</div>
+                <div class="login-subtitle" style="color: @GetTextColorSecondary()">Log in to access your dashboard</div>
+            </div>
+
+            <MudForm Class="login-form">
+                <MudTextField T="string"
+                              @bind-Value="Username"
+                              Label="Username"
+                              Required="true"
+                              RequiredError="Username is required"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Class="mb-4" />
+
+                <MudTextField T="string"
+                              @bind-Value="Password"
+                              Label="Password"
+                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                              Required="true"
+                              RequiredError="Password is required"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                              OnAdornmentClick="TogglePasswordVisibility"
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              OnKeyDown="@HandleKeyDown" />
+
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2 mb-2" Variant="Variant.Filled">@ErrorMessage</MudAlert>
+                }
+
+                <MudButton Variant="Variant.Filled"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           Disabled="@isLoading"
+                           OnClick="LoginUser"
+                           Class="login-button">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Color="Color.Surface" Size="Size.Small" Indeterminate="true" Class="me-2" />
+                        <span>Logging in...</span>
+                    }
+                    else
+                    {
+                        <span>Sign In</span>
+                    }
+                </MudButton>
+
+                <div class="forgot-password-link">
+                    <MudLink OnClick="OpenOtpDialog" Underline="Underline.Hover" Style="@($"color: {GetLinkColor()}")">
+                        Forgot Password?
+                    </MudLink>
+                </div>
+            </MudForm>
+
+            <div class="@($"theme-toggle-wrapper {GetThemeClass()}")">
+                <MudIconButton Icon="@DarkLightModeButtonIcon"
+                               Size="Size.Medium"
+                               OnClick="@HandleDarkModeToggle"
+                               Style="@($"color: {GetTextColorSecondary()}")" />
+            </div>
+        </MudPaper>
+    </div>
+</div>
+
+@code {
+    private string Username { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool isLoading = false;
+    private bool _showPassword = false;
+
+    [CascadingParameter(Name = "IsDarkMode")]
+    public bool IsDarkMode { get; set; }
+
+    [CascadingParameter(Name = "DarkModeToggle")]
+    public EventCallback DarkModeToggle { get; set; }
+
+    [CascadingParameter(Name = "DarkLightModeButtonIcon")]
+    public string DarkLightModeButtonIcon { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UserState.InitializeAsync();
+        if (UserState.IsAuthenticated)
+        {
+            // Already logged in? Redirect to V2 users page
+            NavigationManager.NavigateTo("/admin/users", forceLoad: true);
+        }
+
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private string GetPaperClass()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "login-paper lightest",
+            ThemeMode.Light => "login-paper light",
+            ThemeMode.Dark => "login-paper dark",
+            _ => "login-paper lightest"
+        };
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" : "";
+    }
+
+    private string GetTextColor()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+    }
+
+    private string GetTextColorSecondary()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#475569" : "rgba(255,255,255,0.7)";
+    }
+
+    private string GetLinkColor()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0072cf" : "#ffffff";
+    }
+
+    private async Task HandleDarkModeToggle()
+    {
+        if (DarkModeToggle.HasDelegate)
+        {
+            await DarkModeToggle.InvokeAsync();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LoginUser();
+        }
+    }
+
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
+
+    private void TogglePasswordVisibility() => _showPassword = !_showPassword;
+
+    private async Task LoginUser()
+    {
+        if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+        {
+            ErrorMessage = "Please enter both username and password.";
+            return;
+        }
+
+        isLoading = true;
+        ErrorMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+
+            var user = await db.Users.FirstOrDefaultAsync(u => u.Username == Username);
+
+            if (user == null)
+            {
+                ErrorMessage = "Invalid credentials.";
+                return;
+            }
+
+            var hashedPassword = HashPassword(Password);
+
+            if (user.Password != hashedPassword)
+            {
+                ErrorMessage = "Invalid credentials.";
+                return;
+            }
+
+            await UserState.Login(user.Username);
+            await UserState.SetFullname(user.Fullname);
+            await UserState.SetRole(user.Role);
+
+            await Task.Delay(500); // Small delay for UX
+
+            // V2 Redirection Logic
+            if (user.Role == "Admin")
+            {
+                NavigationManager.NavigateTo("/admin/users-v2", forceLoad: true);
+            }
+            else
+            {
+                // Fallback for non-admins for now, or create V2 pages for them later
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "An unexpected error occurred.";
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenOtpDialog()
+    {
+        var options = new DialogOptions()
+        {
+            CloseOnEscapeKey = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            BackdropClick = false,
+            NoHeader = false,
+            CloseButton = true
+        };
+        var dialog = await DialogService.ShowAsync<OTPVerify>("Reset Password", options);
+        await dialog.Result;
+    }
+}

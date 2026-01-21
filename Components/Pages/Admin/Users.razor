@@ -1,0 +1,308 @@
+﻿@page "/admin/users"
+@layout PDTActivityTracker.Components.Layout.MainLayoutV2
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using PDTActivityTracker.Components.Pages.Dialogs
+@inject IDialogService DialogService
+@inject PDTActivityTracker.Components.Services.UserStateService UserState
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@implements IDisposable
+
+<PageTitle>Users Management</PageTitle>
+
+<style>
+    /* V2 Specific Styles */
+    .v2-page-header {
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .v2-card {
+        border-radius: 12px;
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .v2-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .v2-table-header {
+        background-color: #f8fafc;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #64748b;
+    }
+
+    /* Theme overrides for Dark Mode */
+    .mud-theme-dark .v2-table-header {
+        background-color: #1e293b;
+        color: #94a3b8;
+    }
+
+    .status-chip {
+        border-radius: 6px;
+        font-weight: 500;
+        letter-spacing: 0.025em;
+    }
+
+    .action-btn-group {
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .mud-table-row:hover .action-btn-group {
+        opacity: 1;
+    }
+</style>
+
+<div class="v2-page-header">
+    <div>
+        <MudText Typo="Typo.h5" Style="font-weight: 700;">Users</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Manage system access and roles</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenAddUserDialog"
+               Style="border-radius: 8px; font-weight: 600; text-transform: none;">
+        Add New User
+    </MudButton>
+</div>
+
+<MudPaper Elevation="0" Class="pa-4 mb-6 v2-card">
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="8">
+            <MudTextField T="string"
+                          @bind-Value="_searchTerm"
+                          Placeholder="Search users by name, username or email..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Outlined.Search"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          TextChanged="ApplyFilters"
+                          DebounceInterval="300" />
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudSelect T="string"
+                       @bind-Value="_roleFilter"
+                       Label="Filter by Role"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       SelectedValuesChanged="ApplyFilters">
+                <MudSelectItem Value="@("All")">All Roles</MudSelectItem>
+                <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
+                <MudSelectItem Value="@("Cashier")">Cashier</MudSelectItem>
+                <MudSelectItem Value="@("Faculty")">Faculty</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+</MudPaper>
+
+<MudPaper Elevation="0" Class="v2-card overflow-hidden">
+    <MudTable Items="_filteredUsers" Hover="true" Elevation="0" Loading="@(!_initialized)">
+        <HeaderContent>
+            <MudTh Class="v2-table-header">User</MudTh>
+            <MudTh Class="v2-table-header">Role</MudTh>
+            <MudTh Class="v2-table-header">Email</MudTh>
+            <MudTh Class="v2-table-header" Style="text-align:right">Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="User">
+                <div class="d-flex align-center">
+                    <MudAvatar Image="@GetUserImagePath(context)" Size="Size.Medium" Class="mr-3" />
+                    <div>
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@context.Fullname</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@@@context.Username</MudText>
+                    </div>
+                </div>
+            </MudTd>
+            <MudTd DataLabel="Role">
+                <MudChip T="string" Size="Size.Small" Class="status-chip" Color="@GetRoleColor(context.Role)" Variant="Variant.Text">
+                    @context.Role
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Actions" Style="text-align:right">
+                <div class="action-btn-group">
+                    <MudIconButton Icon="@Icons.Material.Outlined.Edit"
+                                   Size="Size.Small"
+                                   Color="Color.Default"
+                                   OnClick="@(() => EditUser(context))"
+                                   Title="Edit" />
+                    <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                   Size="Size.Small"
+                                   Color="Color.Error"
+                                   OnClick="@(() => DeleteUser(context))"
+                                   Title="Delete" />
+                </div>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    private List<User> _allUsers = new();
+    private List<User> _filteredUsers = new();
+    private bool _initialized = false;
+    private string _searchTerm = string.Empty;
+    private string _roleFilter = "All";
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            await UserState.InitializeAsync();
+
+            if (UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo("/login-v2", forceLoad: true);
+                return;
+            }
+
+            await LoadUsers();
+        }
+    }
+
+    private void OnThemeChanged() => StateHasChanged();
+    public void Dispose() => ThemeService.OnThemeChanged -= OnThemeChanged;
+
+    private async Task LoadUsers()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _allUsers = await db.Users
+            .Where(u => u.Username != UserState.Username)
+            .OrderBy(u => u.Fullname)
+            .AsNoTracking()
+            .ToListAsync();
+
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void ApplyFilters()
+    {
+        _filteredUsers = _allUsers;
+
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            _filteredUsers = _filteredUsers.Where(u =>
+                (u.Fullname?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.Username?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.Email?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            ).ToList();
+        }
+
+        if (_roleFilter != "All")
+        {
+            _filteredUsers = _filteredUsers.Where(u => u.Role == _roleFilter).ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    private string GetUserImagePath(User user)
+    {
+        if (user.ImageData != null && !string.IsNullOrEmpty(user.ImageMimeType))
+        {
+            return $"data:{user.ImageMimeType};base64,{Convert.ToBase64String(user.ImageData)}";
+        }
+        return "/Uploads/UserImg.png";
+    }
+
+    private Color GetRoleColor(string role) => role switch
+    {
+        "Admin" => Color.Primary, // Matches #0072cf
+        "Cashier" => Color.Info,
+        "Faculty" => Color.Success,
+        _ => Color.Default
+    };
+
+    private async Task OpenAddUserDialog()
+    {
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        var dialog = await DialogService.ShowAsync<AddUserForm>("Add New User", options);
+        var result = await dialog.Result;
+
+        if (!(result?.Canceled ?? true))
+        {
+            await LoadUsers();
+            Snackbar.Add("User added successfully", Severity.Success);
+        }
+    }
+
+    private async Task EditUser(User user)
+    {
+        var parameters = new DialogParameters { { "UserToEdit", user } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<EditUserForm>("Edit User", parameters, options);
+        var result = await dialog.Result;
+
+        if (!(result?.Canceled ?? true))
+        {
+            await LoadUsers();
+            Snackbar.Add("User updated successfully", Severity.Success);
+        }
+    }
+
+    private async Task DeleteUser(User user)
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+
+            // Check for related records
+            var hasSubjectAssignments = await db.SubjectAssignments.AnyAsync(sa => sa.FacultyId == user.Id);
+
+            if (hasSubjectAssignments)
+            {
+                Snackbar.Add($"Cannot delete {user.Fullname} because they have subject assignments.", Severity.Warning);
+                return;
+            }
+
+            var parameters = new DialogParameters {
+                { "ContentText", $"Are you sure you want to delete {user.Fullname}?" },
+                { "ButtonText", "Delete User" },
+                { "Color", Color.Error }
+            };
+
+            var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete User", parameters);
+            var result = await dialog.Result;
+
+            if (!(result?.Canceled ?? true))
+            {
+                var userToDelete = await db.Users.FindAsync(user.Id);
+                if (userToDelete != null)
+                {
+                    db.Users.Remove(userToDelete);
+                    await db.SaveChangesAsync();
+                    Snackbar.Add("User deleted successfully", Severity.Success);
+                    await LoadUsers();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
+}

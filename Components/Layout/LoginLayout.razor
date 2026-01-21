@@ -1,0 +1,193 @@
+﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@using PDTActivityTracker.Components.Services
+@implements IDisposable
+
+<style>
+    .login-bg {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background: #0072cf;
+        transition: background 0.3s ease;
+    }
+
+        .login-bg.dark {
+            background: #0f172a;
+        }
+
+        .login-bg.lightest {
+            background: #f8fafc;
+        }
+</style>
+
+<MudThemeProvider Theme="@_theme" IsDarkMode="@(ThemeService.CurrentTheme == ThemeMode.Dark)" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="@GetBackgroundClass()"></div>
+
+<MudLayout>
+    <MudMainContent>
+        <CascadingValue Value="@(ThemeService.CurrentTheme == ThemeMode.Dark)" Name="IsDarkMode">
+            <CascadingValue Value="EventCallback.Factory.Create(this, DarkModeToggle)" Name="DarkModeToggle">
+                <CascadingValue Value="DarkLightModeButtonIcon" Name="DarkLightModeButtonIcon">
+                    @Body
+                </CascadingValue>
+            </CascadingValue>
+        </CascadingValue>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private MudTheme? _theme = null;
+    private bool _initialized = false;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        SetTheme();
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            _initialized = true;
+            await ThemeService.InitializeAsync();
+            SetTheme();
+            StateHasChanged();
+        }
+    }
+
+    private void OnThemeChanged()
+    {
+        SetTheme();
+        StateHasChanged();
+    }
+
+    private async Task DarkModeToggle()
+    {
+        await ThemeService.CycleThemeAsync();
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private void SetTheme()
+    {
+        if (ThemeService.CurrentTheme == ThemeMode.Dark)
+        {
+            _theme = new MudTheme
+            {
+                PaletteDark = _darkPalette,
+                LayoutProperties = new LayoutProperties()
+            };
+        }
+        else
+        {
+            _theme = new MudTheme
+            {
+                PaletteLight = ThemeService.CurrentTheme == ThemeMode.Light ? _lightPalette : _lightestPalette,
+                LayoutProperties = new LayoutProperties()
+            };
+        }
+    }
+
+    private string GetBackgroundClass()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "login-bg lightest",
+            ThemeMode.Light => "login-bg light",
+            ThemeMode.Dark => "login-bg dark",
+            _ => "login-bg lightest"
+        };
+    }
+
+    // New #0072cf Palette for Lightest Mode (Modern White/Blue)
+    private readonly PaletteLight _lightestPalette = new()
+    {
+        Black = "#0f172a",
+        AppbarText = "#0072cf",
+        AppbarBackground = "#ffffff",
+        DrawerBackground = "#ffffff",
+        DrawerIcon = "#0072cf",
+        DrawerText = "#0072cf",
+        GrayLight = "#f1f5f9",
+        GrayLighter = "#f8fafc",
+        Background = "#f8fafc",
+        Surface = "#ffffff",
+        TextPrimary = "#0f172a",
+        TextSecondary = "#475569",
+        Primary = "#0072cf", // Cerulean Blue
+        Secondary = "#005bb5",
+        Info = "#0072cf",
+        Success = "#10b981",
+        Warning = "#f59e0b",
+        Error = "#ef4444",
+        LinesDefault = "#e2e8f0",
+        TableLines = "#e2e8f0",
+        Divider = "#e2e8f0"
+    };
+
+    // New #0072cf Palette for Light Mode (Filled Blue Background Style)
+    private readonly PaletteLight _lightPalette = new()
+    {
+        Black = "#ffffff",
+        AppbarText = "#ffffff",
+        AppbarBackground = "#0072cf",
+        DrawerBackground = "#0072cf",
+        GrayLight = "#f1f5f9",
+        GrayLighter = "#f8fafc",
+        Background = "#0072cf", // Cerulean Blue Background
+        Surface = "#0072cf",
+        TextPrimary = "#ffffff",
+        TextSecondary = "#e2e8f0",
+        Primary = "#ffffff",
+        ActionDefault = "#ffffff"
+    };
+
+    // New #0072cf Palette for Dark Mode
+    private readonly PaletteDark _darkPalette = new()
+    {
+        Primary = "#0072cf", // Cerulean Blue
+        Surface = "#1e293b",
+        Background = "#0f172a",
+        BackgroundGray = "#1e293b",
+        AppbarText = "#e2e8f0",
+        AppbarBackground = "#1e293b",
+        DrawerBackground = "#1e293b",
+        ActionDefault = "#94a3b8",
+        ActionDisabled = "#64748b",
+        ActionDisabledBackground = "#334155",
+        TextPrimary = "#f8fafc",
+        TextSecondary = "#cbd5e1",
+        TextDisabled = "#64748b",
+        DrawerIcon = "#cbd5e1",
+        DrawerText = "#cbd5e1",
+        GrayLight = "#334155",
+        GrayLighter = "#1e293b",
+        Info = "#0072cf",
+        Success = "#10b981",
+        Warning = "#f59e0b",
+        Error = "#ef4444",
+        LinesDefault = "#334155",
+        TableLines = "#334155",
+        Divider = "#334155",
+        OverlayLight = "#1e293b80",
+    };
+
+    public string DarkLightModeButtonIcon => ThemeService.CurrentTheme switch
+    {
+        ThemeMode.Lightest => Icons.Material.Outlined.LightMode,
+        ThemeMode.Light => Icons.Material.Outlined.DarkMode,
+        ThemeMode.Dark => Icons.Material.Rounded.AutoMode,
+        _ => Icons.Material.Outlined.LightMode
+    };
+}
