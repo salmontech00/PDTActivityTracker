@@ -19,8 +19,51 @@
 <PageTitle>Login | SMR Activity Tracker</PageTitle>
 
 <style>
+    .login-wrapper {
+        display: flex;
+        flex-direction: column;
+        min-height: 90vh;
+        width: 100%;
+        padding: 2rem;
+        box-sizing: border-box;
+    }
+
+    .css-logo {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        user-select: none;
+        margin-bottom: 2rem;
+    }
+
+    .logo-main {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: clamp(10rem, 10vw, 5rem);
+        line-height: 0.9;
+        letter-spacing: -2px;
+    }
+
+    .logo-sub {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: clamp(1.55rem, 2.5vw, 1.5rem);
+        letter-spacing: 0.3em;
+        margin-left: 0.2rem;
+        margin-top: 0.5rem;
+    }
+
+    .login-card-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end; /* Move card to right */
+    }
+
     .mud-card {
         padding-top: 12px !important;
+        width: 100%;
+        max-width: 400px;
     }
 
     .mud-card-header {
@@ -35,93 +78,127 @@
         padding-bottom: 0 !important;
     }
 
-    @@media (max-width: 600px) {
-        .mud-container {
-            margin: 0px;
+    @@media (min-width: 960px) {
+        .login-wrapper {
+            flex-direction: row;
+            align-items: flex-start;
+        }
+
+        .css-logo {
+            position: fixed;
+            top: 4rem;
+            left: 4rem;
+            margin-bottom: 0;
+        }
+    }
+
+    @@media (max-width: 959px) {
+        .login-wrapper {
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        .css-logo {
+            align-items: center;
+            text-align: center;
+        }
+
+        .login-card-container {
+            justify-content: center;
+            width: 100%;
         }
 
         .mud-card {
-            max-width: 100% !important;
-            margin: 10px;
+            margin: 0;
         }
     }
 </style>
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 90vh;">
-    <MudCard Elevation="25" Class="px-4 pb-4 rounded-xl" Style="@GetCardStyle()">
-        <MudCardHeader Class="d-flex flex-column align-center px-0">
-        </MudCardHeader>
+<div class="login-wrapper">
+    <div class="css-logo">
+        <span class="logo-main" style="@GetLogoMainStyle()">SMR</span>
+        <span class="logo-sub" style="@GetLogoSubStyle()">ACTIVITY TRACKER</span>
+    </div>
 
-        <MudCardContent>
-            <MudForm @ref="form" Class="d-flex flex-column gap-4">
-                <MudTextField T="string"
-                              @bind-Value="Username"
-                              Label="Username"
-                              Required="true"
-                              RequiredError="Username is required"
-                              Variant="Variant.Outlined"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Person"
-                              AdornmentColor="Color.Primary" />
+    <div class="login-card-container">
+        <MudCard Elevation="25" Class="px-4 pb-4 rounded-xl" Style="@GetCardStyle()">
+            <MudCardHeader Class="d-flex flex-column align-center px-0">
+            </MudCardHeader>
 
-                <MudTextField T="string"
-                              @bind-Value="Password"
-                              Label="Password"
-                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                              Required="true"
-                              RequiredError="Password is required"
-                              Variant="Variant.Outlined"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                              OnAdornmentClick="TogglePasswordVisibility"
-                              AdornmentColor="Color.Primary"
-                              OnKeyDown="@HandleKeyDown" />
+            <MudCardContent>
+                <MudForm @ref="form" Class="d-flex flex-column gap-4">
+                    <MudTextField T="string"
+                                  @bind-Value="Username"
+                                  Label="Username"
+                                  Required="true"
+                                  RequiredError="Username is required"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Person"
+                                  AdornmentColor="Color.Primary"
+                                  Style="@GetInputFieldStyle()" />
 
-                @if (!string.IsNullOrEmpty(ErrorMessage))
-                {
-                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="rounded-lg">@ErrorMessage</MudAlert>
-                }
+                    <MudTextField T="string"
+                                  @bind-Value="Password"
+                                  Label="Password"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Required="true"
+                                  RequiredError="Password is required"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="TogglePasswordVisibility"
+                                  AdornmentColor="Color.Primary"
+                                  OnKeyDown="@HandleKeyDown"
+                                  Style="@GetInputFieldStyle()" />
 
-                <div class="d-flex justify-end">
-                    <MudLink OnClick="OpenOtpDialog" Underline="Underline.Hover" Color="Color.Primary">
-                        Forgot Password?
-                    </MudLink>
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="rounded-lg">@ErrorMessage</MudAlert>
+                    }
+
+                    <div class="d-flex justify-end">
+                        <MudLink OnClick="OpenOtpDialog" Underline="Underline.Hover" Color="Color.Primary">
+                            Forgot Password?
+                        </MudLink>
+                    </div>
+                </MudForm>
+            </MudCardContent>
+
+            <MudCardActions Class="d-flex flex-column px-4">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           FullWidth="true"
+                           Disabled="@isLoading"
+                           OnClick="LoginUser"
+                           Style="@GetButtonStyle()"
+                           Class="rounded-lg py-2 mb-4 elevation-4">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Color="Color.Surface" Size="Size.Small" Indeterminate="true" Class="me-2" />
+                        <span>Logging in...</span>
+                    }
+                    else
+                    {
+                        <span>Log In</span>
+                    }
+                </MudButton>
+
+                <MudDivider Class="my-2 w-100" />
+
+                <div class="d-flex justify-center w-100 mt-2">
+                    <MudTooltip Text="@GetStateTooltip()">
+                        <MudIconButton Icon="@DarkLightModeButtonIcon"
+                                       Color="Color.Primary"
+                                       OnClick="@HandleDarkModeToggle" />
+                    </MudTooltip>
                 </div>
-            </MudForm>
-        </MudCardContent>
-
-        <MudCardActions Class="d-flex flex-column px-4">
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Size="Size.Large"
-                       FullWidth="true"
-                       Disabled="@isLoading"
-                       OnClick="LoginUser"
-                       Style="@GetButtonStyle()"
-                       Class="rounded-lg py-2 mb-4 elevation-4">
-                @if (isLoading)
-                {
-                    <MudProgressCircular Color="Color.Surface" Size="Size.Small" Indeterminate="true" Class="me-2" />
-                    <span>Logging in...</span>
-                }
-                else
-                {
-                    <span>Log In</span>
-                }
-            </MudButton>
-
-            <MudDivider Class="my-2 w-100" />
-
-            <div class="d-flex justify-center w-100 mt-2">
-                <MudTooltip Text="@GetStateTooltip()">
-                    <MudIconButton Icon="@DarkLightModeButtonIcon"
-                                   Color="Color.Primary"
-                                   OnClick="@HandleDarkModeToggle" />
-                </MudTooltip>
-            </div>
-        </MudCardActions>
-    </MudCard>
-</MudContainer>
+            </MudCardActions>
+        </MudCard>
+    </div>
+</div>
 
 @code {
     private string Username { get; set; } = string.Empty;
@@ -161,6 +238,39 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
     }
 
+    private string GetLogoMainStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0072cf",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0072cf"
+        };
+        return $"color: {color};";
+    }
+
+    private string GetLogoSubStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#fdd45c",
+            ThemeMode.Dark => "#0072cf",
+            _ => "#0f172a"
+        };
+        return $"color: {color};";
+    }
+
+    private string GetInputFieldStyle()
+    {
+        if (ThemeService.CurrentTheme == ThemeMode.Lightest)
+        {
+            return "--mud-palette-lines-inputs: #0072cf; --mud-palette-primary: #0072cf;";
+        }
+        return "";
+    }
+
     private string GetCardStyle()
     {
         // Acrylic/Glassmorphism effect
@@ -168,7 +278,7 @@
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid #0072cf;",
             ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.2);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);"
