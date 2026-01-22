@@ -57,13 +57,14 @@
         flex: 1;
         display: flex;
         align-items: center;
-        justify-content: flex-end; /* Move card to right */
+        justify-content: flex-end;
+        margin-right: 50px;
     }
 
     .mud-card {
         padding-top: 12px !important;
         width: 100%;
-        max-width: 400px;
+        max-width: 600px;
     }
 
     .mud-card-header {
@@ -78,6 +79,13 @@
         padding-bottom: 0 !important;
     }
 
+    .theme-toggle-fixed {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+    }
+
     @@media (min-width: 960px) {
         .login-wrapper {
             flex-direction: row;
@@ -89,6 +97,10 @@
             top: 4rem;
             left: 4rem;
             margin-bottom: 0;
+        }
+
+        .login-card-container{
+            margin-right: 0px;
         }
     }
 
@@ -107,10 +119,16 @@
         .login-card-container {
             justify-content: center;
             width: 100%;
+            margin-right: 0px;
         }
 
         .mud-card {
             margin: 0;
+        }
+
+        .theme-toggle-fixed {
+            bottom: 1rem;
+            right: 1rem;
         }
     }
 </style>
@@ -185,19 +203,20 @@
                         <span>Log In</span>
                     }
                 </MudButton>
-
-                <MudDivider Class="my-2 w-100" />
-
-                <div class="d-flex justify-center w-100 mt-2">
-                    <MudTooltip Text="@GetStateTooltip()">
-                        <MudIconButton Icon="@DarkLightModeButtonIcon"
-                                       Color="Color.Primary"
-                                       OnClick="@HandleDarkModeToggle" />
-                    </MudTooltip>
-                </div>
             </MudCardActions>
         </MudCard>
     </div>
+</div>
+
+<div class="theme-toggle-fixed">
+    <MudTooltip Text="@GetStateTooltip()" Placement="Placement.Left">
+        <MudIconButton Icon="@DarkLightModeButtonIcon"
+                       Color="Color.Primary"
+                       OnClick="@HandleDarkModeToggle"
+                       Size="Size.Large"
+                       Style="@GetThemeToggleStyle()"
+                       Class="rounded-circle" />
+    </MudTooltip>
 </div>
 
 @code {
@@ -273,7 +292,6 @@
 
     private string GetCardStyle()
     {
-        // Acrylic/Glassmorphism effect
         var baseStyle = "backdrop-filter: blur(15px); width: 100%; max-width: 400px;";
 
         return ThemeService.CurrentTheme switch
@@ -307,6 +325,17 @@
             ThemeMode.Light => "Switch to Dark Mode",
             ThemeMode.Dark => "Switch to Default",
             _ => "Switch to Blue Theme"
+        };
+    }
+
+    private string GetThemeToggleStyle()
+    {
+        var baseStyle = "background-color: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Light => $"{baseStyle} color: #0072cf !important;",
+            _ => baseStyle
         };
     }
 
