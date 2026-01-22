@@ -1,0 +1,355 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Model
+@using PDTActivityTracker.Components.Services
+@using System.Security.Cryptography
+@using System.Text
+@using System.Text.RegularExpressions
+@using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Processing
+@using SixLabors.ImageSharp.Formats.Jpeg
+@using SixLabors.ImageSharp.Formats.Png
+@using Microsoft.EntityFrameworkCore
+@inject ISnackbar Snackbar
+@inject AppDbContext Db
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight: 700;">UPDATE ACCOUNT</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudForm @ref="_form" Model="_editingUser">
+
+            <MudText Typo="Typo.subtitle2" Class="mb-2" Align="Align.Center" Style="@GetTextStyle(true)">Upload Profile Image</MudText>
+
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; margin-bottom: 24px;">
+                @if (!string.IsNullOrEmpty(_imagePreviewUrl))
+                {
+                    <label for="upload-image" style="position: absolute; top: 10px; z-index: 2; cursor: pointer; background: rgba(0,0,0,0.4); border-radius: 50%; padding: 8px;">
+                        <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Medium" />
+                    </label>
+
+                    <img src="@_imagePreviewUrl"
+                         alt="Preview"
+                         style="height: 120px; width: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #0072cf;" />
+                }
+                else
+                {
+                    <label for="upload-image" style="cursor: pointer; border: 2px dashed #0072cf; border-radius: 50%; padding: 24px; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
+                        <MudIcon Icon="@Icons.Material.Filled.AddAPhoto" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                    </label>
+                }
+
+                <InputFile id="upload-image"
+                           OnChange="OnFileChanged"
+                           accept="image/*"
+                           style="display: none;" />
+            </div>
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Full Name"
+                                  @bind-Value="_editingUser.Fullname"
+                                  Required="true"
+                                  RequiredError="Full name is required"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Username"
+                                  @bind-Value="_editingUser.Username"
+                                  Required="true"
+                                  RequiredError="Username is required"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField T="string"
+                                  Label="Email"
+                                  @bind-Value="_editingUser.Email"
+                                  Required="true"
+                                  RequiredError="Email is required"
+                                  Validation="@(new Func<string, string?>(ValidateEmail))"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Position"
+                                  @bind-Value="_editingUser.Position"
+                                  Required="true"
+                                  RequiredError="Position is required"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Area"
+                                  @bind-Value="_editingUser.Area"
+                                  Required="true"
+                                  RequiredError="Area is required"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="New Password"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="@TogglePasswordVisibility"
+                                  @bind-Value="_password"
+                                  Immediate="true"
+                                  Validation="@(new Func<string, string?>(ValidatePassword))"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="Leave blank to keep current" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Confirm Password"
+                                  InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="@ToggleConfirmPasswordVisibility"
+                                  @bind-Value="_confirmPassword"
+                                  Immediate="true"
+                                  Validation="@(new Func<string, string?>(ValidateConfirmPassword))"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Role"
+                                  Value="@_editingUser.Role"
+                                  ReadOnly="true"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Contact Admin to change role" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Access Tags"
+                                  Value="@_editingUser.Tags"
+                                  ReadOnly="true"
+                                  Variant="Variant.Outlined"
+                                  HelperText="Contact Admin to update access tags" />
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="MudBlazor.Color.Primary" OnClick="Submit" Disabled="@_isSaving" Variant="Variant.Filled" Class="px-6 rounded-lg" Style="@GetButtonStyle()">
+            @if (_isSaving)
+            {
+                <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Updating...</span>
+            }
+            else
+            {
+                <span>Update Account</span>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    private MudForm _form = default!;
+    private bool _isSaving = false;
+
+    private User _editingUser = new();
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+
+    private bool _showPassword = false;
+    private bool _showConfirmPassword = false;
+
+    private string? _imagePreviewUrl;
+    private byte[]? _imageBytes;
+    private string? _imageMimeType;
+
+    [Parameter]
+    public User UserToEdit { get; set; } = default!;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        _editingUser = new User
+        {
+            Id = UserToEdit.Id,
+            Username = UserToEdit.Username,
+            Email = UserToEdit.Email,
+            Password = UserToEdit.Password,
+            Fullname = UserToEdit.Fullname,
+            Position = UserToEdit.Position,
+            Area = UserToEdit.Area,
+            Role = UserToEdit.Role,
+            ImageData = UserToEdit.ImageData,
+            ImageMimeType = UserToEdit.ImageMimeType,
+            Tags = UserToEdit.Tags
+        };
+
+        if (_editingUser.ImageData != null && !string.IsNullOrEmpty(_editingUser.ImageMimeType))
+        {
+            _imagePreviewUrl = $"data:{_editingUser.ImageMimeType};base64,{Convert.ToBase64String(_editingUser.ImageData)}";
+        }
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "border-top: 5px solid #0072cf; border-radius: 12px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Light => $"{baseStyle} background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);",
+            ThemeMode.Dark => $"{baseStyle} background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);",
+            _ => baseStyle
+        };
+    }
+
+    private string GetTextStyle(bool isHeader)
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0f172a;" : "color: #f8fafc;";
+    }
+
+    private string GetButtonStyle()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important; background-color: white !important; font-weight: 600;" : "font-weight: 600;";
+    }
+
+    private string? ValidateEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return "Email is required";
+
+        var emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+        if (!Regex.IsMatch(email, emailPattern, RegexOptions.IgnoreCase))
+            return "Enter a valid email address";
+
+        return null;
+    }
+
+    private string? ValidatePassword(string password)
+    {
+        if (!string.IsNullOrEmpty(password) && password.Length < 6)
+            return "Password must be at least 6 characters";
+        return null;
+    }
+
+    private string? ValidateConfirmPassword(string confirmPassword)
+    {
+        if (!string.IsNullOrEmpty(_password) && confirmPassword != _password)
+            return "Passwords do not match";
+        return null;
+    }
+
+    private static string HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(password);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (!_form.IsValid)
+            return;
+
+        _isSaving = true;
+
+        try
+        {
+            if (!string.IsNullOrEmpty(_password))
+            {
+                _editingUser.Password = HashPassword(_password);
+            }
+
+            var userInDb = await Db.Users.FindAsync(_editingUser.Id);
+            if (userInDb != null)
+            {
+                userInDb.Username = _editingUser.Username;
+                userInDb.Email = _editingUser.Email;
+                userInDb.Password = _editingUser.Password;
+                userInDb.Fullname = _editingUser.Fullname;
+                userInDb.Position = _editingUser.Position;
+                userInDb.Area = _editingUser.Area;
+
+                if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
+                {
+                    userInDb.ImageData = _imageBytes;
+                    userInDb.ImageMimeType = _imageMimeType;
+                }
+
+                await Db.SaveChangesAsync();
+                Snackbar.Add("Account updated successfully!", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            _isSaving = false;
+        }
+    }
+
+    private void TogglePasswordVisibility() => _showPassword = !_showPassword;
+    private void ToggleConfirmPasswordVisibility() => _showConfirmPassword = !_showConfirmPassword;
+
+    private async Task OnFileChanged(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            Snackbar.Add("Image size must be less than 5MB", Severity.Warning);
+            return;
+        }
+
+        try
+        {
+            using var inputStream = file.OpenReadStream(5 * 1024 * 1024);
+            using var image = await Image.LoadAsync(inputStream);
+
+            image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
+            {
+                Size = new SixLabors.ImageSharp.Size(300, 300),
+                Mode = SixLabors.ImageSharp.Processing.ResizeMode.Max
+            }));
+
+            using var ms = new MemoryStream();
+            var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+            if (extension == ".png")
+            {
+                await image.SaveAsync(ms, new PngEncoder());
+                _imageMimeType = "image/png";
+            }
+            else
+            {
+                await image.SaveAsync(ms, new JpegEncoder { Quality = 75 });
+                _imageMimeType = "image/jpeg";
+            }
+
+            _imageBytes = ms.ToArray();
+            _imagePreviewUrl = $"data:{_imageMimeType};base64,{Convert.ToBase64String(_imageBytes)}";
+
+            Snackbar.Add("Image uploaded", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error processing image: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

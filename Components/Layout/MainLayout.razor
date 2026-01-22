@@ -11,30 +11,30 @@
 
 <style>
     .v2-appbar-lightest {
-        background: rgba(255, 255, 255, 0.9) !important;
-        backdrop-filter: blur(8px);
-        border-bottom: 1px solid #e2e8f0 !important;
+        background: rgba(255, 255, 255, 0.8) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
         color: #0f172a !important;
     }
 
     .v2-appbar-light {
-        background: #0072cf !important;
+        background: rgba(0, 114, 207, 0.8) !important;
+        backdrop-filter: blur(12px);
         color: white !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
     }
 
     .v2-appbar-dark {
-        background: rgba(30, 41, 59, 0.9) !important;
-        backdrop-filter: blur(8px);
-        border-bottom: 1px solid #334155 !important;
+        background: rgba(30, 41, 59, 0.8) !important;
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
         color: #f8fafc !important;
     }
 
-    /* Drawer Styling */
-    .v2-drawer-header {
+    /* Branding & Header */
+    .top-logo-section {
         display: flex;
         align-items: center;
-        padding: 16px;
         gap: 12px;
     }
 
@@ -45,19 +45,30 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        width: 40px;
+        height: 40px;
     }
 
     .logo-img {
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         object-fit: contain;
         filter: brightness(0) invert(1);
     }
 
     .v2-drawer-title {
-        font-weight: 700;
-        font-size: 1.1rem;
+        font-weight: 800;
+        font-size: 1.25rem;
         letter-spacing: -0.025em;
+        line-height: 1.2;
+    }
+
+    .logo-highlight {
+        color: #0072cf;
+    }
+
+    html.theme-light .logo-highlight {
+        color: #ffffff;
     }
 
     /* Loading Screen Theme Styling */
@@ -80,6 +91,61 @@
     html.theme-dark .loading-container {
         background-color: #0f172a;
     }
+
+    /* Desktop Navigation */
+    .desktop-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .desktop-drawer {
+        display: block;
+    }
+
+    .mobile-menu-toggle {
+        display: none;
+    }
+
+    .mobile-drawer {
+        display: none;
+    }
+
+    @@media (max-width: 600px) {
+        .logo-bg {
+            width: 32px;
+            height: 32px;
+            padding: 4px;
+        }
+
+        .logo-img {
+            width: 22px;
+            height: 22px;
+        }
+
+        .v2-drawer-title {
+            font-size: 1rem;
+        }
+
+        .desktop-nav {
+            display: none !important;
+        }
+
+        .desktop-drawer {
+            display: none !important;
+        }
+
+        .mobile-menu-toggle {
+            display: flex !important;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mobile-drawer {
+            display: block !important;
+            max-width: 250px !important;
+        }
+    }
 </style>
 
 @if (_isCheckingAuth)
@@ -101,64 +167,110 @@ else
 
     <MudLayout>
         <MudAppBar Elevation="0" Class="@GetAppBarClass()" Fixed="true">
-            <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                           Color="Color.Inherit"
-                           Edge="Edge.Start"
-                           OnClick="@((e) => DrawerToggle())" />
+            <div class="desktop-nav">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Color="Color.Inherit"
+                               Edge="Edge.Start"
+                               OnClick="@((e) => DrawerToggle())" />
+            </div>
+
+            <div class="top-logo-section mx-2">
+                <div class="logo-bg">
+                    <img src="/PITALOGO.png" class="logo-img" alt="Logo" />
+                </div>
+                <MudText Class="v2-drawer-title" Color="@GetDrawerTextColor()">SMR <span class="logo-highlight">Activity Tracker</span></MudText>
+            </div>
 
             <MudSpacer />
 
-            <div class="d-flex align-center gap-4">
+            <div class="desktop-nav gap-4">
                 @if (!string.IsNullOrEmpty(_userImagePath))
                 {
-                    <div class="d-flex align-center cursor-pointer" @onclick="OpenProfilePreviewDialog">
-                        <MudAvatar Image="@_userImagePath" Size="Size.Medium" />
-                        <div class="ml-3 d-none d-sm-block">
-                            <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@UserState.Username</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">@UserState.Role</MudText>
-                        </div>
-                    </div>
+                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="cursor-pointer">
+                        <ActivatorContent>
+                            <div class="d-flex align-center cursor-pointer">
+                                <MudAvatar Image="@_userImagePath" Size="Size.Medium" />
+                                <div class="ml-3">
+                                    <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@UserState.Username</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@UserState.Role</MudText>
+                                </div>
+                            </div>
+                        </ActivatorContent>
+                        <ChildContent>
+                            <MudMenuItem Icon="@Icons.Material.Outlined.Person" OnClick="OpenUpdateAccountDialog">Update Account</MudMenuItem>
+                            <MudMenuItem Icon="@Icons.Material.Outlined.ZoomIn" OnClick="OpenProfilePreviewDialog">View Large Photo</MudMenuItem>
+                            @if (UserState.Role == "Admin")
+                            {
+                                <MudMenuItem Icon="@Icons.Material.Outlined.People" OnClick="@(() => NavigationManager.NavigateTo("/"))">Manage Users</MudMenuItem>
+                                <MudMenuItem Icon="@Icons.Material.Outlined.Settings" OnClick="@(() => NavigationManager.NavigateTo("/admin/settings"))">Settings</MudMenuItem>
+                            }
+                            <MudDivider Class="my-2" />
+                            <MudMenuItem Icon="@Icons.Material.Outlined.Logout" OnClick="Logout" Color="Color.Error">Sign Out</MudMenuItem>
+                        </ChildContent>
+                    </MudMenu>
                 }
 
                 <MudIconButton Icon="@DarkLightModeButtonIcon"
                                Color="Color.Inherit"
                                OnClick="@DarkModeToggle" />
+            </div>
 
-                <MudIconButton Icon="@Icons.Material.Outlined.Logout"
+            <div class="mobile-menu-toggle">
+                @if (!string.IsNullOrEmpty(_userImagePath))
+                {
+                    <MudAvatar Image="@_userImagePath" Size="Size.Small" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;" />
+                }
+                <MudIconButton Icon="@DarkLightModeButtonIcon"
                                Color="Color.Inherit"
-                               Edge="Edge.End"
-                               OnClick="Logout"
-                               Title="Sign Out" />
+                               OnClick="@DarkModeToggle" />
+                <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                               Color="Color.Inherit"
+                               OnClick="@ToggleMobileDrawer" />
             </div>
         </MudAppBar>
 
+        <!-- Desktop Drawer -->
         <MudDrawer @bind-Open="_drawerOpen"
                    ClipMode="DrawerClipMode.Always"
                    Elevation="0"
                    Variant="DrawerVariant.Responsive"
-                   Style="@GetDrawerStyle()">
-
-            <div class="v2-drawer-header">
-                <div class="logo-bg">
-                    <img src="/PITALOGO.png" class="logo-img" alt="Logo" />
-                </div>
-                <MudText Class="v2-drawer-title" Color="@GetDrawerTextColor()">TuitionVal<span style="color:#0072cf">V2</span></MudText>
-            </div>
-
-            <MudDivider Class="my-2" />
-
+                   Style="@GetDrawerStyle()"
+                   Class="desktop-drawer">
             <NavMenu />
+        </MudDrawer>
 
-            <MudSpacer />
-
-            <div class="pa-4">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Primary"
-                           FullWidth="true"
-                           StartIcon="@Icons.Material.Outlined.ManageAccounts"
-                           OnClick="@OpenUpdateAccountDialog">
-                    Account
-                </MudButton>
+        <!-- Mobile Drawer -->
+        <MudDrawer @bind-Open="_mobileDrawerOpen"
+                   Anchor="Anchor.Right"
+                   Elevation="2"
+                   Variant="DrawerVariant.Temporary"
+                   Class="mobile-drawer"
+                   Style="@GetDrawerStyle()">
+            <MudDrawerHeader>
+                <MudText Typo="Typo.h6">MENU</MudText>
+            </MudDrawerHeader>
+            <div class="pa-2">
+                <NavMenu />
+                <MudDivider Class="my-4" />
+                <MudNavLink OnClick="@(async () => { await OpenUpdateAccountDialog(); CloseMobileDrawer(); })"
+                            Icon="@Icons.Material.Outlined.ManageAccounts">
+                    Update Account
+                </MudNavLink>
+                @if (UserState.Role == "Admin")
+                {
+                    <MudNavLink OnClick="@(() => { NavigationManager.NavigateTo("/"); CloseMobileDrawer(); })"
+                                Icon="@Icons.Material.Outlined.People">
+                        Manage Users
+                    </MudNavLink>
+                    <MudNavLink OnClick="@(() => { NavigationManager.NavigateTo("/admin/settings"); CloseMobileDrawer(); })"
+                                Icon="@Icons.Material.Outlined.Settings">
+                        Settings
+                    </MudNavLink>
+                }
+                <MudNavLink OnClick="@LogoutAndClose"
+                            Icon="@Icons.Material.Outlined.Logout">
+                    Sign Out
+                </MudNavLink>
             </div>
         </MudDrawer>
 
@@ -170,6 +282,7 @@ else
 
 @code {
     private bool _drawerOpen = true;
+    private bool _mobileDrawerOpen = false;
     private MudTheme? _theme = null;
     private bool _initialized = false;
     private bool _isCheckingAuth = true;
@@ -180,6 +293,13 @@ else
         base.OnInitialized();
         SetTheme();
         ThemeService.OnThemeChanged += OnThemeChanged;
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _mobileDrawerOpen = false;
+        StateHasChanged();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -245,6 +365,23 @@ else
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void ToggleMobileDrawer()
+    {
+        _mobileDrawerOpen = !_mobileDrawerOpen;
+    }
+
+    private void CloseMobileDrawer()
+    {
+        _mobileDrawerOpen = false;
+    }
+
+    private async Task LogoutAndClose()
+    {
+        CloseMobileDrawer();
+        await Logout();
     }
 
     private void SetTheme()
@@ -298,45 +435,84 @@ else
         return ThemeService.CurrentTheme == ThemeMode.Dark ? "background-color: #0f172a;" : "background-color: #f8fafc;";
     }
 
-    // Reuse palettes from LoginLayoutV2 for consistency
+    private string GetBtnTextStyle()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important; font-weight: 600;" : "font-weight: 600;";
+    }
+
+    // Reuse palettes from LoginLayout for consistency
     private readonly PaletteLight _lightestPalette = new()
     {
-        Primary = "#0072cf",
+        Black = "#0f172a",
+        AppbarText = "#0072cf",
         AppbarBackground = "#ffffff",
+        DrawerBackground = "#ffffff",
+        DrawerIcon = "#0072cf",
+        DrawerText = "#0072cf",
+        GrayLight = "#f1f5f9",
+        GrayLighter = "#f8fafc",
         Background = "#f8fafc",
         Surface = "#ffffff",
         TextPrimary = "#0f172a",
         TextSecondary = "#475569",
-        DrawerBackground = "#ffffff",
-        DrawerText = "#0f172a",
-        DrawerIcon = "#475569"
+        Primary = "#0072cf", // Cerulean Blue
+        Secondary = "#005bb5",
+        Info = "#0072cf",
+        Success = "#10b981",
+        Warning = "#f59e0b",
+        Error = "#ef4444",
+        LinesDefault = "#e2e8f0",
+        TableLines = "#e2e8f0",
+        Divider = "#e2e8f0"
     };
 
     private readonly PaletteLight _lightPalette = new()
     {
-        Primary = "#ffffff",
+        Black = "#ffffff",
+        AppbarText = "#ffffff",
         AppbarBackground = "#0072cf",
-        Background = "#f1f5f9",
-        Surface = "#ffffff",
-        TextPrimary = "#0f172a",
-        TextSecondary = "#475569",
         DrawerBackground = "#0072cf",
-        DrawerText = "#ffffff",
+        GrayLight = "#f1f5f9",
+        GrayLighter = "#f8fafc",
+        Background = "#0072cf", // Cerulean Blue Background
+        Surface = "#0072cf",
+        TextPrimary = "#ffffff",
+        TextSecondary = "#e2e8f0",
+        Primary = "#ffffff",
+        ActionDefault = "#ffffff",
         DrawerIcon = "#ffffff",
-        ActionDefault = "#ffffff"
+        DrawerText = "#ffffff",
+        ActionDisabled = "rgba(255,255,255,0.5)",
+        Divider = "rgba(255,255,255,0.1)"
     };
 
     private readonly PaletteDark _darkPalette = new()
     {
-        Primary = "#0072cf",
-        AppbarBackground = "#1e293b",
-        Background = "#0f172a",
+        Primary = "#0072cf", // Cerulean Blue
         Surface = "#1e293b",
+        Background = "#0f172a",
+        BackgroundGray = "#1e293b",
+        AppbarText = "#e2e8f0",
+        AppbarBackground = "#1e293b",
+        DrawerBackground = "#1e293b",
+        ActionDefault = "#94a3b8",
+        ActionDisabled = "#64748b",
+        ActionDisabledBackground = "#334155",
         TextPrimary = "#f8fafc",
         TextSecondary = "#cbd5e1",
-        DrawerBackground = "#1e293b",
-        DrawerText = "#f8fafc",
-        DrawerIcon = "#cbd5e1"
+        TextDisabled = "#64748b",
+        DrawerIcon = "#cbd5e1",
+        DrawerText = "#cbd5e1",
+        GrayLight = "#334155",
+        GrayLighter = "#1e293b",
+        Info = "#0072cf",
+        Success = "#10b981",
+        Warning = "#f59e0b",
+        Error = "#ef4444",
+        LinesDefault = "#334155",
+        TableLines = "#334155",
+        Divider = "#334155",
+        OverlayLight = "#1e293b80",
     };
 
     public string DarkLightModeButtonIcon => ThemeService.CurrentTheme switch
@@ -349,10 +525,23 @@ else
 
     private async Task OpenUpdateAccountDialog()
     {
-        // Keep existing logic for account update
-        // Implementation omitted for brevity as it relies on existing dialogs
-        // Just a placeholder to show intent
-        await Task.CompletedTask;
+        using var db = await DbFactory.CreateDbContextAsync();
+        var currentUser = await db.Users.FirstOrDefaultAsync(u => u.Username == UserState.Username);
+
+        if (currentUser is null) return;
+
+        var parameters = new DialogParameters { { "UserToEdit", currentUser } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<UpdateAccountForm>("Update My Account", parameters, options);
+        var result = await dialog.Result;
+
+        if (!(result?.Canceled ?? true))
+        {
+            // Refresh local user data if needed
+            await UserState.InitializeAsync();
+            StateHasChanged();
+        }
     }
 
     private async Task OpenProfilePreviewDialog()
@@ -360,13 +549,14 @@ else
         var parameters = new DialogParameters
         {
             { "ImagePath", _userImagePath },
-            { "Username", UserState.Username }
+            { "Username", UserState.Username },
+            { "Role", UserState.Role }
         };
 
         var options = new DialogOptions
         {
             CloseButton = false,
-            MaxWidth = MaxWidth.ExtraSmall,
+            MaxWidth = MaxWidth.Medium,
             NoHeader = true,
             Position = DialogPosition.Center,
             BackdropClick = true,

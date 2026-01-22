@@ -19,5 +19,7 @@ namespace PDTActivityTracker.Model
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<Area> Areas { get; set; }
+        public DbSet<AccessTag> AccessTags { get; set; }
     }
 }

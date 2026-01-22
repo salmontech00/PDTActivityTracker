@@ -5,18 +5,33 @@
 
 <style>
     .mud-navmenu .mud-nav-link.active {
-        color: #0072cf !important;
-        background-color: rgba(0, 114, 207, 0.1);
-        font-weight: 600;
-        border-right: 3px solid #0072cf;
+        color: var(--nav-active-color, #0072cf) !important;
+        background-color: var(--nav-active-bg, rgba(0, 114, 207, 0.1)) !important;
+        font-weight: 700;
+        border-right: 3px solid var(--nav-active-color, #0072cf);
     }
 
         .mud-navmenu .mud-nav-link.active .mud-icon-root {
-            color: #0072cf !important;
+            color: var(--nav-active-color, #0072cf) !important;
         }
 
     .mud-nav-link:hover {
-        background-color: rgba(0, 114, 207, 0.05);
+        background-color: var(--nav-hover-bg, rgba(0, 114, 207, 0.05)) !important;
+    }
+
+    /* Theme-specific overrides */
+    html.theme-light .mud-navmenu .mud-nav-link.active {
+        --nav-active-color: #ffffff;
+        --nav-active-bg: rgba(255, 255, 255, 0.15);
+    }
+
+    html.theme-light .mud-nav-link:hover {
+        --nav-hover-bg: rgba(255, 255, 255, 0.1);
+    }
+
+    html.theme-dark .mud-navmenu .mud-nav-link.active {
+        --nav-active-color: #0072cf;
+        --nav-active-bg: rgba(0, 114, 207, 0.1);
     }
 
     .nav-section-header-v2 {
@@ -26,52 +41,34 @@
         text-transform: uppercase;
         letter-spacing: 1px;
         opacity: 0.8;
+        color: #64748b; /* Default/Lightest */
+    }
+
+    html.theme-light .nav-section-header-v2 {
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    html.theme-dark .nav-section-header-v2 {
+        color: #94a3b8;
     }
 </style>
 
 <MudNavMenu>
     @if (UserState.Role == "Admin")
     {
-        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor();">Admin V2</div>
-
-        <!-- Placeholder for V2 Dashboard if created later, or link to V1 -->
-        <MudNavLink Href="/admin/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Dashboard">
-            Dashboard
-        </MudNavLink>
-
-        <!-- V2 Users Link -->
-        <MudNavLink Href="/admin/users" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.People">
+        <div class="nav-section-header-v2">MENU</div>
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.People">
             Manage Users
         </MudNavLink>
-
-        <MudNavLink Href="/admin/students" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.School">
-            Students
-        </MudNavLink>
-        <MudNavLink Href="/admin/subjects" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.LibraryBooks">
-            Subjects
-        </MudNavLink>
-        <MudNavLink Href="/admin/transactions" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.ReceiptLong">
-            Transactions
+        <MudNavLink Href="/admin/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Settings">
+            Settings
         </MudNavLink>
     }
-    else if (UserState.Role == "Cashier")
+    else if (UserState.Role == "AVP" || UserState.Role == "Area Head" || UserState.Role == "Store Head")
     {
-        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor();">Cashier</div>
-        <MudNavLink Href="/cashier/students" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.School">
-            Students
-        </MudNavLink>
-        <MudNavLink Href="/cashier/payments" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Payment">
-            Payments
-        </MudNavLink>
-        <MudNavLink Href="/cashier/transactions" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Receipt">
-            Transactions
-        </MudNavLink>
-    }
-    else
-    {
-        <div class="nav-section-header-v2" style="color: @GetMenuHeaderColor();">Faculty</div>
-        <MudNavLink Href="/faculty/validate-exam-permit" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.VerifiedUser">
-            Validate Permit
+        <div class="nav-section-header-v2">Portal</div>
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Groups">
+            View Users
         </MudNavLink>
     }
 </MudNavMenu>
@@ -91,16 +88,5 @@
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
-    }
-
-    private string GetMenuHeaderColor()
-    {
-        return ThemeService.CurrentTheme switch
-        {
-            ThemeMode.Lightest => "#64748b",
-            ThemeMode.Light => "rgba(255,255,255,0.7)",
-            ThemeMode.Dark => "#94a3b8",
-            _ => "#64748b"
-        };
     }
 }

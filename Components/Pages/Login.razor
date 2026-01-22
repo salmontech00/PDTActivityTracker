@@ -16,24 +16,39 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Login | SMR Activity Tracker</PageTitle>
 
 <style>
+    .mud-card {
+        padding-top: 12px !important;
+    }
+
+    .mud-card-header {
+        padding-top: 0 !important;
+    }
+
+    .mud-card-content {
+        padding-top: 0 !important;
+    }
+
+    .mud-card-actions {
+        padding-bottom: 0 !important;
+    }
+
     @@media (max-width: 600px) {
         .mud-container {
-            padding-left: 16px !important;
-            padding-right: 16px !important;
+            margin: 0px;
         }
 
         .mud-card {
             max-width: 100% !important;
-            margin: 0 0px;
+            margin: 10px;
         }
     }
 </style>
 
 <MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 90vh;">
-    <MudCard Elevation="25" Class="pa-4 rounded-xl" Style="@GetCardStyle()">
+    <MudCard Elevation="25" Class="px-4 pb-4 rounded-xl" Style="@GetCardStyle()">
         <MudCardHeader Class="d-flex flex-column align-center px-0">
         </MudCardHeader>
 
@@ -75,7 +90,7 @@
             </MudForm>
         </MudCardContent>
 
-        <MudCardActions Class="d-flex flex-column px-4 pb-4">
+        <MudCardActions Class="d-flex flex-column px-4">
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
                        Size="Size.Large"
@@ -91,7 +106,7 @@
                 }
                 else
                 {
-                    <span>Sign In</span>
+                    <span>Log In</span>
                 }
             </MudButton>
 
@@ -130,7 +145,7 @@
         await UserState.InitializeAsync();
         if (UserState.IsAuthenticated)
         {
-            NavigationManager.NavigateTo("/admin/users", forceLoad: true);
+            NavigationManager.NavigateTo("/", forceLoad: true);
         }
 
         ThemeService.OnThemeChanged += OnThemeChanged;
@@ -149,14 +164,14 @@
     private string GetCardStyle()
     {
         // Acrylic/Glassmorphism effect
-        var baseStyle = "backdrop-filter: blur(10px); width: 100%; max-width: 400px;";
+        var baseStyle = "backdrop-filter: blur(15px); width: 100%; max-width: 400px;";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.9);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
-            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.05);",
-            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.9);"
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);"
         };
     }
 

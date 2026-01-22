@@ -1,12 +1,13 @@
-﻿@using MudBlazor
+﻿@using PDTActivityTracker.Components.Services
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 
-<MudDialog>
+<MudDialog Style="@GetDialogStyle()">
     <DialogContent>
-        <MudText>@ContentText</MudText>
+        <MudText Typo="Typo.body1" Style="@GetTextStyle()">@ContentText</MudText>
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="Submit">@ButtonText</MudButton>
+        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="Submit" Class="px-6 rounded-lg">@ButtonText</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -16,6 +17,21 @@
     [Parameter] public string ContentText { get; set; } = "Are you sure?";
     [Parameter] public string ButtonText { get; set; } = "Delete";
     [Parameter] public Color Color { get; set; } = Color.Error;
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = $"border-top: 5px solid {GetBorderColor()}; border-radius: 12px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Light => $"{baseStyle} background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);",
+            ThemeMode.Dark => $"{baseStyle} background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);",
+            _ => baseStyle
+        };
+    }
+
+    private string GetBorderColor() => Color == Color.Error ? "#ef4444" : "#0072cf";
+
+    private string GetTextStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0f172a;" : "color: #f8fafc;";
 
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();
