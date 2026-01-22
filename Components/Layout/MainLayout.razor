@@ -37,7 +37,7 @@
         padding: 16px;
         gap: 12px;
     }
-    
+
     .logo-bg {
         background-color: #0072cf;
         padding: 6px;
@@ -46,12 +46,12 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .logo-img {
-         width: 32px;
-         height: 32px;
-         object-fit: contain;
-         filter: brightness(0) invert(1);
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        filter: brightness(0) invert(1);
     }
 
     .v2-drawer-title {
@@ -59,14 +59,35 @@
         font-size: 1.1rem;
         letter-spacing: -0.025em;
     }
+
+    /* Loading Screen Theme Styling */
+    .loading-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        transition: background-color 0.3s ease;
+    }
+
+    html.theme-lightest .loading-container {
+        background-color: #f8fafc;
+    }
+
+    html.theme-light .loading-container {
+        background-color: #0072cf;
+    }
+
+    html.theme-dark .loading-container {
+        background-color: #0f172a;
+    }
 </style>
 
 @if (_isCheckingAuth)
 {
     <MudLayout>
         <MudMainContent>
-            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f8fafc;">
-                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+            <div class="loading-container">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="@(ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Primary)" />
             </div>
         </MudMainContent>
     </MudLayout>
@@ -84,7 +105,7 @@ else
                            Color="Color.Inherit"
                            Edge="Edge.Start"
                            OnClick="@((e) => DrawerToggle())" />
-            
+
             <MudSpacer />
 
             <div class="d-flex align-center gap-4">
@@ -102,12 +123,12 @@ else
                 <MudIconButton Icon="@DarkLightModeButtonIcon"
                                Color="Color.Inherit"
                                OnClick="@DarkModeToggle" />
-                               
+
                 <MudIconButton Icon="@Icons.Material.Outlined.Logout"
                                Color="Color.Inherit"
                                Edge="Edge.End"
-                               OnClick="Logout" 
-                               Title="Sign Out"/>
+                               OnClick="Logout"
+                               Title="Sign Out" />
             </div>
         </MudAppBar>
 
@@ -116,24 +137,24 @@ else
                    Elevation="0"
                    Variant="DrawerVariant.Responsive"
                    Style="@GetDrawerStyle()">
-            
+
             <div class="v2-drawer-header">
                 <div class="logo-bg">
-                     <img src="/PITALOGO.png" class="logo-img" alt="Logo" />
+                    <img src="/PITALOGO.png" class="logo-img" alt="Logo" />
                 </div>
                 <MudText Class="v2-drawer-title" Color="@GetDrawerTextColor()">TuitionVal<span style="color:#0072cf">V2</span></MudText>
             </div>
-            
+
             <MudDivider Class="my-2" />
-            
-            <NavMenu/>
-            
+
+            <NavMenu />
+
             <MudSpacer />
-            
+
             <div class="pa-4">
-                <MudButton Variant="Variant.Outlined" 
-                           Color="Color.Primary" 
-                           FullWidth="true" 
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           FullWidth="true"
                            StartIcon="@Icons.Material.Outlined.ManageAccounts"
                            OnClick="@OpenUpdateAccountDialog">
                     Account
@@ -256,28 +277,30 @@ else
             _ => "v2-appbar-lightest"
         };
     }
-    
+
     private string GetDrawerStyle()
     {
-        return ThemeService.CurrentTheme switch {
-             ThemeMode.Light => "background-color: #0072cf; color: white;",
-             ThemeMode.Dark => "background-color: #1e293b;",
-             _ => "background-color: #ffffff;"
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Light => "background-color: #0072cf; color: white;",
+            ThemeMode.Dark => "background-color: #1e293b;",
+            _ => "background-color: #ffffff;"
         };
     }
-    
+
     private Color GetDrawerTextColor()
     {
-         return ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Inherit;
+        return ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Inherit;
     }
-    
+
     private string GetMainContentStyle()
     {
-         return ThemeService.CurrentTheme == ThemeMode.Dark ? "background-color: #0f172a;" : "background-color: #f8fafc;";
+        return ThemeService.CurrentTheme == ThemeMode.Dark ? "background-color: #0f172a;" : "background-color: #f8fafc;";
     }
 
     // Reuse palettes from LoginLayoutV2 for consistency
-    private readonly PaletteLight _lightestPalette = new() {
+    private readonly PaletteLight _lightestPalette = new()
+    {
         Primary = "#0072cf",
         AppbarBackground = "#ffffff",
         Background = "#f8fafc",
@@ -289,7 +312,8 @@ else
         DrawerIcon = "#475569"
     };
 
-    private readonly PaletteLight _lightPalette = new() {
+    private readonly PaletteLight _lightPalette = new()
+    {
         Primary = "#ffffff",
         AppbarBackground = "#0072cf",
         Background = "#f1f5f9",
@@ -302,7 +326,8 @@ else
         ActionDefault = "#ffffff"
     };
 
-    private readonly PaletteDark _darkPalette = new() {
+    private readonly PaletteDark _darkPalette = new()
+    {
         Primary = "#0072cf",
         AppbarBackground = "#1e293b",
         Background = "#0f172a",
@@ -324,12 +349,12 @@ else
 
     private async Task OpenUpdateAccountDialog()
     {
-         // Keep existing logic for account update
-         // Implementation omitted for brevity as it relies on existing dialogs
-         // Just a placeholder to show intent
-         await Task.CompletedTask;
+        // Keep existing logic for account update
+        // Implementation omitted for brevity as it relies on existing dialogs
+        // Just a placeholder to show intent
+        await Task.CompletedTask;
     }
-    
+
     private async Task OpenProfilePreviewDialog()
     {
         var parameters = new DialogParameters

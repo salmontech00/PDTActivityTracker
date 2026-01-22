@@ -12,166 +12,9 @@
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
-<style>
-    .otp-input input {
-        text-align: center !important;
-        font-size: 24px !important;
-        font-weight: 600;
-        letter-spacing: 0;
-    }
-
-    /* Match login form styling */
-    .otp-form .mud-input-root {
-        margin-bottom: 14px;
-    }
-
-    .otp-form .mud-input-outlined {
-        background-color: transparent !important;
-    }
-
-        .otp-form .mud-input-outlined .mud-input-root {
-            background-color: transparent !important;
-        }
-
-    .otp-form .mud-input-slot {
-        background-color: transparent !important;
-    }
-
-    /* MudBlazor input field customization */
-    .otp-form .mud-input-label {
-        color: #6b7ed8 !important;
-        font-weight: 500;
-        font-size: 0.85rem;
-    }
-
-    .otp-form .mud-input-outlined .mud-input-slot {
-        color: #6b7ed8;
-        background-color: transparent !important;
-    }
-
-    .otp-form .mud-input-outlined-border {
-        border-color: #667fb5 !important;
-        border-width: 2px !important;
-    }
-
-    /* Focused state */
-    .otp-form .mud-input-outlined:hover .mud-input-outlined-border {
-        border-color: #667fb5 !important;
-        border-width: 2px !important;
-    }
-
-    .otp-form .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
-        border-color: #667fb5 !important;
-        border-width: 2px !important;
-    }
-
-    .otp-form .mud-input-outlined.mud-input-focused .mud-input-label {
-        color: #667fb5 !important;
-    }
-
-    /* Input text color */
-    .otp-form .mud-input-control {
-        font-size: 0.9rem;
-        color: #667fb5 !important;
-        background-color: transparent !important;
-    }
-
-    .otp-form .mud-input {
-        color: #667fb5 !important;
-        background-color: transparent !important;
-    }
-
-        /* Placeholder color */
-        .otp-form .mud-input::placeholder {
-            color: #667fb5;
-            opacity: 0.6;
-        }
-
-    /* Adornment icon color (for password visibility toggle) */
-    .otp-form .mud-input-adornment .mud-icon-root {
-        color: #667fb5 !important;
-    }
-
-    /* OTP digit inputs */
-    .otp-input .mud-input-outlined-border {
-        border-color: #667fb5 !important;
-        border-width: 2px !important;
-    }
-
-    .otp-input .mud-input-outlined:hover .mud-input-outlined-border {
-        border-color: #667fb5 !important;
-        border-width: 2px !important;
-    }
-
-    .otp-input .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
-        border-color: #667fb5 !important;
-        border-width: 2px !important;
-    }
-
-    .otp-input .mud-input-control {
-        color: #6b7ed8 !important;
-        font-size: 24px !important;
-        font-weight: 600 !important;
-    }
-
-    .otp-input .mud-input {
-        color: #6b7ed8 !important;
-        background-color: transparent !important;
-    }
-
-    .otp-dialog .mud-dialog-surface {
-        background: #1e3a6f !important;
-    }
-
-    .otp-dialog.dark .mud-dialog-surface {
-        background: #0f172a !important;
-    }
-    /* Action buttons */
-    .otp-dialog-button {
-        height: 40px;
-        font-weight: 500;
-        text-transform: none;
-        font-size: 0.9rem;
-        background-color: #2b467f !important;
-        border: 2px solid #667fb5 !important;
-        color: #ffffff !important;
-        box-shadow: none !important;
-    }
-
-        .otp-dialog-button:hover {
-            background-color: #1e3161 !important;
-            border: 2px solid #667fb5 !important;
-        }
-
-        .otp-dialog-button:disabled {
-            background-color: #2b467f !important;
-            border: 2px solid #667fb5 !important;
-            opacity: 0.7;
-        }
-
-    /* Dialog text colors */
-    .otp-dialog .mud-typography {
-        color: #6b7ed8;
-    }
-
-    .otp-dialog .mud-dialog-title {
-        color: #ffffff;
-    }
-
-    .otp-dialog .mud-link {
-        color: #6b7ed8 !important;
-        font-weight: 500;
-    }
-
-        .otp-dialog .mud-link:hover {
-            color: #667fb5 !important;
-        }
-</style>
-
-
-<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="otp-dialog" Style="border-top: 5px solid #667fb5; border-left: 3px solid #667fb5; border-radius:4px;">
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="rounded-xl pa-2" Style="@GetDialogStyle()">
     <TitleContent>
-        <span style="@($"color: {GetTitleColor()};")">
+        <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">
             @if (_step == DialogStep.EnterCredentials)
             {
                 <text>VERIFY OTP</text>
@@ -184,131 +27,149 @@
             {
                 <text>CHANGE PASSWORD</text>
             }
-        </span>
+        </MudText>
     </TitleContent>
 
     <DialogContent>
         @if (_step == DialogStep.EnterCredentials)
         {
-            <MudForm @ref="_credentialsForm" Class="otp-form">
-                <MudText Typo="Typo.body2" Class="mb-4">
-                    Enter your username and email to receive a 4-digit verification code.
-                </MudText>
+            <MudForm @ref="_credentialsForm">
+                <MudStack Spacing="4">
+                    <MudText Typo="Typo.body2" Style="@GetTextStyle()">
+                        Enter your username and email to receive a 4-digit verification code.
+                    </MudText>
 
-                <MudTextField T="string"
-                              Label="Username"
-                              @bind-Value="_username"
-                              Required="true"
-                              RequiredError="Username is required"
-                              Class="mb-3" />
+                    <MudTextField T="string"
+                                  Label="Username"
+                                  @bind-Value="_username"
+                                  Required="true"
+                                  RequiredError="Username is required"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Person"
+                                  AdornmentColor="Color.Primary" />
 
-                <MudTextField T="string"
-                              Label="Email"
-                              @bind-Value="_email"
-                              Required="true"
-                              RequiredError="Email is required"
-                              Validation="@(new Func<string, string?>(ValidateEmail))" />
+                    <MudTextField T="string"
+                                  Label="Email"
+                                  @bind-Value="_email"
+                                  Required="true"
+                                  RequiredError="Email is required"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Email"
+                                  AdornmentColor="Color.Primary"
+                                  Validation="@(new Func<string, string?>(ValidateEmail))" />
+                </MudStack>
             </MudForm>
         }
         else if (_step == DialogStep.EnterOtp)
         {
-            <MudForm @ref="_otpForm" Class="otp-form">
-                <MudText Typo="Typo.body2" Class="mb-2">
-                    A 4-digit code has been sent to <strong>@_maskedEmail</strong>
-                </MudText>
-                <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Primary">
-                    Please enter the code below:
-                </MudText>
-
-                <div class="d-flex justify-center gap-6 mb-4" style="">
-                    @for (int i = 0; i < 4; i++)
-                    {
-                        int index = i;
-                        <MudTextField T="string"
-                                      @bind-Value="_otpDigits[index]"
-                                      MaxLength="1"
-                                      Variant="Variant.Outlined"
-                                      Margin="Margin.Dense"
-                                      Class="otp-input"
-                                      InputStyle="width: 60px; font-size: 24px; text-align: center;"
-                                      OnKeyUp="@((KeyboardEventArgs e) => HandleKeyUp(e, index))"
-                                      @ref="_otpInputs[index]" />
-                    }
-                </div>
-
-                @if (_remainingSeconds > 0)
-                {
-                    <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-2" Color="@(_remainingSeconds <= 60 ? Color.Warning : Color.Info)">
-                        Code expires in: <strong>@FormatTime(_remainingSeconds)</strong>
+            <MudForm @ref="_otpForm">
+                <MudStack Spacing="3">
+                    <MudText Typo="Typo.body2" Style="@GetTextStyle()">
+                        A 4-digit code has been sent to <strong>@_maskedEmail</strong>
                     </MudText>
-                }
-                else
-                {
-                    <MudAlert Severity="Severity.Warning" Class="mb-2">
-                        Verification code has expired. Please request a new one.
-                    </MudAlert>
-                }
+                    <MudText Typo="Typo.body2" Style="@GetTextStyle()" Class="fw-bold">
+                        Please enter the code below:
+                    </MudText>
 
-                <MudText Typo="Typo.caption" Align="Align.Center" Color="Color.Secondary">
-                    Didn't receive the code?
-                    <MudLink OnClick="ResendOtp" Color="Color.Primary" Disabled="@_isResending">
-                        @if (_isResending)
+                    <div class="d-flex justify-space-between gap-2 py-4 w-100">
+                        @for (int i = 0; i < 4; i++)
                         {
-                            <span>Resending...</span>
+                            int index = i;
+                            <div style="flex: 1; max-width: 80px;">
+                                <MudTextField T="string"
+                                              @bind-Value="_otpDigits[index]"
+                                              MaxLength="1"
+                                              Variant="Variant.Outlined"
+                                              Margin="Margin.Dense"
+                                              Style="font-size: 24px; text-align: center;"
+                                              OnKeyUp="@((KeyboardEventArgs e) => HandleKeyUp(e, index))"
+                                              @ref="_otpInputs[index]"
+                                              AdornmentColor="Color.Primary" />
+                            </div>
                         }
-                        else
-                        {
-                            <span>Resend</span>
-                        }
-                    </MudLink>
-                </MudText>
+                    </div>
+
+                    @if (_remainingSeconds > 0)
+                    {
+                        <MudText Typo="Typo.body2" Align="Align.Center" Style="@GetTextStyle()">
+                            Code expires in: <strong>@FormatTime(_remainingSeconds)</strong>
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Warning" Dense="true">
+                            Verification code has expired. Please request a new one.
+                        </MudAlert>
+                    }
+
+                    <MudText Typo="Typo.caption" Align="Align.Center" Style="@GetTextStyleSecondary()">
+                        Didn't receive the code?
+                        <MudLink OnClick="ResendOtp" Color="Color.Primary" Disabled="@_isResending" Style="font-weight: 600;">
+                            @if (_isResending)
+                            {
+                                <span>Resending...</span>
+                            }
+                            else
+                            {
+                                <span>Resend</span>
+                            }
+                        </MudLink>
+                    </MudText>
+                </MudStack>
             </MudForm>
         }
         else if (_step == DialogStep.ChangePassword)
         {
-            <MudForm @ref="_passwordForm" Class="otp-form">
-                <MudText Typo="Typo.body2" Class="mb-4" Color="Color.Success">
-                    Verification successful! Please enter your new password.
-                </MudText>
+            <MudForm @ref="_passwordForm">
+                <MudStack Spacing="4">
+                    <MudText Typo="Typo.body2" Color="Color.Success">
+                        Verification successful! Please enter your new password.
+                    </MudText>
 
-                <MudTextField T="string"
-                              Label="Password"
-                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                              OnAdornmentClick="@TogglePasswordVisibility"
-                              @bind-Value="_password"
-                              Immediate="true"
-                              Required="true"
-                              RequiredError="Password is required"
-                              Validation="@(new Func<string, string?>(ValidatePassword))"
-                              Class="mb-3" />
+                    <MudTextField T="string"
+                                  Label="Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="@TogglePasswordVisibility"
+                                  AdornmentColor="Color.Primary"
+                                  @bind-Value="_password"
+                                  Immediate="true"
+                                  Required="true"
+                                  RequiredError="Password is required"
+                                  Validation="@(new Func<string, string?>(ValidatePassword))" />
 
-                <MudTextField T="string"
-                              Label="Confirm Password"
-                              InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                              OnAdornmentClick="@ToggleConfirmPasswordVisibility"
-                              @bind-Value="_confirmPassword"
-                              Immediate="true"
-                              Required="true"
-                              RequiredError="Confirm password is required"
-                              Validation="@(new Func<string, string?>(ValidateConfirmPassword))" />
+                    <MudTextField T="string"
+                                  Label="Confirm Password"
+                                  Variant="Variant.Outlined"
+                                  InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                  OnAdornmentClick="@ToggleConfirmPasswordVisibility"
+                                  AdornmentColor="Color.Primary"
+                                  @bind-Value="_confirmPassword"
+                                  Immediate="true"
+                                  Required="true"
+                                  RequiredError="Confirm password is required"
+                                  Validation="@(new Func<string, string?>(ValidateConfirmPassword))" />
+                </MudStack>
             </MudForm>
         }
 
         @if (!string.IsNullOrEmpty(_errorMessage))
         {
-            <MudAlert Severity="Severity.Error" Class="mt-3">@_errorMessage</MudAlert>
+            <MudAlert Severity="Severity.Error" Dense="true" Class="mt-3">@_errorMessage</MudAlert>
         }
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="@(_isSending || _isVerifying || _isUpdating)" Style="@($"color: {GetTitleColor()};")">Cancel</MudButton>
+        <MudButton OnClick="Cancel" Disabled="@(_isSending || _isVerifying || _isUpdating)" Style="@($"color: {GetTitleColor()}; text-transform: none;")">Cancel</MudButton>
         @if (_step == DialogStep.EnterCredentials)
         {
-            <MudButton Color="Color.Primary" OnClick="SendOtp" Disabled="@_isSending" Class="otp-dialog-button">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SendOtp" Disabled="@_isSending" Class="rounded-lg px-6" Style="@GetButtonStyle()">
                 @if (_isSending)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -322,7 +183,7 @@
         }
         else if (_step == DialogStep.EnterOtp)
         {
-            <MudButton Color="Color.Primary" OnClick="VerifyOtp" Disabled="@(_isVerifying || _remainingSeconds <= 0)" Class="otp-dialog-button">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="VerifyOtp" Disabled="@(_isVerifying || _remainingSeconds <= 0)" Class="rounded-lg px-6" Style="@GetButtonStyle()">
                 @if (_isVerifying)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -336,7 +197,7 @@
         }
         else if (_step == DialogStep.ChangePassword)
         {
-            <MudButton Color="Color.Primary" OnClick="ChangePassword" Disabled="@_isUpdating" Class="otp-dialog-button">
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="ChangePassword" Disabled="@_isUpdating" Class="rounded-lg px-6" Style="@GetButtonStyle()">
                 @if (_isUpdating)
                 {
                     <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="me-2" />
@@ -392,7 +253,6 @@
 
     protected override void OnInitialized()
     {
-        // Subscribe to theme changes
         if (ThemeService != null)
         {
             ThemeService.OnThemeChanged += OnThemeChanged;
@@ -413,19 +273,50 @@
         }
     }
 
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
     private string GetTitleColor()
     {
         if (ThemeService == null)
-        {
-            return "#1e3a6f"; // Default to lightest mode color
-        }
+            return "#0f172a";
+
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => "#1e3a6f",
+            ThemeMode.Lightest => "#0f172a",
             ThemeMode.Light => "#ffffff",
             ThemeMode.Dark => "#ffffff",
-            _ => "#1e3a6f"
+            _ => "#0f172a"
         };
+    }
+
+    private string GetTextStyle()
+    {
+        if (ThemeService == null) return "color: #0f172a;";
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #475569;" : "color: #ffffff;";
+    }
+
+    private string GetTextStyleSecondary()
+    {
+        if (ThemeService == null) return "color: #94a3b8;";
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #64748b;" : "color: rgba(255,255,255,0.7);";
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none;";
+        var baseStyle = "text-transform: none;";
+        return ThemeService.CurrentTheme == ThemeMode.Light ? $"{baseStyle} color: #0072cf !important;" : baseStyle;
     }
 
     private string? ValidateEmail(string? email)
@@ -496,19 +387,16 @@
 
     private void StartCountdown()
     {
-        _remainingSeconds = 300; // 5 minutes = 300 seconds
-
+        _remainingSeconds = 300;
         _countdownTimer?.Dispose();
         _countdownTimer = new System.Threading.Timer(_ =>
         {
             _remainingSeconds--;
-
             if (_remainingSeconds <= 0)
             {
                 _countdownTimer?.Dispose();
                 _countdownTimer = null;
             }
-
             InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
     }
@@ -516,9 +404,7 @@
     private async Task SendOtp()
     {
         await _credentialsForm.Validate();
-
-        if (!_credentialsForm.IsValid)
-            return;
+        if (!_credentialsForm.IsValid) return;
 
         _isSending = true;
         _errorMessage = string.Empty;
@@ -526,9 +412,7 @@
 
         try
         {
-            // Check for user with matching username AND email
             var user = await Db.Users.FirstOrDefaultAsync(u => u.Username == _username && u.Email == _email);
-
             if (user == null)
             {
                 _errorMessage = "No account found with this username and email combination.";
@@ -536,7 +420,6 @@
                 return;
             }
 
-            // Check for duplicate emails (safety check)
             var duplicateEmailCount = await Db.Users.CountAsync(u => u.Email == _email);
             if (duplicateEmailCount > 1)
             {
@@ -545,21 +428,15 @@
                 return;
             }
 
-            // Generate 4-digit OTP
             var random = new Random();
             _generatedOtp = random.Next(1000, 9999).ToString();
             _otpGeneratedAt = DateTime.UtcNow;
             _userId = user.Id;
 
-            // Send email with OTP code
             await EmailService.SendOtpEmailAsync(_email, _generatedOtp);
-
             _maskedEmail = MaskEmail(_email);
             _step = DialogStep.EnterOtp;
-
-            // Start the countdown timer
             StartCountdown();
-
             Snackbar.Add($"Verification code sent to {_maskedEmail}", Severity.Success);
         }
         catch (Exception ex)
@@ -575,7 +452,6 @@
 
     private async Task ResendOtp()
     {
-        // Ensure we have valid username and email before resending
         if (string.IsNullOrWhiteSpace(_username) || string.IsNullOrWhiteSpace(_email))
         {
             _errorMessage = "Session expired. Please start over.";
@@ -590,9 +466,7 @@
 
         try
         {
-            // Verify user still exists with same credentials
             var user = await Db.Users.FirstOrDefaultAsync(u => u.Username == _username && u.Email == _email);
-
             if (user == null)
             {
                 _errorMessage = "Account verification failed. Please start over.";
@@ -601,17 +475,12 @@
                 return;
             }
 
-            // Generate new OTP
             var random = new Random();
             _generatedOtp = random.Next(1000, 9999).ToString();
             _otpGeneratedAt = DateTime.UtcNow;
 
-            // Send email with new OTP code
             await EmailService.SendOtpEmailAsync(_email, _generatedOtp);
-
-            // Restart the countdown timer
             StartCountdown();
-
             Snackbar.Add("Verification code resent!", Severity.Info);
         }
         catch (Exception ex)
@@ -628,7 +497,6 @@
     private void VerifyOtp()
     {
         _errorMessage = string.Empty;
-
         var enteredOtp = string.Join("", _otpDigits);
 
         if (enteredOtp.Length != 4)
@@ -637,7 +505,6 @@
             return;
         }
 
-        // Check if OTP has expired
         var elapsedTime = DateTime.UtcNow - _otpGeneratedAt;
         if (elapsedTime.TotalMinutes > 5)
         {
@@ -653,10 +520,8 @@
         {
             if (enteredOtp == _generatedOtp)
             {
-                // Stop the countdown timer
                 _countdownTimer?.Dispose();
                 _countdownTimer = null;
-
                 _step = DialogStep.ChangePassword;
             }
             else
@@ -675,9 +540,7 @@
     private async Task ChangePassword()
     {
         await _passwordForm.Validate();
-
-        if (!_passwordForm.IsValid)
-            return;
+        if (!_passwordForm.IsValid) return;
 
         _isUpdating = true;
         _errorMessage = string.Empty;
@@ -686,7 +549,6 @@
         try
         {
             var userInDb = await Db.Users.FindAsync(_userId);
-
             if (userInDb == null)
             {
                 _errorMessage = "User not found.";
@@ -694,7 +556,6 @@
                 return;
             }
 
-            // Double-check username and email still match
             if (userInDb.Username != _username || userInDb.Email != _email)
             {
                 _errorMessage = "Account verification failed. Please start over.";
@@ -702,9 +563,7 @@
                 return;
             }
 
-            // Hash and update password
             userInDb.Password = HashPassword(_password);
-
             await Db.SaveChangesAsync();
 
             Snackbar.Add("Password changed successfully!", Severity.Success);
@@ -723,12 +582,10 @@
 
     private async Task HandleKeyUp(KeyboardEventArgs e, int index)
     {
-        // Move to next input if digit entered
         if (!string.IsNullOrEmpty(_otpDigits[index]) && index < 3)
         {
             await _otpInputs[index + 1].FocusAsync();
         }
-        // Move to previous input on backspace
         else if (e.Key == "Backspace" && index > 0 && string.IsNullOrEmpty(_otpDigits[index]))
         {
             await _otpInputs[index - 1].FocusAsync();

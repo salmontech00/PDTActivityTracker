@@ -67,7 +67,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         {
             Username = "admin",
             Password = hashedPassword,
-            Email = "admin@tuition.local",
+            Email = "015mhikebertillo@gmail.com",
             Role = "Admin",
             Fullname = "System Administrator"
         };

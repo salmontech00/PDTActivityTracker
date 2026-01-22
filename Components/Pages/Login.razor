@@ -19,147 +19,35 @@
 <PageTitle>Login</PageTitle>
 
 <style>
-    .login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        padding: 20px;
-    }
-
-    .login-card-wrapper {
-        width: 100%;
-        max-width: 400px;
-    }
-
-    .login-paper {
-        padding: 40px 32px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
-        background-color: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-    }
-
-        .login-paper.lightest {
-            background-color: rgba(255, 255, 255, 0.9);
-            border: 1px solid #e2e8f0;
+    @@media (max-width: 600px) {
+        .mud-container {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
         }
 
-        .login-paper.light {
-            background-color: rgba(255, 255, 255, 0.1);
+        .mud-card {
+            max-width: 100% !important;
+            margin: 0 0px;
         }
-
-        .login-paper.dark {
-            background-color: rgba(30, 41, 59, 0.7);
-            border: 1px solid #334155;
-        }
-
-    .login-header {
-        text-align: center;
-        margin-bottom: 32px;
     }
-
-        .login-header img {
-            width: 80px !important;
-            height: 80px !important;
-            object-fit: contain;
-            margin-bottom: 16px !important;
-            background-color: white !important;
-            border-radius: 16px !important;
-            padding: 8px !important;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-        }
-
-    .login-title {
-        font-size: 1.75rem;
-        font-weight: 700;
-        margin-bottom: 8px;
-        letter-spacing: -0.02em;
-    }
-
-    .login-subtitle {
-        font-size: 0.95rem;
-        font-weight: 400;
-        line-height: 1.5;
-        opacity: 0.9;
-    }
-
-    .login-form .mud-input-root {
-        margin-bottom: 20px;
-    }
-
-    .login-button {
-        height: 48px;
-        font-weight: 600;
-        text-transform: none;
-        font-size: 1rem;
-        border-radius: 8px;
-        margin-top: 24px;
-        box-shadow: 0 4px 12px rgba(0, 114, 207, 0.3) !important;
-        background-color: #0072cf !important;
-        color: white !important;
-    }
-
-        .login-button:hover {
-            box-shadow: 0 6px 16px rgba(0, 114, 207, 0.4) !important;
-            background-color: #005bb5 !important;
-        }
-
-    .forgot-password-link {
-        text-align: center;
-        margin-top: 24px;
-    }
-
-        .forgot-password-link .mud-link {
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-    .theme-toggle-wrapper {
-        display: flex;
-        justify-content: center;
-        margin-top: 32px;
-        padding-top: 24px;
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
-
-        .theme-toggle-wrapper.lightest {
-            border-top: 1px solid #e2e8f0;
-        }
-
-    /* Custom Input Styling to match V2 theme */
-    .mud-input-outlined-border {
-        border-width: 1px !important;
-    }
-
-    .mud-input-focused .mud-input-outlined-border {
-        border-color: #0072cf !important;
-        border-width: 2px !important;
-    }
-
 </style>
 
-<div class="login-container">
-    <div class="login-card-wrapper">
-        <MudPaper Class="@GetPaperClass()" Elevation="0">
-            <div class="login-header">
-                <div>
-                    <img src="/PITALOGO.png" alt="PITA Logo" />
-                </div>
-                <div class="login-title" style="color: @GetTextColor()">Welcome Back</div>
-                <div class="login-subtitle" style="color: @GetTextColorSecondary()">Log in to access your dashboard</div>
-            </div>
+<MudContainer MaxWidth="MaxWidth.Small" Class="d-flex justify-center align-center" Style="min-height: 90vh;">
+    <MudCard Elevation="25" Class="pa-4 rounded-xl" Style="@GetCardStyle()">
+        <MudCardHeader Class="d-flex flex-column align-center px-0">
+        </MudCardHeader>
 
-            <MudForm Class="login-form">
+        <MudCardContent>
+            <MudForm @ref="form" Class="d-flex flex-column gap-4">
                 <MudTextField T="string"
                               @bind-Value="Username"
                               Label="Username"
                               Required="true"
                               RequiredError="Username is required"
                               Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
-                              Class="mb-4" />
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Person"
+                              AdornmentColor="Color.Primary" />
 
                 <MudTextField T="string"
                               @bind-Value="Password"
@@ -167,51 +55,58 @@
                               InputType="@(_showPassword ? InputType.Text : InputType.Password)"
                               Required="true"
                               RequiredError="Password is required"
+                              Variant="Variant.Outlined"
                               Adornment="Adornment.End"
                               AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                               OnAdornmentClick="TogglePasswordVisibility"
-                              Variant="Variant.Outlined"
-                              Margin="Margin.Dense"
+                              AdornmentColor="Color.Primary"
                               OnKeyDown="@HandleKeyDown" />
 
                 @if (!string.IsNullOrEmpty(ErrorMessage))
                 {
-                    <MudAlert Severity="Severity.Error" Dense="true" Class="mt-2 mb-2" Variant="Variant.Filled">@ErrorMessage</MudAlert>
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Dense="true" Class="rounded-lg">@ErrorMessage</MudAlert>
                 }
 
-                <MudButton Variant="Variant.Filled"
-                           FullWidth="true"
-                           Size="Size.Large"
-                           Disabled="@isLoading"
-                           OnClick="LoginUser"
-                           Class="login-button">
-                    @if (isLoading)
-                    {
-                        <MudProgressCircular Color="Color.Surface" Size="Size.Small" Indeterminate="true" Class="me-2" />
-                        <span>Logging in...</span>
-                    }
-                    else
-                    {
-                        <span>Sign In</span>
-                    }
-                </MudButton>
-
-                <div class="forgot-password-link">
-                    <MudLink OnClick="OpenOtpDialog" Underline="Underline.Hover" Style="@($"color: {GetLinkColor()}")">
+                <div class="d-flex justify-end">
+                    <MudLink OnClick="OpenOtpDialog" Underline="Underline.Hover" Color="Color.Primary">
                         Forgot Password?
                     </MudLink>
                 </div>
             </MudForm>
+        </MudCardContent>
 
-            <div class="@($"theme-toggle-wrapper {GetThemeClass()}")">
-                <MudIconButton Icon="@DarkLightModeButtonIcon"
-                               Size="Size.Medium"
-                               OnClick="@HandleDarkModeToggle"
-                               Style="@($"color: {GetTextColorSecondary()}")" />
+        <MudCardActions Class="d-flex flex-column px-4 pb-4">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Size="Size.Large"
+                       FullWidth="true"
+                       Disabled="@isLoading"
+                       OnClick="LoginUser"
+                       Style="@GetButtonStyle()"
+                       Class="rounded-lg py-2 mb-4 elevation-4">
+                @if (isLoading)
+                {
+                    <MudProgressCircular Color="Color.Surface" Size="Size.Small" Indeterminate="true" Class="me-2" />
+                    <span>Logging in...</span>
+                }
+                else
+                {
+                    <span>Sign In</span>
+                }
+            </MudButton>
+
+            <MudDivider Class="my-2 w-100" />
+
+            <div class="d-flex justify-center w-100 mt-2">
+                <MudTooltip Text="@GetStateTooltip()">
+                    <MudIconButton Icon="@DarkLightModeButtonIcon"
+                                   Color="Color.Primary"
+                                   OnClick="@HandleDarkModeToggle" />
+                </MudTooltip>
             </div>
-        </MudPaper>
-    </div>
-</div>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>
 
 @code {
     private string Username { get; set; } = string.Empty;
@@ -219,6 +114,7 @@
     private string ErrorMessage { get; set; } = string.Empty;
     private bool isLoading = false;
     private bool _showPassword = false;
+    MudForm form = default!;
 
     [CascadingParameter(Name = "IsDarkMode")]
     public bool IsDarkMode { get; set; }
@@ -234,7 +130,6 @@
         await UserState.InitializeAsync();
         if (UserState.IsAuthenticated)
         {
-            // Already logged in? Redirect to V2 users page
             NavigationManager.NavigateTo("/admin/users", forceLoad: true);
         }
 
@@ -251,35 +146,43 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
     }
 
-    private string GetPaperClass()
+    private string GetCardStyle()
     {
+        // Acrylic/Glassmorphism effect
+        var baseStyle = "backdrop-filter: blur(10px); width: 100%; max-width: 400px;";
+
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => "login-paper lightest",
-            ThemeMode.Light => "login-paper light",
-            ThemeMode.Dark => "login-paper dark",
-            _ => "login-paper lightest"
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.9);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.9);"
         };
     }
 
-    private string GetThemeClass()
+    private string GetTextStyle(bool isTitle)
     {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" : "";
+        var color = ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+        if (isTitle)
+            return $"color: {color}; font-weight: 700;";
+
+        return $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#475569" : "rgba(255,255,255,0.7)")};";
     }
 
-    private string GetTextColor()
+    private string GetButtonStyle()
     {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important;" : "";
     }
 
-    private string GetTextColorSecondary()
+    private string GetStateTooltip()
     {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#475569" : "rgba(255,255,255,0.7)";
-    }
-
-    private string GetLinkColor()
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0072cf" : "#ffffff";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "Switch to Blue Theme",
+            ThemeMode.Light => "Switch to Dark Mode",
+            ThemeMode.Dark => "Switch to Default",
+            _ => "Switch to Blue Theme"
+        };
     }
 
     private async Task HandleDarkModeToggle()
@@ -344,16 +247,14 @@
             await UserState.SetFullname(user.Fullname);
             await UserState.SetRole(user.Role);
 
-            await Task.Delay(500); // Small delay for UX
+            await Task.Delay(500);
 
-            // V2 Redirection Logic
             if (user.Role == "Admin")
             {
                 NavigationManager.NavigateTo("/", forceLoad: true);
             }
             else
             {
-                // Fallback for non-admins for now, or create V2 pages for them later
                 NavigationManager.NavigateTo("/", forceLoad: true);
             }
         }
