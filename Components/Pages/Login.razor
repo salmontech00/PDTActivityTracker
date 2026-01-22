@@ -34,6 +34,7 @@
         align-items: flex-start;
         user-select: none;
         margin-bottom: 2rem;
+        margin-left: 30px;
     }
 
     .logo-main {
@@ -95,35 +96,51 @@
         .css-logo {
             position: fixed;
             top: 4rem;
-            left: 4rem;
+            left: 50px; /* Match login-card-container margin-right */
             margin-bottom: 0;
         }
 
-        .login-card-container{
-            margin-right: 0px;
+        .login-card-container {
+            margin-right: 50px;
         }
     }
 
-    @@media (max-width: 959px) {
+    /* Mobile styles only */
+    @@media (max-width: 600px) {
         .login-wrapper {
             justify-content: center;
             align-items: center;
-            padding: 1rem;
+            padding: 0;
+            min-height: 80vh;
         }
 
         .css-logo {
             align-items: center;
             text-align: center;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .logo-main {
+            font-size: 5rem;
+        }
+
+        .logo-sub {
+            font-size: 0.87rem;
+            letter-spacing: 0.2em;
+            margin: 0px;
         }
 
         .login-card-container {
             justify-content: center;
             width: 100%;
-            margin-right: 0px;
+            margin-right: 0;
+            padding: 0 1rem 1rem 1rem;
         }
 
         .mud-card {
             margin: 0;
+            max-width: 100%;
         }
 
         .theme-toggle-fixed {
