@@ -1,7 +1,7 @@
 ﻿@using MudBlazor
 @using PDTActivityTracker.Components.Model
-@using PDTActivityTracker.Model
 @using PDTActivityTracker.Components.Services
+@using PDTActivityTracker.Model
 @using System.Security.Cryptography
 @using System.Text
 @using System.Text.RegularExpressions
@@ -14,48 +14,221 @@
 @inject AppDbContext Db
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 
-<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Style="@GetDialogStyle()">
+<style>
+    /* OTP-style dialog */
+    .mud-dialog-card {
+        background: #0f172a !important;
+        border-top: 5px solid #0072cf;
+        border-left: 3px solid #0072cf;
+        border-radius: 4px;
+    }
+
+        .mud-dialog-card.dark {
+            background: #0f172a !important;
+        }
+
+        .mud-dialog-card.lightest {
+            background: rgba(255, 255, 255, 1) !important;
+            border-top: 5px solid #0072cf;
+            border-left: 3px solid #0072cf;
+        }
+
+    .mud-dialog-title {
+        color: #ffffff !important;
+        padding: 12px !important;
+    }
+
+        .mud-dialog-title.lightest {
+            color: #0f172a !important;
+        }
+
+    /* Form styling matching OTP dialog */
+    .update-account-form .mud-input-root {
+        margin-bottom: 14px;
+    }
+
+    /* Input labels and text */
+    .update-account-form .mud-input-label {
+        color: #0072cf !important;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .update-account-form.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .update-account-form .mud-input-outlined .mud-input-slot {
+        color: #0072cf;
+    }
+
+    .update-account-form.lightest .mud-input-outlined .mud-input-slot {
+        color: #0f172a;
+    }
+
+    .update-account-form .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+    /* Focused state */
+    .update-account-form .mud-input-outlined:hover .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+    .update-account-form .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+    .update-account-form .mud-input-outlined.mud-input-focused .mud-input-label {
+        color: #0072cf !important;
+    }
+
+    /* Input text color */
+    .update-account-form .mud-input-control {
+        font-size: 0.9rem;
+        color: #0072cf !important;
+        background-color: transparent !important;
+    }
+
+    .update-account-form.lightest .mud-input-control {
+        color: #0f172a !important;
+    }
+
+    .update-account-form .mud-input {
+        color: #0072cf !important;
+        background-color: transparent !important;
+    }
+
+    .update-account-form.lightest .mud-input {
+        color: #0f172a !important;
+    }
+
+    .update-account-form .mud-input::placeholder {
+        color: #0072cf;
+        opacity: 0.6;
+    }
+
+    .update-account-form.lightest .mud-input::placeholder {
+        color: #0f172a;
+        opacity: 0.6;
+    }
+
+    /* Adornment icons */
+    .update-account-form .mud-input-adornment .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .update-account-form.lightest .mud-input-adornment .mud-icon-root {
+        color: #0f172a !important;
+    }
+
+    /* Upload section */
+    .upload-section {
+        text-align: center;
+        color: #0072cf;
+    }
+
+        .upload-section.lightest {
+            color: #0f172a;
+        }
+
+        .upload-section .mud-icon-root {
+            color: #0072cf !important;
+        }
+
+        .upload-section.lightest .mud-icon-root {
+            color: #0f172a !important;
+        }
+
+    /* Action buttons */
+    .update-account-dialog-button {
+        height: 40px;
+        font-weight: 500;
+        text-transform: none;
+        font-size: 0.9rem;
+        background-color: #005bb5 !important;
+        border: 2px solid #0072cf !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+        .update-account-dialog-button:hover {
+            background-color: #004a94 !important;
+            border: 2px solid #0072cf !important;
+        }
+
+        .update-account-dialog-button:disabled {
+            background-color: #005bb5 !important;
+            border: 2px solid #0072cf !important;
+            opacity: 0.7;
+        }
+
+    .cancel-button {
+        color: #ffffff !important;
+    }
+
+        .cancel-button.lightest {
+            color: #0f172a !important;
+        }
+
+    @@media (max-width: 600px) {
+        .update-account-form .mud-input-label {
+            font-size: 0.8rem;
+        }
+
+        .update-account-form .mud-input-control {
+            font-size: 0.85rem;
+        }
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@GetDialogClass()">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="font-weight: 700;">UPDATE ACCOUNT</MudText>
+        <span class="@GetTitleClass()">Update Account</span>
     </TitleContent>
 
     <DialogContent>
-        <MudForm @ref="_form" Model="_editingUser">
+        <MudForm @ref="_form" Model="_editingUser" Class="@GetFormClass()">
+            <div class="@GetUploadSectionClass()">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Upload Profile Image</MudText>
 
-            <MudText Typo="Typo.subtitle2" Class="mb-2" Align="Align.Center" Style="@GetTextStyle(true)">Upload Profile Image</MudText>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; margin-bottom: 16px;">
+                    @if (!string.IsNullOrEmpty(_imagePreviewUrl))
+                    {
+                        <label for="upload-image" style="position: absolute; top: 10px; z-index: 2; opacity: 0.5; cursor: pointer;">
+                            <MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                        </label>
 
-            <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; margin-bottom: 24px;">
-                @if (!string.IsNullOrEmpty(_imagePreviewUrl))
-                {
-                    <label for="upload-image" style="position: absolute; top: 10px; z-index: 2; cursor: pointer; background: rgba(0,0,0,0.4); border-radius: 50%; padding: 8px;">
-                        <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Medium" />
-                    </label>
+                        <img src="@_imagePreviewUrl"
+                             alt="Preview"
+                             style="max-height: 150px; max-width:150px; border-radius: 6px;" />
+                    }
+                    else
+                    {
+                        <label for="upload-image" style="cursor: pointer;">
+                            <MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                        </label>
+                    }
 
-                    <img src="@_imagePreviewUrl"
-                         alt="Preview"
-                         style="height: 120px; width: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #0072cf;" />
-                }
-                else
-                {
-                    <label for="upload-image" style="cursor: pointer; border: 2px dashed #0072cf; border-radius: 50%; padding: 24px; width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;">
-                        <MudIcon Icon="@Icons.Material.Filled.AddAPhoto" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
-                    </label>
-                }
-
-                <InputFile id="upload-image"
-                           OnChange="OnFileChanged"
-                           accept="image/*"
-                           style="display: none;" />
+                    <InputFile id="upload-image"
+                               OnChange="OnFileChanged"
+                               accept="image/*"
+                               style="display: none;" />
+                </div>
             </div>
 
-            <MudGrid Spacing="3">
+            <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
                                   Label="Full Name"
                                   @bind-Value="_editingUser.Fullname"
                                   Required="true"
                                   RequiredError="Full name is required"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -64,7 +237,8 @@
                                   @bind-Value="_editingUser.Username"
                                   Required="true"
                                   RequiredError="Username is required"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12">
@@ -74,30 +248,13 @@
                                   Required="true"
                                   RequiredError="Email is required"
                                   Validation="@(new Func<string, string?>(ValidateEmail))"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
-                                  Label="Position"
-                                  @bind-Value="_editingUser.Position"
-                                  Required="true"
-                                  RequiredError="Position is required"
-                                  Variant="Variant.Outlined" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Area"
-                                  @bind-Value="_editingUser.Area"
-                                  Required="true"
-                                  RequiredError="Area is required"
-                                  Variant="Variant.Outlined" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="New Password"
+                                  Label="Password"
                                   InputType="@(_showPassword ? InputType.Text : InputType.Password)"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
@@ -106,7 +263,8 @@
                                   Immediate="true"
                                   Validation="@(new Func<string, string?>(ValidatePassword))"
                                   Variant="Variant.Outlined"
-                                  Placeholder="Leave blank to keep current" />
+                                  Margin="Margin.Dense"
+                                  Placeholder="Leave blank to keep current password" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -119,33 +277,16 @@
                                   @bind-Value="_confirmPassword"
                                   Immediate="true"
                                   Validation="@(new Func<string, string?>(ValidateConfirmPassword))"
-                                  Variant="Variant.Outlined" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Role"
-                                  Value="@_editingUser.Role"
-                                  ReadOnly="true"
                                   Variant="Variant.Outlined"
-                                  HelperText="Contact Admin to change role" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Access Tags"
-                                  Value="@_editingUser.Tags"
-                                  ReadOnly="true"
-                                  Variant="Variant.Outlined"
-                                  HelperText="Contact Admin to update access tags" />
+                                  Margin="Margin.Dense" />
                 </MudItem>
             </MudGrid>
         </MudForm>
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="MudBlazor.Color.Primary" OnClick="Submit" Disabled="@_isSaving" Variant="Variant.Filled" Class="px-6 rounded-lg" Style="@GetButtonStyle()">
+        <MudButton OnClick="Cancel" Class="@GetCancelButtonClass()">Cancel</MudButton>
+        <MudButton Color="MudBlazor.Color.Primary" OnClick="Submit" Disabled="@_isSaving" Class="update-account-dialog-button">
             @if (_isSaving)
             {
                 <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
@@ -153,7 +294,7 @@
             }
             else
             {
-                <span>Update Account</span>
+                <span>Update</span>
             }
         </MudButton>
     </DialogActions>
@@ -180,6 +321,38 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "";
+    }
+
+    private string GetDialogClass()
+    {
+        var themeClass = GetThemeClass();
+        return $"mud-dialog-card {themeClass}";
+    }
+
+    private string GetTitleClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "mud-dialog-title lightest" : "mud-dialog-title";
+    }
+
+    private string GetFormClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "update-account-form lightest" : "update-account-form";
+    }
+
+    private string GetUploadSectionClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "upload-section lightest" : "upload-section";
+    }
+
+    private string GetCancelButtonClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "cancel-button lightest" : "cancel-button";
+    }
+
     protected override void OnInitialized()
     {
         _editingUser = new User
@@ -189,39 +362,15 @@
             Email = UserToEdit.Email,
             Password = UserToEdit.Password,
             Fullname = UserToEdit.Fullname,
-            Position = UserToEdit.Position,
-            Area = UserToEdit.Area,
             Role = UserToEdit.Role,
             ImageData = UserToEdit.ImageData,
-            ImageMimeType = UserToEdit.ImageMimeType,
-            Tags = UserToEdit.Tags
+            ImageMimeType = UserToEdit.ImageMimeType
         };
 
         if (_editingUser.ImageData != null && !string.IsNullOrEmpty(_editingUser.ImageMimeType))
         {
             _imagePreviewUrl = $"data:{_editingUser.ImageMimeType};base64,{Convert.ToBase64String(_editingUser.ImageData)}";
         }
-    }
-
-    private string GetDialogStyle()
-    {
-        var baseStyle = "border-top: 5px solid #0072cf; border-radius: 12px;";
-        return ThemeService.CurrentTheme switch
-        {
-            ThemeMode.Light => $"{baseStyle} background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);",
-            ThemeMode.Dark => $"{baseStyle} background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);",
-            _ => baseStyle
-        };
-    }
-
-    private string GetTextStyle(bool isHeader)
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0f172a;" : "color: #f8fafc;";
-    }
-
-    private string GetButtonStyle()
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important; background-color: white !important; font-weight: 600;" : "font-weight: 600;";
     }
 
     private string? ValidateEmail(string? email)
@@ -268,6 +417,30 @@
 
         try
         {
+            var existingUsername = Db.Users
+                .FirstOrDefault(u => u.Id != _editingUser.Id &&
+                                   u.Username != null &&
+                                   u.Username.ToLower() == _editingUser.Username.ToLower());
+
+            if (existingUsername != null)
+            {
+                Snackbar.Add("Username already exists.", Severity.Warning);
+                _isSaving = false;
+                return;
+            }
+
+            var existingEmail = Db.Users
+                .FirstOrDefault(u => u.Id != _editingUser.Id &&
+                                   u.Email != null &&
+                                   u.Email.ToLower() == (_editingUser.Email ?? "").ToLower());
+
+            if (existingEmail != null)
+            {
+                Snackbar.Add("Email already exists.", Severity.Warning);
+                _isSaving = false;
+                return;
+            }
+
             if (!string.IsNullOrEmpty(_password))
             {
                 _editingUser.Password = HashPassword(_password);
@@ -280,8 +453,6 @@
                 userInDb.Email = _editingUser.Email;
                 userInDb.Password = _editingUser.Password;
                 userInDb.Fullname = _editingUser.Fullname;
-                userInDb.Position = _editingUser.Position;
-                userInDb.Area = _editingUser.Area;
 
                 if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
                 {
@@ -320,7 +491,6 @@
             using var inputStream = file.OpenReadStream(5 * 1024 * 1024);
             using var image = await Image.LoadAsync(inputStream);
 
-            // Resize to 300x300 max
             image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
             {
                 Size = new SixLabors.ImageSharp.Size(300, 300),
@@ -329,11 +499,9 @@
 
             using var ms = new MemoryStream();
 
-            // Check if image has transparency (PNG)
             var extension = Path.GetExtension(file.Name).ToLowerInvariant();
             bool isPng = extension == ".png";
 
-            // Use PNG for transparent images, JPEG for others
             if (isPng)
             {
                 var encoder = new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression };

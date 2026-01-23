@@ -9,21 +9,195 @@
 @inject AppDbContext Db
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 
-<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Style="@GetDialogStyle()">
+<style>
+    /* OTP-style dialog */
+    .mud-dialog-card {
+        background: #0f172a !important;
+        border-top: 5px solid #0072cf;
+        border-left: 3px solid #0072cf;
+        border-radius: 4px;
+    }
+
+        .mud-dialog-card.dark {
+            background: #0f172a !important;
+        }
+
+        .mud-dialog-card.lightest {
+            background: rgba(255, 255, 255, 1) !important;
+            border-top: 5px solid #0072cf;
+            border-left: 3px solid #0072cf;
+        }
+
+    .mud-dialog-title {
+        color: #ffffff !important;
+        padding: 12px !important;
+    }
+
+        .mud-dialog-title.lightest {
+            color: #0f172a !important;
+        }
+
+    /* Form styling matching OTP dialog */
+    .add-user-form .mud-input-root {
+        margin-bottom: 14px;
+    }
+
+    /* Input labels and text */
+    .add-user-form .mud-input-label {
+        color: #0072cf !important;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .add-user-form.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .add-user-form .mud-input-outlined .mud-input-slot {
+        color: #0072cf;
+    }
+
+    .add-user-form.lightest .mud-input-outlined .mud-input-slot {
+        color: #0f172a;
+    }
+
+    .add-user-form .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+    /* Focused state */
+    .add-user-form .mud-input-outlined:hover .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+    .add-user-form .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+        border-width: 2px !important;
+    }
+
+    .add-user-form .mud-input-outlined.mud-input-focused .mud-input-label {
+        color: #0072cf !important;
+    }
+
+    /* Input text color */
+    .add-user-form .mud-input-control {
+        font-size: 0.9rem;
+        color: #0072cf !important;
+        background-color: transparent !important;
+    }
+
+    .add-user-form.lightest .mud-input-control {
+        color: #0f172a !important;
+    }
+
+    .add-user-form .mud-input {
+        color: #0072cf !important;
+        background-color: transparent !important;
+    }
+
+    .add-user-form.lightest .mud-input {
+        color: #0f172a !important;
+    }
+
+    .add-user-form .mud-input::placeholder {
+        color: #0072cf;
+        opacity: 0.6;
+    }
+
+    .add-user-form.lightest .mud-input::placeholder {
+        color: #0f172a;
+        opacity: 0.6;
+    }
+
+    /* Adornment icons */
+    .add-user-form .mud-input-adornment .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .add-user-form.lightest .mud-input-adornment .mud-icon-root {
+        color: #0f172a !important;
+    }
+
+    /* Select dropdowns */
+    .add-user-form .mud-select {
+        color: #0072cf !important;
+    }
+
+    .add-user-form.lightest .mud-select {
+        color: #0f172a !important;
+    }
+
+    .add-user-form .mud-select-input {
+        color: #0072cf !important;
+    }
+
+    .add-user-form.lightest .mud-select-input {
+        color: #0f172a !important;
+    }
+
+    /* Action buttons */
+    .add-user-dialog-button {
+        height: 40px;
+        font-weight: 500;
+        text-transform: none;
+        font-size: 0.9rem;
+        background-color: #005bb5 !important;
+        border: 2px solid #0072cf !important;
+        color: #ffffff !important;
+        box-shadow: none !important;
+    }
+
+        .add-user-dialog-button:hover {
+            background-color: #004a94 !important;
+            border: 2px solid #0072cf !important;
+        }
+
+        .add-user-dialog-button:disabled {
+            background-color: #005bb5 !important;
+            border: 2px solid #0072cf !important;
+            opacity: 0.7;
+        }
+
+    .cancel-button {
+        color: #ffffff !important;
+    }
+
+        .cancel-button.lightest {
+            color: #0f172a !important;
+        }
+
+    @@media (max-width: 600px) {
+        .add-user-form .mud-input-label
+
+    {
+        font-size: 0.8rem;
+    }
+
+    .add-user-form .mud-input-control {
+        font-size: 0.85rem;
+    }
+
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Class="@GetDialogClass()">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="font-weight: 700;">ADD NEW USER</MudText>
+        <span class="@GetTitleClass()">Add User</span>
     </TitleContent>
 
     <DialogContent>
-        <MudForm @ref="_form" Model="_newUser">
-            <MudGrid Spacing="3">
+        <MudForm @ref="_form" Model="_newUser" Class="@GetFormClass()">
+            <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
                                   Label="Full Name"
                                   @bind-Value="_newUser.Fullname"
                                   Required="true"
                                   RequiredError="Full name is required"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -32,7 +206,8 @@
                                   @bind-Value="_newUser.Username"
                                   Required="true"
                                   RequiredError="Username is required"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -42,7 +217,8 @@
                                   Required="true"
                                   RequiredError="Email is required"
                                   Validation="@(new Func<string, string?>(ValidateEmail))"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -51,7 +227,8 @@
                                @bind-Value="_newUser.Role"
                                Required="true"
                                RequiredError="Role is required"
-                               Variant="Variant.Outlined">
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense">
                         <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
                         <MudSelectItem Value="@("AVP")">AVP</MudSelectItem>
                         <MudSelectItem Value="@("Area Head")">Area Head</MudSelectItem>
@@ -65,7 +242,8 @@
                                   @bind-Value="_newUser.Position"
                                   Required="true"
                                   RequiredError="Position is required"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -74,7 +252,8 @@
                                   @bind-Value="_newUser.Area"
                                   Required="true"
                                   RequiredError="Area is required"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12">
@@ -102,7 +281,8 @@
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="TogglePasswordVisibility"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -117,23 +297,24 @@
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="ToggleConfirmPasswordVisibility"
-                                  Variant="Variant.Outlined" />
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
                 </MudItem>
             </MudGrid>
         </MudForm>
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit" Disabled="@_isSaving" Variant="Variant.Filled" Class="px-6 rounded-lg" Style="@GetButtonStyle()">
+        <MudButton OnClick="Cancel" Class="@GetCancelButtonClass()">Cancel</MudButton>
+        <MudButton Color="MudBlazor.Color.Primary" OnClick="Submit" Disabled="@_isSaving" Class="add-user-dialog-button">
             @if (_isSaving)
             {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                <span>Creating...</span>
+                <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
+                <span>Adding...</span>
             }
             else
             {
-                <span>Create User</span>
+                <span>Add</span>
             }
         </MudButton>
     </DialogActions>
@@ -154,6 +335,33 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "";
+    }
+
+    private string GetDialogClass()
+    {
+        var themeClass = GetThemeClass();
+        return $"mud-dialog-card {themeClass}";
+    }
+
+    private string GetTitleClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "mud-dialog-title lightest" : "mud-dialog-title";
+    }
+
+    private string GetFormClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "add-user-form lightest" : "add-user-form";
+    }
+
+    private string GetCancelButtonClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "cancel-button lightest" : "cancel-button";
+    }
+
     protected override async Task OnInitializedAsync()
     {
         await LoadTags();
@@ -162,22 +370,6 @@
     private async Task LoadTags()
     {
         _availableTags = await Db.AccessTags.OrderBy(t => t.Name).ToListAsync();
-    }
-
-    private string GetDialogStyle()
-    {
-        var baseStyle = "border-top: 5px solid #0072cf; border-radius: 12px;";
-        return ThemeService.CurrentTheme switch
-        {
-            ThemeMode.Light => $"{baseStyle} background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);",
-            ThemeMode.Dark => $"{baseStyle} background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);",
-            _ => baseStyle
-        };
-    }
-
-    private string GetButtonStyle()
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important; background-color: white !important; font-weight: 600;" : "font-weight: 600;";
     }
 
     private string? ValidateConfirmPassword(string confirmPassword)
