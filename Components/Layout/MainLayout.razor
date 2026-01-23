@@ -25,7 +25,6 @@
     }
 
     .mobile-drawer {
-        display: none;
     }
 
     .appbar-text {
@@ -101,7 +100,6 @@
         }
 
         .mobile-drawer {
-            display: block !important;
             max-width: 250px !important;
         }
 
@@ -147,41 +145,79 @@
 
     /* GLASSMORPHISM STYLES */
     .admin-appbar-lightest {
-        background-color: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(0,0,0,0.05);
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(15px);
+        border-bottom: 1px solid #0072cf;
     }
 
     .admin-appbar-light {
-        background-color: rgba(0, 114, 207, 0.5) !important;
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(15px);
+        border-bottom: 1px solid rgba(255,255,255,0.2);
     }
 
     .admin-appbar-dark {
-        background-color: rgba(15, 23, 42, 0.5) !important;
-        backdrop-filter: blur(10px);
+        background-color: rgba(30, 41, 59, 0.15) !important;
+        backdrop-filter: blur(15px);
         border-bottom: 1px solid rgba(255,255,255,0.05);
     }
 
     /* DRAWER STYLES */
     /* Target the drawer content specifically to apply the background */
     .admin-drawer-lightest .mud-drawer-content {
-        background-color: rgba(255, 255, 255, 0.5) !important;
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(0,0,0,0.05);
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(15px);
+    }
+
+    .desktop-drawer.admin-drawer-lightest .mud-drawer-content {
+        border-right: 1px solid #0072cf;
+    }
+
+    .mobile-drawer.admin-drawer-lightest .mud-drawer-content {
+        border-left: 1px solid #0072cf;
     }
 
     .admin-drawer-light .mud-drawer-content {
-        background-color: rgba(0, 114, 207, 0.5) !important;
-        backdrop-filter: blur(10px);
-        border-right: 1px solid rgba(255,255,255,0.1);
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        backdrop-filter: blur(15px);
+    }
+
+    .desktop-drawer.admin-drawer-light .mud-drawer-content {
+        border-right: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .mobile-drawer.admin-drawer-light .mud-drawer-content {
+        border-left: 1px solid rgba(255,255,255,0.2);
     }
 
     .admin-drawer-dark .mud-drawer-content {
-        background-color: rgba(15, 23, 42, 0.5) !important;
-        backdrop-filter: blur(10px);
+        background-color: rgba(30, 41, 59, 0.15) !important;
+        backdrop-filter: blur(15px);
+    }
+
+    .desktop-drawer.admin-drawer-dark .mud-drawer-content {
         border-right: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .mobile-drawer.admin-drawer-dark .mud-drawer-content {
+        border-left: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .main-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url('/BG/MainBG.png');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: -1;
+    }
+
+    .mud-layout {
+        background: transparent !important;
     }
 </style>
 
@@ -208,6 +244,7 @@ else
     <MudSnackbarProvider />
 
     <MudLayout>
+        <div class="main-background"></div>
         <MudAppBar Elevation="1" Class="@GetAppBarClass()">
             <div class="desktop-nav">
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
@@ -287,6 +324,7 @@ else
                    Anchor="Anchor.Right"
                    Elevation="2"
                    Variant="DrawerVariant.Temporary"
+                   Overlay="true"
                    Class="@($"mobile-drawer {GetDrawerClass()}")">
             <MudDrawerHeader>
                 <MudText Typo="Typo.h6">Menu</MudText>
