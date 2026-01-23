@@ -16,200 +16,70 @@
 @inject PDTActivityTracker.Components.Services.UserStateService UserState
 
 <style>
-    /* OTP-style dialog */
-    .mud-dialog-card {
-        background: #0f172a !important;
-        border-top: 5px solid #0072cf;
-        border-left: 3px solid #0072cf;
-        border-radius: 4px;
+    /* SHARED GLASS DIALOG STYLES */
+
+    /* Remove default button borders */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
     }
 
-        .mud-dialog-card.dark {
-            background: #0f172a !important;
-        }
-
-        .mud-dialog-card.lightest {
-            background: rgba(255, 255, 255, 1) !important;
-            border-top: 5px solid #0072cf;
-            border-left: 3px solid #0072cf;
-        }
-
-    .mud-dialog-title {
-        color: #ffffff !important;
-        padding: 12px !important;
-    }
-
-        .mud-dialog-title.lightest {
-            color: #0f172a !important;
-        }
-
-    /* Form styling matching OTP dialog */
-    .edit-user-form .mud-input-root {
-        margin-bottom: 14px;
-    }
-
-    /* Input labels and text */
-    .edit-user-form .mud-input-label {
-        color: #0072cf !important;
-        font-weight: 500;
-        font-size: 0.85rem;
-    }
-
-    .edit-user-form.lightest .mud-input-label {
-        color: #0f172a !important;
-    }
-
-    .edit-user-form .mud-input-outlined .mud-input-slot {
-        color: #0072cf;
-    }
-
-    .edit-user-form.lightest .mud-input-outlined .mud-input-slot {
-        color: #0f172a;
-    }
-
-    .edit-user-form .mud-input-outlined-border {
-        border-color: #0072cf !important;
-        border-width: 2px !important;
-    }
-
-    /* Focused state */
-    .edit-user-form .mud-input-outlined:hover .mud-input-outlined-border {
-        border-color: #0072cf !important;
-        border-width: 2px !important;
-    }
-
-    .edit-user-form .mud-input-outlined.mud-input-focused .mud-input-outlined-border {
-        border-color: #0072cf !important;
-        border-width: 2px !important;
-    }
-
-    .edit-user-form .mud-input-outlined.mud-input-focused .mud-input-label {
-        color: #0072cf !important;
-    }
-
-    /* Input text color */
-    .edit-user-form .mud-input-control {
-        font-size: 0.9rem;
-        color: #0072cf !important;
-        background-color: transparent !important;
-    }
-
-    .edit-user-form.lightest .mud-input-control {
-        color: #0f172a !important;
-    }
-
-    .edit-user-form .mud-input {
-        color: #0072cf !important;
-        background-color: transparent !important;
-    }
-
-    .edit-user-form.lightest .mud-input {
-        color: #0f172a !important;
-    }
-
-    .edit-user-form .mud-input::placeholder {
-        color: #0072cf;
-        opacity: 0.6;
-    }
-
-    .edit-user-form.lightest .mud-input::placeholder {
-        color: #0f172a;
-        opacity: 0.6;
-    }
-
-    /* Adornment icons */
-    .edit-user-form .mud-input-adornment .mud-icon-root {
-        color: #0072cf !important;
-    }
-
-    .edit-user-form.lightest .mud-input-adornment .mud-icon-root {
-        color: #0f172a !important;
-    }
-
-    /* Select dropdowns */
-    .edit-user-form .mud-select {
-        color: #0072cf !important;
-    }
-
-    .edit-user-form.lightest .mud-select {
-        color: #0f172a !important;
-    }
-
-    .edit-user-form .mud-select-input {
-        color: #0072cf !important;
-    }
-
-    .edit-user-form.lightest .mud-select-input {
-        color: #0f172a !important;
-    }
-
-    /* Upload section */
-    .upload-section {
-        text-align: center;
-        color: #0072cf;
-    }
-
-        .upload-section.lightest {
-            color: #0f172a;
-        }
-
-        .upload-section .mud-icon-root {
-            color: #0072cf !important;
-        }
-
-        .upload-section.lightest .mud-icon-root {
-            color: #0f172a !important;
-        }
-
-    /* Action buttons */
-    .edit-user-dialog-button {
-        height: 40px;
-        font-weight: 500;
-        text-transform: none;
-        font-size: 0.9rem;
-        background-color: #005bb5 !important;
-        border: 2px solid #0072cf !important;
-        color: #ffffff !important;
-        box-shadow: none !important;
-    }
-
-        .edit-user-dialog-button:hover {
-            background-color: #004a94 !important;
-            border: 2px solid #0072cf !important;
-        }
-
-        .edit-user-dialog-button:disabled {
-            background-color: #005bb5 !important;
-            border: 2px solid #0072cf !important;
-            opacity: 0.7;
-        }
-
-    .cancel-button {
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    /* White Text/Inputs */
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-icon-root,
+    .glass-dialog.light .mud-input-adornment {
         color: #ffffff !important;
     }
 
-        .cancel-button.lightest {
-            color: #0f172a !important;
-        }
+    /* White Borders */
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
 
-    @@media (max-width: 600px) {
-        .edit-user-form .mud-input-label {
-            font-size: 0.8rem;
-        }
+    .glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #ffffff !important;
+        border-width: 2px !important;
+    }
 
-        .edit-user-form .mud-input-control {
-            font-size: 0.85rem;
-        }
+    /* Placeholder */
+    .glass-dialog.light .mud-input-slot::placeholder {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    /* Ensure inputs are NOT white (default visibility) */
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root{
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.lightest .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 1) !important;
+    }
+
+    .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
     }
 </style>
 
-<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@GetDialogClass()">
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
-        <span class="@GetTitleClass()">Edit User</span>
+        <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Edit User</MudText>
     </TitleContent>
 
     <DialogContent>
-        <MudForm @ref="_form" Model="_editingUser" Class="@GetFormClass()">
+        <MudForm @ref="_form" Model="_editingUser">
             <div class="@GetUploadSectionClass()">
                 <MudText Typo="Typo.subtitle2" Class="mb-2">Upload Profile Image</MudText>
 
@@ -329,6 +199,7 @@
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="@TogglePasswordVisibility"
+                                  AdornmentColor="@GetAdornmentColor()"
                                   @bind-Value="_password"
                                   Immediate="true"
                                   Validation="@(new Func<string, string?>(ValidatePassword))"
@@ -344,6 +215,7 @@
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="@ToggleConfirmPasswordVisibility"
+                                  AdornmentColor="@GetAdornmentColor()"
                                   @bind-Value="_confirmPassword"
                                   Immediate="true"
                                   Validation="@(new Func<string, string?>(ValidateConfirmPassword))"
@@ -355,8 +227,8 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel" Class="@GetCancelButtonClass()">Cancel</MudButton>
-        <MudButton Color="MudBlazor.Color.Primary" OnClick="Submit" Disabled="@_isSaving" Class="edit-user-dialog-button">
+        <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
+        <MudButton Color="MudBlazor.Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_isSaving" Class="rounded-lg px-6" Style="@GetButtonStyle()">
             @if (_isSaving)
             {
                 <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
@@ -394,36 +266,65 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
+
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null)
+            return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
+
+    private MudBlazor.Color GetAdornmentColor()
+    {
+        if (ThemeService == null) return MudBlazor.Color.Primary;
+        return ThemeService.CurrentTheme == ThemeMode.Light ? MudBlazor.Color.Surface : MudBlazor.Color.Primary;
+    }
+
+
     private string GetThemeClass()
     {
         return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
-               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "";
-    }
-
-    private string GetDialogClass()
-    {
-        var themeClass = GetThemeClass();
-        return $"mud-dialog-card {themeClass}";
-    }
-
-    private string GetTitleClass()
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "mud-dialog-title lightest" : "mud-dialog-title";
-    }
-
-    private string GetFormClass()
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "edit-user-form lightest" : "edit-user-form";
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
     }
 
     private string GetUploadSectionClass()
     {
         return ThemeService.CurrentTheme == ThemeMode.Lightest ? "upload-section lightest" : "upload-section";
-    }
-
-    private string GetCancelButtonClass()
-    {
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "cancel-button lightest" : "cancel-button";
     }
 
     protected override async Task OnInitializedAsync()

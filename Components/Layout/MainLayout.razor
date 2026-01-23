@@ -57,71 +57,68 @@
         }
 
     @@media (max-width: 600px) {
-        .appbar-text
-
-    {
-        gap: 4px;
-    }
-
-    .appbar-text img {
-        width: 30px !important;
-        height: 30px !important;
-    }
-
-    .appbar-text .mud-typography {
-        font-size: 0.95rem !important;
-        font-weight: 600;
-    }
-
-    .desktop-nav {
-        display: none !important;
-    }
-
-    .desktop-drawer {
-        display: none !important;
-    }
-
-    .mobile-menu-toggle {
-        display: flex !important;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .mobile-drawer {
-        display: block !important;
-        max-width: 250px !important;
-    }
-
-    .user-profile-section {
-        gap: 4px !important;
-    }
-
-        .user-profile-section img {
-            width: 25px !important;
-            height: 25px !important;
+        .appbar-text {
+            gap: 4px;
         }
 
-        .user-profile-section .mud-typography {
+            .appbar-text img {
+                width: 30px !important;
+                height: 30px !important;
+            }
+
+            .appbar-text .mud-typography {
+                font-size: 0.95rem !important;
+                font-weight: 600;
+            }
+
+        .desktop-nav {
             display: none !important;
         }
 
-    .mud-appbar .mud-icon-button {
-        padding: 8px !important;
-    }
-
-        .mud-appbar .mud-icon-button svg {
-            width: 20px !important;
-            height: 20px !important;
+        .desktop-drawer {
+            display: none !important;
         }
 
+        .mobile-menu-toggle {
+            display: flex !important;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mobile-drawer {
+            display: block !important;
+            max-width: 250px !important;
+        }
+
+        .user-profile-section {
+            gap: 4px !important;
+        }
+
+            .user-profile-section img {
+                width: 25px !important;
+                height: 25px !important;
+            }
+
+            .user-profile-section .mud-typography {
+                display: none !important;
+            }
+
+        .mud-appbar .mud-icon-button {
+            padding: 8px !important;
+        }
+
+            .mud-appbar .mud-icon-button svg {
+                width: 20px !important;
+                height: 20px !important;
+            }
     }</style>
 
 @if (_isCheckingAuth)
 {
     <MudLayout>
         <MudMainContent>
-            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #0f172a; color: #0072cf;">
-                <MudProgressCircular Indeterminate="true" Size="Size.Large" />
+            <div style="@GetLoadingContainerStyle()">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
             </div>
         </MudMainContent>
     </MudLayout>
@@ -421,6 +418,18 @@ else
             ThemeMode.Light => "admin-appbar-light",
             ThemeMode.Dark => "admin-appbar-dark",
             _ => "admin-appbar-lightest"
+        };
+    }
+
+    private string GetLoadingContainerStyle()
+    {
+        var baseStyle = "display: flex; justify-content: center; align-items: center; height: 100vh;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: #ffffff; color: #0072cf;",
+            ThemeMode.Light => $"{baseStyle} background-color: #0072cf; color: #ffffff;",
+            ThemeMode.Dark => $"{baseStyle} background-color: #0f172a; color: #0072cf;",
+            _ => $"{baseStyle} background-color: #0f172a; color: #0072cf;"
         };
     }
 

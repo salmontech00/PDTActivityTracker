@@ -1,13 +1,48 @@
 ﻿@using PDTActivityTracker.Components.Services
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 
-<MudDialog Style="@GetDialogStyle()">
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    /* Primary (or specific Color) Button: White BG, Color Text */
+    .glass-dialog.light .mud-button-filled {
+        background-color: #ffffff !important;
+    }
+
+        /* Force specific overrides for common filled buttons in Light Mode */
+        .glass-dialog.light .mud-button-filled.mud-button-primary {
+            color: #0072cf !important;
+        }
+
+        .glass-dialog.light .mud-button-filled.mud-button-error {
+            color: #f44336 !important;
+        }
+
+        .glass-dialog.light .mud-button-filled:hover {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+        }
+
+    /* Cancel/Text Button: White Text */
+    .glass-dialog.light .mud-button-text,
+    .glass-dialog.light .mud-button-text.mud-text-secondary {
+        color: #ffffff !important;
+    }
+</style>
+
+<MudDialog Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <DialogContent>
         <MudText Typo="Typo.body1" Style="@GetTextStyle()">@ContentText</MudText>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="Submit" Class="px-6 rounded-lg">@ButtonText</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" Color="Color.Inherit" Class="mud-text-secondary" Style="@GetCancelButtonStyle()">Cancel</MudButton>
+        <MudButton Color="@Color" Variant="Variant.Filled" OnClick="Submit" Class="px-6 rounded-lg" Style="@GetButtonStyle()">@ButtonText</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -20,18 +55,58 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = $"border-top: 5px solid {GetBorderColor()}; border-radius: 12px;";
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 300px;";
+
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Light => $"{baseStyle} background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);",
-            ThemeMode.Dark => $"{baseStyle} background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);",
-            _ => baseStyle
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };
     }
 
-    private string GetBorderColor() => Color == Color.Error ? "#ef4444" : "#0072cf";
+    private string GetTextStyle()
+    {
+        if (ThemeService == null) return "color: #0f172a;";
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #475569;" : "color: #ffffff;";
+    }
 
-    private string GetTextStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0f172a;" : "color: #f8fafc;";
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null)
+            return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+
+        // For ConfirmDialog, we ensure white background in Light mode
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
 
     void Submit() => MudDialog.Close(DialogResult.Ok(true));
     void Cancel() => MudDialog.Cancel();

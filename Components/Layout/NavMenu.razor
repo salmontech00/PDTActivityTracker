@@ -57,7 +57,7 @@
     @if (UserState.Role == "Admin")
     {
         <div class="nav-section-header-v2">MENU</div>
-        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.People">
+        <MudNavLink Href="/admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.People">
             Manage Users
         </MudNavLink>
     }
