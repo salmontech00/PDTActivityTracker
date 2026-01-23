@@ -320,6 +320,7 @@
             using var inputStream = file.OpenReadStream(5 * 1024 * 1024);
             using var image = await Image.LoadAsync(inputStream);
 
+            // Resize to 300x300 max
             image.Mutate(x => x.Resize(new SixLabors.ImageSharp.Processing.ResizeOptions
             {
                 Size = new SixLabors.ImageSharp.Size(300, 300),
@@ -327,23 +328,30 @@
             }));
 
             using var ms = new MemoryStream();
-            var extension = Path.GetExtension(file.Name).ToLowerInvariant();
 
-            if (extension == ".png")
+            // Check if image has transparency (PNG)
+            var extension = Path.GetExtension(file.Name).ToLowerInvariant();
+            bool isPng = extension == ".png";
+
+            // Use PNG for transparent images, JPEG for others
+            if (isPng)
             {
-                await image.SaveAsync(ms, new PngEncoder());
+                var encoder = new PngEncoder { CompressionLevel = PngCompressionLevel.BestCompression };
+                await image.SaveAsync(ms, encoder);
                 _imageMimeType = "image/png";
+                _imagePreviewUrl = $"data:image/png;base64,{Convert.ToBase64String(ms.ToArray())}";
             }
             else
             {
-                await image.SaveAsync(ms, new JpegEncoder { Quality = 75 });
+                var encoder = new JpegEncoder { Quality = 70 };
+                await image.SaveAsync(ms, encoder);
                 _imageMimeType = "image/jpeg";
+                _imagePreviewUrl = $"data:image/jpeg;base64,{Convert.ToBase64String(ms.ToArray())}";
             }
 
             _imageBytes = ms.ToArray();
-            _imagePreviewUrl = $"data:{_imageMimeType};base64,{Convert.ToBase64String(_imageBytes)}";
 
-            Snackbar.Add("Image uploaded", Severity.Success);
+            Snackbar.Add($"Image uploaded ({_imageBytes.Length / 1024}KB)", Severity.Success);
         }
         catch (Exception ex)
         {

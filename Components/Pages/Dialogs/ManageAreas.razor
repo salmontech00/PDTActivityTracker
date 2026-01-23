@@ -1,0 +1,107 @@
+﻿@using PDTActivityTracker.Components.Model
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Services
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject ISnackbar Snackbar
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight: 700;">MANAGE AREAS</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="pa-4">
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="7">
+                    <MudTextField T="string" @bind-Value="_newAreaName" Label="Area Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="5">
+                    <MudSelect T="string" @bind-Value="_newAreaType" Label="Type" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Municipality")">Municipality</MudSelectItem>
+                        <MudSelectItem Value="@("Barangay")">Barangay</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudButton OnClick="AddArea" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Class="rounded-lg">Add Area</MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <div style="max-height: 400px; overflow-y: auto;">
+                <MudTable Items="_areas" Dense="true" Hover="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Name</MudTh>
+                        <MudTh>Type</MudTh>
+                        <MudTh Style="text-align:right">Action</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Name">@context.Name</MudTd>
+                        <MudTd DataLabel="Type">@context.Type</MudTd>
+                        <MudTd DataLabel="Action" Style="text-align:right">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteArea(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Default">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    
+    private List<Area> _areas = new();
+    private string _newAreaName = "";
+    private string _newAreaType = "Barangay";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAreas();
+    }
+
+    private async Task LoadAreas()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _areas = await db.Areas.OrderBy(a => a.Type).ThenBy(a => a.Name).ToListAsync();
+    }
+
+    private async Task AddArea()
+    {
+        if (string.IsNullOrWhiteSpace(_newAreaName)) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        var area = new Area { Name = _newAreaName, Type = _newAreaType };
+        db.Areas.Add(area);
+        await db.SaveChangesAsync();
+        
+        _newAreaName = "";
+        await LoadAreas();
+        Snackbar.Add("Area added!", Severity.Success);
+    }
+
+    private async Task DeleteArea(Area area)
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.Areas.Remove(area);
+        await db.SaveChangesAsync();
+        await LoadAreas();
+        Snackbar.Add("Area removed!", Severity.Info);
+    }
+
+    private void Close() => MudDialog.Close(DialogResult.Ok(true));
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "border-top: 5px solid #0072cf; border-radius: 12px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Light => $"{baseStyle} background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);",
+            ThemeMode.Dark => $"{baseStyle} background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px);",
+            _ => baseStyle
+        };
+    }
+}

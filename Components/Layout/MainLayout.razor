@@ -10,6 +10,7 @@
 @implements IDisposable
 
 <style>
+
     .v2-appbar-lightest {
         background: rgba(255, 255, 255, 0.8) !important;
         backdrop-filter: blur(12px);
@@ -50,17 +51,23 @@
     }
 
     .logo-img {
-        width: 28px;
-        height: 28px;
+        width: 38px;
+        height: 38px;
         object-fit: contain;
-        filter: brightness(0) invert(1);
     }
 
-    .v2-drawer-title {
+    .logo-text h1 {
+        font-size: 1.5rem;
         font-weight: 800;
-        font-size: 1.25rem;
-        letter-spacing: -0.025em;
+        margin: 0;
         line-height: 1.2;
+    }
+
+    .logo-text p {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        margin: 0;
+        letter-spacing: 0.1em;
     }
 
     .logo-highlight {
@@ -112,19 +119,18 @@
     }
 
     @@media (max-width: 600px) {
-        .logo-bg {
-            width: 32px;
-            height: 32px;
-            padding: 4px;
+        .sk-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
         }
 
-        .logo-img {
-            width: 22px;
-            height: 22px;
+        .logo-text h1 {
+            font-size: 1.1rem;
         }
 
-        .v2-drawer-title {
-            font-size: 1rem;
+        .logo-text p {
+            font-size: 0.6rem;
         }
 
         .desktop-nav {
@@ -147,6 +153,7 @@
         }
     }
 </style>
+
 
 @if (_isCheckingAuth)
 {
@@ -174,51 +181,52 @@ else
                                OnClick="@((e) => DrawerToggle())" />
             </div>
 
-            <div class="top-logo-section mx-2">
-                <div class="logo-bg">
-                    <img src="/PITALOGO.png" class="logo-img" alt="Logo" />
+            <div class="top-logo-section mx-2" style="cursor: default;">
+                <div class="sk-logo">
+                    <img src="/logo/LCClogo.png" alt="Logo" />
                 </div>
-                <MudText Class="v2-drawer-title" Color="@GetDrawerTextColor()">SMR <span class="logo-highlight">Activity Tracker</span></MudText>
+                <div class="logo-text">
+                    <h1>
+                        <span style="@GetLogoMainStyle()">SMR</span> <span style="@GetLogoSubStyle()">Activity Tracker</span>
+                    </h1>
+                    <p style="@GetLogoSubStyle()">ADMIN PORTAL</p>
+                </div>
             </div>
 
             <MudSpacer />
 
-            <div class="desktop-nav gap-4">
+            <div class="d-flex align-center" style="gap: 8px;">
                 @if (!string.IsNullOrEmpty(_userImagePath))
                 {
-                    <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="cursor-pointer">
-                        <ActivatorContent>
-                            <div class="d-flex align-center cursor-pointer">
-                                <MudAvatar Image="@_userImagePath" Size="Size.Medium" />
-                                <div class="ml-3">
-                                    <MudText Typo="Typo.subtitle2" Style="font-weight: 600;">@UserState.Username</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@UserState.Role</MudText>
-                                </div>
-                            </div>
-                        </ActivatorContent>
-                        <ChildContent>
-                            <MudMenuItem Icon="@Icons.Material.Outlined.Person" OnClick="OpenUpdateAccountDialog">Update Account</MudMenuItem>
-                            <MudMenuItem Icon="@Icons.Material.Outlined.ZoomIn" OnClick="OpenProfilePreviewDialog">View Large Photo</MudMenuItem>
-                            @if (UserState.Role == "Admin")
-                            {
-                                <MudMenuItem Icon="@Icons.Material.Outlined.People" OnClick="@(() => NavigationManager.NavigateTo("/"))">Manage Users</MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Outlined.Settings" OnClick="@(() => NavigationManager.NavigateTo("/admin/settings"))">Settings</MudMenuItem>
-                            }
-                            <MudDivider Class="my-2" />
-                            <MudMenuItem Icon="@Icons.Material.Outlined.Logout" OnClick="Logout" Color="Color.Error">Sign Out</MudMenuItem>
-                        </ChildContent>
-                    </MudMenu>
+                    <MudAvatar Image="@_userImagePath" Size="Size.Medium" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;" />
                 }
-
-                <MudIconButton Icon="@DarkLightModeButtonIcon"
-                               Color="Color.Inherit"
-                               OnClick="@DarkModeToggle" />
+                else
+                {
+                    <MudAvatar Image="/Uploads/UserImg.png" Size="Size.Medium" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;" />
+                }
+                <div class="d-flex flex-column cursor-pointer" @onclick="OpenUpdateAccountDialog">
+                    <MudText Typo="Typo.subtitle2" Style="font-weight: 600; line-height: 1.2;">@UserState.Username</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8; line-height: 1.2;">@UserState.Role</MudText>
+                </div>
             </div>
+
+            <MudIconButton Icon="@DarkLightModeButtonIcon"
+                           Color="Color.Inherit"
+                           OnClick="@DarkModeToggle" />
+
+            <MudIconButton Icon="@Icons.Material.Outlined.Logout"
+                           Color="Color.Inherit"
+                           Edge="Edge.End"
+                           OnClick="Logout" />
 
             <div class="mobile-menu-toggle">
                 @if (!string.IsNullOrEmpty(_userImagePath))
                 {
                     <MudAvatar Image="@_userImagePath" Size="Size.Small" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;" />
+                }
+                else
+                {
+                    <MudAvatar Image="/Uploads/UserImg.png" Size="Size.Small" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;" />
                 }
                 <MudIconButton Icon="@DarkLightModeButtonIcon"
                                Color="Color.Inherit"
@@ -286,7 +294,7 @@ else
     private MudTheme? _theme = null;
     private bool _initialized = false;
     private bool _isCheckingAuth = true;
-    private string? _userImagePath;
+    private string? _userImagePath = "/Uploads/UserImg.png";
 
     protected override void OnInitialized()
     {
@@ -425,6 +433,31 @@ else
         };
     }
 
+
+    private string GetLogoMainStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0072cf",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0072cf"
+        };
+        return $"color: {color};";
+    }
+
+    private string GetLogoSubStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#fdd45c",
+            ThemeMode.Dark => "#0072cf",
+            _ => "#0f172a"
+        };
+        return $"color: {color};";
+    }
+
     private Color GetDrawerTextColor()
     {
         return ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Inherit;
@@ -538,9 +571,17 @@ else
 
         if (!(result?.Canceled ?? true))
         {
-            // Refresh local user data if needed
-            await UserState.InitializeAsync();
-            StateHasChanged();
+            // Refresh local user data
+            using var dbRefresh = await DbFactory.CreateDbContextAsync();
+            var updatedUser = await dbRefresh.Users.FirstOrDefaultAsync(u => u.Id == currentUser.Id);
+            if (updatedUser != null)
+            {
+                _userImagePath = updatedUser.ImageData != null && !string.IsNullOrEmpty(updatedUser.ImageMimeType)
+                    ? $"data:{updatedUser.ImageMimeType};base64,{Convert.ToBase64String(updatedUser.ImageData)}"
+                    : "/Uploads/UserImg.png";
+
+                StateHasChanged();
+            }
         }
     }
 
