@@ -12,12 +12,13 @@ namespace PDTActivityTracker.Components.Services
     public class ThemeService
     {
         private readonly IJSRuntime _jsRuntime;
-        private ThemeMode _currentTheme = ThemeMode.Lightest;
+        private ThemeMode _currentTheme = ThemeMode.Light; // Changed default from Lightest to Light
         private bool _initialized = false;
 
         public event Action? OnThemeChanged;
 
         public ThemeMode CurrentTheme => _currentTheme;
+
         public bool IsDarkMode => _currentTheme == ThemeMode.Dark;
 
         public ThemeService(IJSRuntime jsRuntime)
@@ -38,12 +39,12 @@ namespace PDTActivityTracker.Components.Services
                 }
                 else
                 {
-                    _currentTheme = ThemeMode.Lightest;
+                    _currentTheme = ThemeMode.Light; // Changed default to Light
                 }
             }
             catch
             {
-                _currentTheme = ThemeMode.Lightest;
+                _currentTheme = ThemeMode.Light; // Changed default to Light
             }
 
             _initialized = true;
@@ -56,7 +57,7 @@ namespace PDTActivityTracker.Components.Services
                 ThemeMode.Lightest => ThemeMode.Light,
                 ThemeMode.Light => ThemeMode.Dark,
                 ThemeMode.Dark => ThemeMode.Lightest,
-                _ => ThemeMode.Lightest
+                _ => ThemeMode.Light // Changed default to Light
             };
 
             try

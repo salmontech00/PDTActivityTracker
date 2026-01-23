@@ -187,10 +187,11 @@
 
 @if (_isCheckingAuth)
 {
+    <MudThemeProvider Theme="@_theme" IsDarkMode="@(ThemeService.CurrentTheme == ThemeMode.Dark)" />
     <MudLayout>
         <MudMainContent>
             <div style="@GetLoadingContainerStyle()">
-                <MudProgressCircular Indeterminate="true" Size="Size.Large"/>
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Style="@GetLoadingSpinnerStyle()" />
             </div>
         </MudMainContent>
     </MudLayout>
@@ -555,10 +556,21 @@ else
         var baseStyle = "display: flex; justify-content: center; align-items: center; height: 100vh;";
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: #ffffff; color: #0072cf;",
-            ThemeMode.Light => $"{baseStyle} background-color: #0072cf; color: #ffffff;",
-            ThemeMode.Dark => $"{baseStyle} background-color: #0f172a; color: #0072cf;",
-            _ => $"{baseStyle} background-color: #0072cf; color: #ffffff;"
+            ThemeMode.Lightest => $"{baseStyle} background-color: #f8fafc;",
+            ThemeMode.Light => $"{baseStyle} background-color: #0072cf;",
+            ThemeMode.Dark => $"{baseStyle} background-color: #0f172a;",
+            _ => $"{baseStyle} background-color: #f8fafc;"
+        };
+    }
+
+    private string GetLoadingSpinnerStyle()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "color: #0072cf;",
+            ThemeMode.Light => "color: #ffffff;",
+            ThemeMode.Dark => "color: #0072cf;",
+            _ => "color: #0072cf;"
         };
     }
 
