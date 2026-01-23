@@ -31,17 +31,15 @@
     .appbar-text {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0px;
     }
 
         .appbar-text img {
-            width: 40px !important;
-            height: 40px !important;
+            width: 100px !important;
+            height: 100px !important;
             object-fit: contain;
             margin: 0px !important;
-            background-color: #0072cf !important;
-            border-radius: 5px !important;
-            padding: 3px !important;
+            padding: 0px !important;
         }
 
         .appbar-text .mud-typography {
@@ -55,15 +53,32 @@
         .mud-drawer .mud-nav-link.active .mud-icon-root {
             color: #0072cf !important;
         }
+    /* MINI LOGO STYLES */
+    .logo-main-small {
+        font-family: 'Inter', sans-serif;
+        font-weight: 800;
+        font-size: 1.87rem;
+        line-height: 0.9;
+        letter-spacing: -1px;
+    }
+
+    .logo-sub-small {
+        font-family: 'Inter', sans-serif;
+        font-weight: 600;
+        font-size: 0.8rem;
+        letter-spacing: 0.15em;
+        line-height: 1;
+        margin: 0px !important;
+    }
 
     @@media (max-width: 600px) {
         .appbar-text {
-            gap: 4px;
+            gap: 0px;
         }
 
             .appbar-text img {
-                width: 30px !important;
-                height: 30px !important;
+                width: 70px !important;
+                height: 70px !important;
             }
 
             .appbar-text .mud-typography {
@@ -111,14 +126,71 @@
                 width: 20px !important;
                 height: 20px !important;
             }
-    }</style>
+        /* MINI LOGO STYLES */
+        .logo-main-small {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+
+        .logo-sub-small {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            line-height: 1;
+            margin: 0px !important;
+        }
+    }
+
+    /* GLASSMORPHISM STYLES */
+    .admin-appbar-lightest {
+        background-color: rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .admin-appbar-light {
+        background-color: rgba(0, 114, 207, 0.5) !important;
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .admin-appbar-dark {
+        background-color: rgba(15, 23, 42, 0.5) !important;
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* DRAWER STYLES */
+    /* Target the drawer content specifically to apply the background */
+    .admin-drawer-lightest .mud-drawer-content {
+        background-color: rgba(255, 255, 255, 0.5) !important;
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .admin-drawer-light .mud-drawer-content {
+        background-color: rgba(0, 114, 207, 0.5) !important;
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .admin-drawer-dark .mud-drawer-content {
+        background-color: rgba(15, 23, 42, 0.5) !important;
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(255,255,255,0.05);
+    }
+</style>
 
 @if (_isCheckingAuth)
 {
     <MudLayout>
         <MudMainContent>
             <div style="@GetLoadingContainerStyle()">
-                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudProgressCircular Indeterminate="true" Size="Size.Large"/>
             </div>
         </MudMainContent>
     </MudLayout>
@@ -145,7 +217,10 @@ else
             <div class="appbar-text">
                 <img src="/logo/LCClogo.png"
                      alt="Logo" />
-                <MudText Typo="Typo.h5" Class="ml-1">SMR Activity Tracker</MudText>
+                <div class="d-flex flex-column justify-center ml-2">
+                    <span class="logo-main-small" style="@GetLogoMainStyle()">SMR</span>
+                    <span class="logo-sub-small" style="@GetLogoSubStyle()">ACTIVITY TRACKER</span>
+                </div>
             </div>
             <MudSpacer />
 
@@ -178,9 +253,7 @@ else
                          style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer;"
                          @onclick="OpenProfilePreviewDialog" />
                 }
-                <MudIconButton Icon="@DarkLightModeButtonIcon"
-                               Color="Color.Inherit"
-                               OnClick="@DarkModeToggle" />
+
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
                                Color="Color.Inherit"
                                OnClick="@ToggleMobileDrawer" />
@@ -191,7 +264,7 @@ else
                    @bind-Open="_drawerOpen"
                    ClipMode="DrawerClipMode.Always"
                    Elevation="2"
-                   Class="desktop-drawer">
+                   Class="@($"desktop-drawer {GetDrawerClass()}")">
             <NavMenu />
             <MudDivider Class="my-2" />
             <MudNavLink OnClick="@(async () => await OpenUpdateAccountDialog())"
@@ -213,7 +286,7 @@ else
                    Anchor="Anchor.Right"
                    Elevation="2"
                    Variant="DrawerVariant.Temporary"
-                   Class="mobile-drawer">
+                   Class="@($"mobile-drawer {GetDrawerClass()}")">
             <MudDrawerHeader>
                 <MudText Typo="Typo.h6">Menu</MudText>
             </MudDrawerHeader>
@@ -253,6 +326,11 @@ else
                         Settings
                     </MudNavLink>
                 }
+
+                <MudNavLink OnClick="@DarkModeToggleAndClose"
+                            Icon="@DarkLightModeButtonIcon">
+                    Theme: @GetThemeModeName()
+                </MudNavLink>
 
                 <MudNavLink OnClick="@LogoutAndClose"
                             Icon="@Icons.Material.Outlined.Logout">
@@ -362,6 +440,22 @@ else
         await ThemeService.CycleThemeAsync();
     }
 
+    private async Task DarkModeToggleAndClose()
+    {
+        await ThemeService.CycleThemeAsync();
+    }
+
+    private string GetThemeModeName()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "Light",
+            ThemeMode.Light => "Default",
+            ThemeMode.Dark => "Dark",
+            _ => "Light"
+        };
+    }
+
     private async Task Logout()
     {
         await UserState.Logout();
@@ -421,6 +515,41 @@ else
         };
     }
 
+    private string GetDrawerClass()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "admin-drawer-lightest",
+            ThemeMode.Light => "admin-drawer-light",
+            ThemeMode.Dark => "admin-drawer-dark",
+            _ => "admin-drawer-lightest"
+        };
+    }
+
+    private string GetLogoMainStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0072cf",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0072cf"
+        };
+        return $"color: {color};";
+    }
+
+    private string GetLogoSubStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#fdd45c",
+            ThemeMode.Dark => "#0072cf",
+            _ => "#0f172a"
+        };
+        return $"color: {color};";
+    }
+
     private string GetLoadingContainerStyle()
     {
         var baseStyle = "display: flex; justify-content: center; align-items: center; height: 100vh;";
@@ -429,7 +558,7 @@ else
             ThemeMode.Lightest => $"{baseStyle} background-color: #ffffff; color: #0072cf;",
             ThemeMode.Light => $"{baseStyle} background-color: #0072cf; color: #ffffff;",
             ThemeMode.Dark => $"{baseStyle} background-color: #0f172a; color: #0072cf;",
-            _ => $"{baseStyle} background-color: #0f172a; color: #0072cf;"
+            _ => $"{baseStyle} background-color: #0072cf; color: #ffffff;"
         };
     }
 
