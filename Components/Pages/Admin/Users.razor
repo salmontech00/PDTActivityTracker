@@ -16,321 +16,251 @@
 <PageTitle>Users Management</PageTitle>
 
 <style>
-    /* Apply login-style colors */
-    .mud-paper {
-        background: rgba(30, 58, 111, 1) !important;
-        border: 2px solid #667fb5 !important;
-        border-radius: 4px;
+    .users-container {
+        padding: 1rem;
     }
 
-        .mud-paper.lightest {
-            background: rgba(255, 255, 255, 1) !important;
-            border: 2px solid #667fb5 !important;
+    /* GLASS CONTAINER */
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #0072cf !important;
         }
 
+        .glass-panel.light {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+    /* PAGE HEADER */
     .page-header-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 24px;
-        margin-top: 16px;
+        padding: 0;
     }
 
-    .page-header-title {
-        color: #ffffff;
-        font-size: 1.75rem;
-        font-weight: 600;
+    .button-group {
+        display: flex;
+        gap: 12px;
+        padding: 0;
         margin: 0;
     }
 
-        .page-header-title.lightest {
-            color: #1e3a6f;
+    .page-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+        .page-title.lightest {
+            color: #0f172a;
         }
 
-    /* Table Styling */
+        .page-title.light {
+            color: #ffffff;
+        }
+
+        .page-title.dark {
+            color: #ffffff;
+        }
+
+    /* TABLE STYLING */
     .mud-table {
         background: transparent !important;
     }
 
     .mud-table-head {
-        background: #5b6ec8;
+        background: rgba(0, 114, 207, 0.1);
     }
 
         .mud-table-head.lightest {
-            background: #e2e8f0;
+            background: rgba(0, 114, 207, 0.05);
         }
-
-        .mud-table-head .mud-table-cell {
-            color: #ffffff !important;
-            font-weight: 600;
-            border-bottom: 2px solid #667fb5 !important;
-        }
-
-        .mud-table-head.lightest .mud-table-cell {
-            color: #1e3a6f !important;
-            border-bottom: 2px solid #e2e8f0 !important;
-        }
-
-    .mud-table-row {
-        color: #ffffff !important;
-    }
-
-        .mud-table-row:hover {
-            background-color: rgba(255, 255, 255, 0.1) !important;
-        }
-
-        .mud-table-row.lightest {
-            color: #1e3a6f !important;
-        }
-
-            .mud-table-row.lightest:hover {
-                background-color: rgba(0, 0, 0, 0.05) !important;
-            }
 
     .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 12px 16px !important;
+    }
+
+    .lightest .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    .mud-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .lightest .mud-table-row:hover {
+        background-color: rgba(0, 114, 207, 0.05) !important;
+    }
+
+    /* Fix for Pager/Footer alignment */
+    .mud-table-pagination {
+        background-color: transparent !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: inherit !important;
+    }
+
+    .lightest .mud-table-pagination {
+        border-top: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    /* BUTTONS */
+    .modern-button {
+        text-transform: none !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+
+    /* ROLE CHIPS */
+    .role-chip {
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+    }
+
+    .role-chip-success {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: rgb(253, 212, 92) !important;
+        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    }
+
+    .role-chip-info {
+        background-color: rgba(14, 165, 233, 0.15) !important;
+        color: rgb(14, 165, 233) !important;
+        border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    }
+
+    .role-chip-secondary {
+        background-color: rgba(167, 139, 250, 0.15) !important;
+        color: rgb(167, 139, 250) !important;
+        border: 1px solid rgba(167, 139, 250, 0.3) !important;
+    }
+
+    /* STATUS CHIPS */
+    .status-chip-active {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: rgb(253, 212, 92) !important;
+        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    }
+
+    .status-chip-inactive {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: rgb(239, 68, 68) !important;
+        border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    }
+
+    .lightest .status-chip-active {
+        background-color: rgb(0, 114, 207, 0.5) !important;
+    }
+
+    .lightest .role-chip-success {
+        background-color: rgb(0, 114, 207, 0.5) !important;
+    }
+
+    .modern-button.lightest {
+        /* Primary color for lightest */
+    }
+
+    .button-group .modern-button.light {
+        background-color: #ffffff !important;
+        color: #0072cf !important;
+    }
+
+    /* Action Icon Buttons white in darker themes */
+    .light .mud-icon-button.mud-info-text,
+    .dark .mud-icon-button.mud-info-text,
+    .light .mud-icon-button.mud-primary-text,
+    .dark .mud-icon-button.mud-primary-text {
         color: #ffffff !important;
     }
 
-        .mud-table-cell.lightest {
-            color: #1e3a6f !important;
-        }
-
-    /* Buttons */
-    .add-user-button,
-    .action-button {
-        background-color: #2b467f !important;
-        border: 2px solid #667fb5 !important;
-        color: #ffffff !important;
-        box-shadow: none !important;
-    }
-
-        .add-user-button:hover,
-        .action-button:hover {
-            background-color: #1e3161 !important;
-            border: 2px solid #667fb5 !important;
-        }
-
-    /* Filter section */
-    .filter-section {
-        background: rgba(30, 58, 111, 0.3) !important;
+    /* MOBILE CARDS */
+    .mobile-card {
         margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .mobile-card-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lightest .mobile-card-header {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .mobile-card-content {
         padding: 16px;
     }
 
-        .filter-section.lightest {
-            background: rgba(255, 255, 255, 1) !important;
-            border: 2px solid #667fb5 !important;
-        }
-
-        .filter-section .mud-input-outlined-border {
-            border-color: #667fb5 !important;
-            border-width: 1px !important;
-        }
-
-        .filter-section.lightest .mud-input-outlined-border {
-            border-color: #667fb5 !important;
-        }
-
-        .filter-section .mud-input-label {
-            color: #6b7ed8 !important;
-        }
-
-        .filter-section.lightest .mud-input-label {
-            color: #1e3a6f !important;
-        }
-
-        .filter-section .mud-input {
-            color: #6b7ed8 !important;
-        }
-
-        .filter-section.lightest .mud-input {
-            color: #1e3a6f !important;
-        }
-
-        .filter-section .mud-select {
-            color: #6b7ed8 !important;
-        }
-
-        .filter-section.lightest .mud-select {
-            color: #1e3a6f !important;
-        }
-
-        .filter-section .mud-icon-root {
-            color: #667fb5 !important;
-        }
-
-    /* Desktop/Mobile display toggles */
-    .desktop-table {
-        display: block;
+    .mobile-card-actions {
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        display: flex;
+        gap: 8px;
     }
 
-    .mobile-cards {
-        display: none;
+    .lightest .mobile-card-actions {
+        background: rgba(0, 114, 207, 0.03);
     }
 
-    .user-profile-img {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        object-fit: cover;
+    /* FILTER SECTION */
+    .filter-section {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+        .filter-section .mud-input-root {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+    .lightest .filter-section .mud-input-root {
+        background: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .light .filter-section .mud-input-root {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .light .filter-section .mud-input-label,
+    .light .filter-section .mud-input-adornment-start,
+    .light .filter-section .mud-select-input,
+    .light .filter-section .mud-input-slot {
+        color: #ffffff !important;
+    }
+
+    .light .filter-section .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
+        border-color: #ffffff !important;
     }
 
     .filter-toggle-button {
         display: none;
-        margin-bottom: 8px;
     }
 
-    .button-group {
-        display: flex;
-        gap: 16px;
-    }
-
-    .filter-info-text {
-        color: #667fb5;
-    }
-
-        .filter-info-text.lightest {
-            color: #667fb5;
-        }
-
-
-
-    /* Mobile Responsive Styles */
-    @@media (max-width: 600px) {
-        .page-header-title {
-            display: none;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: nowrap;
-            margin-bottom: 0px;
-            margin-top: 12px;
-            width: 100%;
-            justify-content: space-between;
-        }
-
-        .add-user-button {
-            flex: 1;
-            min-width: 0;
-            margin-bottom: 0px;
-            margin-top: 0px;
-            font-size: 0.6rem;
-            padding: 6px 6px;
-        }
-
-            .add-user-button .mud-button-label {
-                font-size: 0.75rem;
-                white-space: nowrap;
-            }
-
-        .desktop-table {
-            display: none;
-        }
-
-        .mobile-cards {
-            display: block;
-        }
-
-        .user-card {
-            background: rgba(30, 58, 111, 0.3) !important;
-            border-left: 4px solid #667fb5 !important;
-            border: 2px solid #667fb5 !important;
-            margin-bottom: 12px;
-            padding: 0;
-        }
-
-            .user-card.lightest {
-                background: rgba(255, 255, 255, 1) !important;
-                border: 2px solid #667fb5 !important;
-                border-left: 4px solid #3b82f6 !important;
-            }
-
-        .user-card-header {
-            background-color: #667fb5 !important;
-            color: white;
-            padding: 10px 12px;
-            border-top-right-radius: 4px;
-            font-size: 0.9rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-            .user-card-header.lightest {
-                background-color: #3b82f6 !important;
-            }
-
-        .user-card-content {
-            padding: 12px;
-            color: #6b7ed8 !important;
-        }
-
-            .user-card-content.lightest {
-                color: #1e3a6f !important;
-            }
-
-        .user-card-field-label {
-            color: #6b7ed8 !important;
-            font-weight: 600;
-            font-size: 0.75rem;
-            margin-bottom: 4px;
-        }
-
-            .user-card-field-label.lightest {
-                color: #667fb5 !important;
-            }
-
-        .user-card-field-value {
-            color: #ffffff !important;
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-        }
-
-            .user-card-field-value.lightest {
-                color: #1e3a6f !important;
-            }
-
-        .user-card-actions {
-            border-top: 2px solid #667fb5 !important;
-            background: rgba(102, 127, 181, 0.1);
-            display: flex;
-            gap: 8px;
-            flex-wrap: nowrap;
-            justify-content: space-between;
-            padding: 10px 16px;
-        }
-
-            .user-card-actions.lightest {
-                border-top: 2px solid #e2e8f0 !important;
-                background: rgba(226, 232, 240, 0.3);
-            }
-
-            .user-card-actions .mud-button-root {
-                background-color: #2b467f !important;
-                border: 2px solid #667fb5 !important;
-                flex: 1;
-                min-width: 0;
-                color: white !important;
-            }
-
-            .user-card-actions.lightest .mud-button-root {
-                background-color: #3b82f6 !important;
-                border: 2px solid #667fb5 !important;
-            }
-
-        .user-profile-img-mobile {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-bottom: 12px;
-        }
-
+    /* RESPONSIVE */
+    @@media (max-width: 960px) {
         .filter-toggle-button {
             display: inline-flex !important;
-            width: 100%;
         }
 
         .filter-section .mud-grid {
@@ -340,298 +270,336 @@
         .filter-section.filters-visible .mud-grid {
             display: flex;
         }
+
+        .desktop-view {
+            display: none;
+        }
+
+        .mobile-view {
+            display: block;
+        }
+
+        .page-header-row {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+            text-align: center;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .page-title {
+            display: none;
+        }
+
+        .button-group {
+            flex-direction: row !important;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+            .button-group .modern-button {
+                flex: 1;
+                font-size: 0.70rem !important;
+            }
+    }
+
+    @@media (min-width: 961px) {
+        .desktop-view {
+            display: block;
+        }
+
+        .mobile-view {
+            display: none;
+        }
     }
 </style>
 
-<div class="page-header-row">
-    <MudText Typo="Typo.h4" Class="@($"page-header-title {GetThemeClass()}")">Manage Users</MudText>
+<div class="users-container">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Users Management</MudText>
 
-    <div class="button-group">
-        <MudButton Class="add-user-button"
-                   Variant="Variant.Filled"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   Size="Size.Small"
-                   OnClick="OpenAddUserDialog">
-            USER
-        </MudButton>
-        <MudButton Class="add-user-button"
-                   Variant="Variant.Filled"
-                   StartIcon="@Icons.Material.Filled.LocationOn"
-                   Size="Size.Small"
-                   OnClick="OpenManageAreasDialog">
-            AREA
-        </MudButton>
+        <div class="button-group">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       OnClick="OpenAddUserDialog"
+                       Class="@($"modern-button {GetThemeClass()}")"
+                       Style="@GetButtonStyle()">
+                ADD USER
+            </MudButton>
+        </div>
     </div>
-</div>
 
-<!-- Filter Section -->
-<MudPaper Class="@($"filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")"
-          Style="@GetPaperBackground()"
-          Elevation="1">
-    <MudButton Variant="Variant.Outlined"
-               StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
-               FullWidth="true"
-               OnClick="@(() => _showFilters = !_showFilters)"
-               Class="filter-toggle-button"
-               Style="@GetFilterButtonStyle()">
-        @(_showFilters ? "Hide Filters" : "Show Filters")
-    </MudButton>
+    <!-- Filter Section -->
+    <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")"
+              Elevation="0">
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                   FullWidth="true"
+                   OnClick="@(() => _showFilters = !_showFilters)"
+                   Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                   Style="@GetFilterButtonStyle()">
+            @(_showFilters ? "Hide Filters" : "Show Filters")
+        </MudButton>
 
-    <MudGrid Spacing="2">
-        <MudItem xs="12" sm="6" md="4">
-            <MudTextField T="string"
-                          @bind-Value="_searchTerm"
-                          @bind-Value:after="ApplyFilters"
-                          Label="Search Users"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Placeholder="Name, username, email..."
-                          Immediate="true"
-                          DebounceInterval="300"
-                          Dense="true"
-                          Margin="Margin.Dense" />
-        </MudItem>
-        <MudItem xs="12" sm="6" md="2">
-            <MudSelect T="string"
-                       @bind-Value="_roleFilter"
-                       @bind-Value:after="ApplyFilters"
-                       Label="Role"
-                       Variant="Variant.Outlined"
-                       Dense="true"
-                       Margin="Margin.Dense">
-                <MudSelectItem Value="@("All")" Style="@GetPaperBackground()">All Roles</MudSelectItem>
-                <MudSelectItem Value="@("Admin")" Style="@GetPaperBackground()">Admin</MudSelectItem>
-                <MudSelectItem Value="@("AVP")" Style="@GetPaperBackground()">AVP</MudSelectItem>
-                <MudSelectItem Value="@("Area Head")" Style="@GetPaperBackground()">Area Head</MudSelectItem>
-                <MudSelectItem Value="@("Store Head")" Style="@GetPaperBackground()">Store Head</MudSelectItem>
-            </MudSelect>
-        </MudItem>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="4" md="4">
+                <MudTextField T="string"
+                              @bind-Value="_searchTerm"
+                              @bind-Value:after="ApplyFilters"
+                              Label="Search Users"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              Placeholder="Search name, designation..."
+                              Immediate="true"
+                              DebounceInterval="300"
+                              Margin="Margin.Dense"
+                              Class="rounded-lg" />
+            </MudItem>
+            <MudItem xs="12" sm="4" md="4">
+                <MudSelect T="string"
+                           @bind-Value="_roleFilter"
+                           @bind-Value:after="ApplyFilters"
+                           Label="Access Level"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="rounded-lg">
+                    <MudSelectItem Value="@("All")">All Levels</MudSelectItem>
+                    <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
+                    <MudSelectItem Value="@("AVP")">AVP</MudSelectItem>
+                    <MudSelectItem Value="@("Area Head")">Area Head</MudSelectItem>
+                    <MudSelectItem Value="@("Store Head")">Store Head</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="4" md="4">
+                <MudSelect T="string"
+                           @bind-Value="_statusFilter"
+                           @bind-Value:after="ApplyFilters"
+                           Label="Status"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="rounded-lg">
+                    <MudSelectItem Value="@("All")">All Status</MudSelectItem>
+                    <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                    <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
 
-        <MudItem xs="12" sm="6" md="3">
-            <MudSelect T="string"
-                       @bind-Value="_areaTypeFilter"
-                       Label="Area Type"
-                       Variant="Variant.Outlined"
-                       Dense="true"
-                       Margin="Margin.Dense"
-                       SelectedValuesChanged="OnAreaTypeFilterChanged">
-                <MudSelectItem Value="@("All")" Style="@GetPaperBackground()">All Types</MudSelectItem>
-                <MudSelectItem Value="@("Municipality")" Style="@GetPaperBackground()">Municipality</MudSelectItem>
-                <MudSelectItem Value="@("Barangay")" Style="@GetPaperBackground()">Barangay</MudSelectItem>
-            </MudSelect>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="3">
-            <MudSelect T="string"
-                       @bind-Value="_specificAreaFilter"
-                       Label="Specific Area"
-                       Variant="Variant.Outlined"
-                       Disabled="@(_areaTypeFilter == "All")"
-                       Dense="true"
-                       Margin="Margin.Dense"
-                       SelectedValuesChanged="ApplyFilters">
-                <MudSelectItem Value="@("All")" Style="@GetPaperBackground()">All Areas</MudSelectItem>
-                @foreach (var area in _availableAreas)
-                {
-                    <MudSelectItem Value="@area" Style="@GetPaperBackground()">@area</MudSelectItem>
-                }
-            </MudSelect>
-        </MudItem>
-    </MudGrid>
-
-    <MudGrid>
-        <MudItem xs="12">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <MudText Typo="Typo.body2" Class="@($"filter-info-text {GetThemeClass()}")">
-                    Showing @_filteredUsers.Count of @_allUsers.Count users
-                </MudText>
-                @if (HasActiveFilters())
-                {
-                    <MudButton Variant="Variant.Text"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Clear"
-                               OnClick="ClearFilters">
-                        Clear Filters
-                    </MudButton>
-                }
-            </div>
-        </MudItem>
-    </MudGrid>
-</MudPaper>
-
-<!-- Desktop Table View -->
-<div class="desktop-table">
-    <MudPaper Class="@GetThemeClass()" Style="@GetPaperBackground()" Elevation="1">
-        <MudTable Items="_filteredUsers" Hover="true">
-            <HeaderContent>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">No.</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Profile</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Full Name</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Username</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Email</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Position</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Area</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Role</MudTh>
-                <MudTh Class="@($"mud-table-column {GetThemeClass()}")">Action</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="No." Class="@($"mud-table-column {GetThemeClass()}")">@(_filteredUsers.ToList().IndexOf(context) + 1)</MudTd>
-                <MudTd DataLabel="Profile" Class="@($"mud-table-column {GetThemeClass()}")">
-                    <img src="@GetUserImagePath(context)"
-                         alt="Profile"
-                         class="user-profile-img" />
-                </MudTd>
-                <MudTd DataLabel="Full Name" Class="@($"mud-table-column {GetThemeClass()}")" Style="font-weight: 600;">@context.Fullname</MudTd>
-                <MudTd DataLabel="Username" Class="@($"mud-table-column {GetThemeClass()}")">@@@context.Username</MudTd>
-                <MudTd DataLabel="Email" Class="@($"mud-table-column {GetThemeClass()}")">@context.Email</MudTd>
-                <MudTd DataLabel="Position" Class="@($"mud-table-column {GetThemeClass()}")">@context.Position</MudTd>
-                <MudTd DataLabel="Area" Class="@($"mud-table-column {GetThemeClass()}")">@context.Area</MudTd>
-                <MudTd DataLabel="Role" Class="@($"mud-table-column {GetThemeClass()}")">
-                    <MudChip T="string"
-                             Size="Size.Small"
-                             Color="@GetRoleColor(context.Role)">
-                        @context.Role
-                    </MudChip>
-                </MudTd>
-                <MudTd DataLabel="Action" Class="@($"mud-table-column {GetThemeClass()}")">
-                    @if (UserState.Role == "Admin" || context.Username == UserState.Username)
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Color="Color.Primary"
-                                       Size="Size.Small"
-                                       OnClick="@(() => EditUser(context))"
-                                       Title="Edit user" />
-
-                        @if (UserState.Role == "Admin" && context.Username != UserState.Username)
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           OnClick="@(() => DeleteUser(context))"
-                                           Title="Delete user" />
-                        }
-                    }
-                </MudTd>
-            </RowTemplate>
-            <PagerContent>
-                <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
-            </PagerContent>
-        </MudTable>
+        <div class="d-flex align-center justify-space-between">
+            <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                Showing @_filteredUsers.Count of @_allUsers.Count users
+            </MudText>
+            @if (HasActiveFilters())
+            {
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Error"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.RestartAlt"
+                           OnClick="ClearFilters"
+                           Class="modern-button">
+                    Reset Filters
+                </MudButton>
+            }
+        </div>
     </MudPaper>
-</div>
 
-<!-- Mobile Card View -->
-<div class="mobile-cards">
-    @if (_filteredUsers.Any())
-    {
-        @for (int i = 0; i < _filteredUsers.Count; i++)
+    <!-- Desktop Table View -->
+    <div class="desktop-view">
+        <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
+            <MudTable Items="_filteredUsers" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass">
+                <HeaderContent>
+                    <MudTh>No.</MudTh>
+                    <MudTh>Profile</MudTh>
+                    <MudTh>Emp. No.</MudTh>
+                    <MudTh>Full Name</MudTh>
+                    <MudTh>Designation</MudTh>
+                    <MudTh>Username</MudTh>
+                    <MudTh>Access Level</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh Style="text-align: center;">Action</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="No.">@(_filteredUsers.ToList().IndexOf(context) + 1)</MudTd>
+                    <MudTd DataLabel="Profile">
+                        <MudAvatar Size="Size.Small" Color="GetAvatarColor(context)">
+                            @if (!string.IsNullOrEmpty(GetUserImagePath(context)))
+                            {
+                                <MudImage Src="@GetUserImagePath(context)" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Person" />
+                            }
+                        </MudAvatar>
+                    </MudTd>
+                    <MudTd DataLabel="Emp. No.">@context.EmployeeNumber</MudTd>
+                    <MudTd DataLabel="Full Name" Style="font-weight: 600;">@context.Fullname</MudTd>
+                    <MudTd DataLabel="Designation">@context.Designation</MudTd>
+                    <MudTd DataLabel="Username">@@@context.Username</MudTd>
+                    <MudTd DataLabel="Access Level">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Text"
+                                 Class="@($"role-chip {GetRoleChipClass(context.Role)}")">
+                            @context.Role
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Text"
+                                 Class="@($"role-chip {GetStatusChipClass(context.Status ?? "Active")}")">
+                            @context.Status
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Action" Style="text-align: center;">
+                        <div class="d-flex justify-center gap-2">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Color="Color.Info"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OpenViewUserDialog(context))"
+                                           Title="View user details" />
+
+                            @if (UserState.Role == "Admin" || context.Username == UserState.Username)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               OnClick="@(() => EditUser(context))"
+                                               Title="Edit user" />
+
+                                @if (UserState.Role == "Admin")
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => DeleteUser(context))"
+                                                   Disabled="@(context.Username == UserState.Username)"
+                                                   Title="Delete user" />
+                                }
+                            }
+                        </div>
+                    </MudTd>
+                </RowTemplate>
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudPaper>
+    </div>
+
+    <!-- Mobile View -->
+    <div class="mobile-view">
+        @if (_filteredUsers.Any())
         {
-            var user = _filteredUsers[i];
-            var index = i + 1;
-
-            <MudCard Class="@($"user-card {GetThemeClass()}")" Elevation="2">
-                <div class="@($"user-card-header {GetThemeClass()}")">
-                    <span><strong>User #@index</strong></span>
-                    <MudChip T="string" Size="Size.Small" Color="@GetRoleColor(user.Role)">@user.Role</MudChip>
-                </div>
-                <div class="@($"user-card-content {GetThemeClass()}")">
-                    <div style="text-align: center;">
-                        <img src="@GetUserImagePath(user)"
-                             alt="Profile"
-                             class="user-profile-img-mobile" />
+            @foreach (var user in _filteredUsers)
+            {
+                <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                    <div class="mobile-card-header">
+                        <div class="d-flex align-center gap-3">
+                            <MudAvatar Size="Size.Medium" Color="GetAvatarColor(user)">
+                                @if (!string.IsNullOrEmpty(GetUserImagePath(user)))
+                                {
+                                    <MudImage Src="@GetUserImagePath(user)" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                }
+                            </MudAvatar>
+                            <div>
+                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@user.Fullname</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@@@user.Username</MudText>
+                            </div>
+                        </div>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"role-chip {GetRoleChipClass(user.Role)}")">
+                            @user.Role
+                        </MudChip>
                     </div>
 
-                    <MudText Typo="Typo.body2" Color="Color.Default" Class="@($"user-card-field-label {GetThemeClass()}")">
-                        <strong>Full Name:</strong>
-                    </MudText>
-                    <MudText Typo="Typo.body1" Class="@($"user-card-field-value {GetThemeClass()}")">
-                        @user.Fullname
-                    </MudText>
+                    <div class="mobile-card-content">
+                        <MudGrid Spacing="1">
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Emp. No.</MudText>
+                                <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Designation</MudText>
+                                <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Status</MudText>
+                                <br />
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Variant="Variant.Text"
+                                         Class="@($"role-chip {GetStatusChipClass(user.Status ?? "Active")}")">
+                                    @user.Status
+                                </MudChip>
+                            </MudItem>
+                        </MudGrid>
+                    </div>
 
-                    <MudText Typo="Typo.body2" Color="Color.Default" Class="@($"user-card-field-label {GetThemeClass()}")">
-                        <strong>Username:</strong>
-                    </MudText>
-                    <MudText Typo="Typo.body1" Class="@($"user-card-field-value {GetThemeClass()}")">
-                        @@@user.Username
-                    </MudText>
-
-                    <MudText Typo="Typo.body2" Color="Color.Default" Class="@($"user-card-field-label {GetThemeClass()}")">
-                        <strong>Email:</strong>
-                    </MudText>
-                    <MudText Typo="Typo.body1" Class="@($"user-card-field-value {GetThemeClass()}")">
-                        @user.Email
-                    </MudText>
-
-                    <MudText Typo="Typo.body2" Color="Color.Default" Class="@($"user-card-field-label {GetThemeClass()}")">
-                        <strong>Position:</strong>
-                    </MudText>
-                    <MudText Typo="Typo.body1" Class="@($"user-card-field-value {GetThemeClass()}")">
-                        @user.Position
-                    </MudText>
-
-                    <MudText Typo="Typo.body2" Color="Color.Default" Class="@($"user-card-field-label {GetThemeClass()}")">
-                        <strong>Area:</strong>
-                    </MudText>
-                    <MudText Typo="Typo.body1" Class="@($"user-card-field-value {GetThemeClass()}")">
-                        @user.Area
-                    </MudText>
-                </div>
-                <div class="@($"user-card-actions {GetThemeClass()}")">
-                    @if (UserState.Role == "Admin" || user.Username == UserState.Username)
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Icon="@Icons.Material.Filled.Edit"
-                                   Color="Color.Primary"
-                                   Size="Size.Small"
-                                   OnClick="@(() => EditUser(user))">
-                            Edit
-                        </MudButton>
-                        @if (UserState.Role == "Admin" && user.Username != UserState.Username)
-                        {
-                            <MudButton Variant="Variant.Filled"
-                                       Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
+                    <div class="mobile-card-actions">
+                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                       Color="Color.Info"
                                        Size="Size.Small"
-                                       OnClick="@(() => DeleteUser(user))">
-                                Delete
-                            </MudButton>
+                                       OnClick="@(() => OpenViewUserDialog(user))"
+                                       Title="View user details" />
+
+                        @if (UserState.Role == "Admin" || user.Username == UserState.Username)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Color="Color.Primary"
+                                           Size="Size.Small"
+                                           OnClick="@(() => EditUser(user))"
+                                           Title="Edit user" />
+
+                            @if (UserState.Role == "Admin")
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               OnClick="@(() => DeleteUser(user))"
+                                               Disabled="@(user.Username == UserState.Username)"
+                                               Title="Delete user" />
+                            }
                         }
+                    </div>
+                </MudPaper>
+            }
+        }
+        else
+        {
+            <MudCard Elevation="1" Style="padding: 15px; text-align: center;">
+                <MudText Typo="Typo.body1">
+                    @if (HasActiveFilters())
+                    {
+                        <text>No users found matching your filters.</text>
                     }
-                </div>
+                    else
+                    {
+                        <text>No users found</text>
+                    }
+                </MudText>
             </MudCard>
         }
-    }
-    else
-    {
-        <MudCard Elevation="1" Style="padding: 15px; text-align: center;">
-            <MudText Typo="Typo.body1">
-                @if (HasActiveFilters())
-                {
-                    <text>No users found matching your filters.</text>
-                }
-                else
-                {
-                    <text>No users found</text>
-                }
-            </MudText>
-        </MudCard>
-    }
+    </div>
 </div>
 
 @code {
     private bool _showFilters = false;
     private List<User> _allUsers = new();
     private List<User> _filteredUsers = new();
-    private List<Area> _allAreas = new();
-    private List<string> _availableAreas = new();
     private bool _initialized = false;
 
     // Filter variables
     private string _searchTerm = string.Empty;
     private string _roleFilter = "All";
-    private string _areaTypeFilter = "All";
-    private string _specificAreaFilter = "All";
+    private string _statusFilter = "All";
 
     protected override void OnInitialized()
     {
@@ -652,25 +620,33 @@
     private string GetThemeClass()
     {
         return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
-               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "";
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
     }
 
     private string GetPaperBackground()
     {
-        return ThemeService.CurrentTheme switch
-        {
-            ThemeMode.Lightest => "background: rgba(255, 255, 255, 1) !important;",
-            ThemeMode.Light => "background: rgba(30, 58, 111, 1) !important;",
-            ThemeMode.Dark => "background: rgba(15, 23, 42, 1) !important;",
-            _ => "background: rgba(30, 58, 111, 1) !important;"
-        };
+        return ""; // Backed by glass-panel CSS
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "border-radius: 12px;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
+            : "border-radius: 12px; font-weight: bold;";
     }
 
     private string GetFilterButtonStyle()
     {
+        if (ThemeService == null) return "";
         return ThemeService.CurrentTheme == ThemeMode.Lightest
-            ? "color: #1e3a6f; border-color: #667fb5;"
-            : "color: #ffffff; border-color: #667fb5;";
+            ? "color: #0072cf; border-color: #0072cf; border-radius: 12px;"
+            : "color: #ffffff; border-color: #ffffff; border-radius: 12px; background-color: transparent !important;";
+    }
+
+    private string GetStatusTextColor()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "text-dark" : "text-white";
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -704,13 +680,6 @@
             .AsNoTracking()
             .ToListAsync();
 
-        // Load all areas
-        _allAreas = await db.Areas
-            .OrderBy(a => a.Type)
-            .ThenBy(a => a.Name)
-            .AsNoTracking()
-            .ToListAsync();
-
         ApplyFilters();
     }
 
@@ -731,8 +700,8 @@
                 (u.Fullname?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (u.Username?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (u.Email?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                 (u.Position?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (u.Area?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+                (u.Designation?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (u.EmployeeNumber?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
             ).ToList();
         }
 
@@ -741,55 +710,20 @@
             _filteredUsers = _filteredUsers.Where(u => u.Role == _roleFilter).ToList();
         }
 
-        // Apply area type filter
-        if (_areaTypeFilter != "All" && _specificAreaFilter == "All")
+        if (_statusFilter != "All")
         {
-            var areasOfType = _allAreas
-                .Where(a => a.Type == _areaTypeFilter)
-                .Select(a => a.Name)
-                .ToList();
-
-            _filteredUsers = _filteredUsers
-                .Where(u => u.Area != null && areasOfType.Contains(u.Area))
-                .ToList();
-        }
-
-        // Apply specific area filter
-        if (_specificAreaFilter != "All")
-        {
-            _filteredUsers = _filteredUsers
-               .Where(u => u.Area == _specificAreaFilter)
-               .ToList();
+            _filteredUsers = _filteredUsers.Where(u => u.Status == _statusFilter).ToList();
         }
 
         StateHasChanged(); // Used when called from UI events
     }
 
-    private void OnAreaTypeFilterChanged()
-    {
-        _specificAreaFilter = "All";
-        if (_areaTypeFilter == "All")
-        {
-            _availableAreas = new List<string>();
-        }
-        else
-        {
-            _availableAreas = _allAreas
-                .Where(a => a.Type == _areaTypeFilter)
-                .Select(a => a.Name)
-                .OrderBy(n => n)
-                .ToList();
-        }
-        ApplyFilters();
-    }
 
     private void ClearFilters()
     {
         _searchTerm = string.Empty;
         _roleFilter = "All";
-        _areaTypeFilter = "All";
-        _specificAreaFilter = "All";
-        _availableAreas = new List<string>();
+        _statusFilter = "All";
         ApplyFilters();
     }
 
@@ -797,29 +731,50 @@
     {
         return !string.IsNullOrWhiteSpace(_searchTerm) ||
                _roleFilter != "All" ||
-               _areaTypeFilter != "All" ||
-               _specificAreaFilter != "All";
+               _statusFilter != "All";
     }
 
-    private string GetUserImagePath(User user)
+    private string? GetUserImagePath(User user)
     {
         if (user.ImageData != null && !string.IsNullOrEmpty(user.ImageMimeType))
         {
             return $"data:{user.ImageMimeType};base64,{Convert.ToBase64String(user.ImageData)}";
         }
-        return "/Uploads/UserImg.png";
+        return null;
     }
+
+    private Color GetAvatarColor(User user)
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => Color.Primary,
+            _ => Color.Inherit
+        };
+    }
+
+    private string GetRoleChipClass(string role) => role switch
+    {
+        "Admin" => "role-chip-success",
+        "AVP" => "role-chip-secondary",
+        "Area Head" => "role-chip-info",
+        "Store Head" => "role-chip-success",
+        _ => "role-chip-success"
+    };
+
+    private string GetStatusChipClass(string status) => status switch
+    {
+        "Active" => "status-chip-active",
+        "Inactive" => "status-chip-inactive",
+        _ => "status-chip-active"
+    };
 
     private Color GetRoleColor(string role) => role switch
     {
-        "Admin" => Color.Error,
-        "Cashier" => Color.Info, // From Reference
-        "Faculty" => Color.Success, // From Reference
-        // Map other roles if needed
+        "Admin" => Color.Success,
         "AVP" => Color.Secondary,
         "Area Head" => Color.Info,
         "Store Head" => Color.Success,
-        _ => Color.Default
+        _ => Color.Success
     };
 
     private async Task OpenAddUserDialog()
@@ -833,6 +788,18 @@
             await LoadUsers();
         }
     }
+
+    private async Task OpenViewUserDialog(User user)
+    {
+        var parameters = new DialogParameters
+        {
+            { "UserToView", user }
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        await DialogService.ShowAsync<ViewUser>("User Details", parameters, options);
+    }
+
 
     private async Task EditUser(User user)
     {
@@ -854,8 +821,8 @@
     private async Task DeleteUser(User user)
     {
         var parameters = new DialogParameters {
-            { "ContentText", $"Are you sure you want to delete {user.Fullname}?" },
-            { "ButtonText", "Delete User" },
+            { "ContentText", $"Are you sure you want to delete '{user.Fullname}'?\n\nThis action cannot be undone." },
+            { "ButtonText", "Delete" },
             { "Color", Color.Error }
         };
 
@@ -866,7 +833,7 @@
             FullWidth = true
         };
 
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete User", parameters, options);
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Delete", parameters, options);
         var result = await dialog.Result;
 
         if (!(result?.Canceled ?? true))
@@ -881,31 +848,13 @@
                     db.Users.Remove(userToDelete);
                     await db.SaveChangesAsync();
                     Snackbar.Add("User deleted successfully!", Severity.Success);
+                    await LoadUsers();
                 }
-                await LoadUsers();
             }
             catch (Exception ex)
             {
                 Snackbar.Add($"Error deleting user: {ex.Message}", Severity.Error);
             }
-        }
-    }
-
-    private async Task OpenManageAreasDialog()
-    {
-        var options = new DialogOptions
-        {
-            CloseButton = true,
-            MaxWidth = MaxWidth.Medium,
-            FullWidth = true
-        };
-
-        var dialog = await DialogService.ShowAsync<ManageAreas>("Manage Areas", options);
-        var result = await dialog.Result;
-
-        if (!(result?.Canceled ?? true))
-        {
-            await LoadData();
         }
     }
 }

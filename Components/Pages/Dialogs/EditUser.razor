@@ -59,7 +59,7 @@
         color: #0f172a !important;
     }
 
-    .glass-dialog.lightest .mud-icon-root{
+    .glass-dialog.lightest .mud-icon-root {
         color: #0072cf !important;
     }
 
@@ -121,10 +121,20 @@
 
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
-                                  Label="Username"
-                                  @bind-Value="_editingUser.Username"
+                                  Label="Employee Number"
+                                  @bind-Value="_editingUser.EmployeeNumber"
                                   Required="true"
-                                  RequiredError="Username is required"
+                                  RequiredError="Employee number is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Designation"
+                                  @bind-Value="_editingUser.Designation"
+                                  Required="true"
+                                  RequiredError="Designation is required"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -140,12 +150,22 @@
                                   Margin="Margin.Dense" />
                 </MudItem>
 
-                <MudItem xs="12" sm="6">
+                <MudItem xs="12" sm="4">
+                    <MudTextField T="string"
+                                  Label="Username"
+                                  @bind-Value="_editingUser.Username"
+                                  Required="true"
+                                  RequiredError="Username is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
                     <MudSelect T="string"
-                               Label="Role"
+                               Label="Access Level"
                                @bind-Value="_editingUser.Role"
                                Required="true"
-                               RequiredError="Role is required"
+                               RequiredError="Access level is required"
                                Variant="Variant.Outlined"
                                Margin="Margin.Dense"
                                Disabled="@(UserState.Role != "Admin")">
@@ -156,41 +176,19 @@
                     </MudSelect>
                 </MudItem>
 
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Position"
-                                  @bind-Value="_editingUser.Position"
-                                  Required="true"
-                                  RequiredError="Position is required"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Area"
-                                  @bind-Value="_editingUser.Area"
-                                  Required="true"
-                                  RequiredError="Area is required"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
-                </MudItem>
-
-                <MudItem xs="12">
+                <MudItem xs="12" sm="4">
                     <MudSelect T="string"
-                               Label="Access Tags"
-                               MultiSelection="true"
-                               @bind-Value="_dummyTag"
-                               @bind-SelectedValues="_selectedTags"
+                               Label="Status"
+                               @bind-Value="_editingUser.Status"
+                               Required="true"
+                               RequiredError="Status is required"
                                Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               Disabled="@(UserState.Role != "Admin")">
-                        @foreach (var tag in _availableTags)
-                        {
-                            <MudSelectItem Value="@tag.Name">@tag.Name</MudSelectItem>
-                        }
+                               Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
                     </MudSelect>
                 </MudItem>
+
 
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
@@ -257,9 +255,6 @@
     private byte[]? _imageBytes;
     private string? _imageMimeType;
 
-    private List<AccessTag> _availableTags = new();
-    private IEnumerable<string> _selectedTags = new List<string>();
-    private string _dummyTag = string.Empty;
 
     [Parameter] public User UserToEdit { get; set; } = default!;
 
@@ -327,7 +322,7 @@
         return ThemeService.CurrentTheme == ThemeMode.Lightest ? "upload-section lightest" : "upload-section";
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         _editingUser = new User
         {
@@ -336,31 +331,20 @@
             Email = UserToEdit.Email,
             Password = UserToEdit.Password,
             Fullname = UserToEdit.Fullname,
-            Position = UserToEdit.Position,
-            Area = UserToEdit.Area,
+            EmployeeNumber = UserToEdit.EmployeeNumber,
+            Designation = UserToEdit.Designation,
+            Status = UserToEdit.Status,
             Role = UserToEdit.Role,
             ImageData = UserToEdit.ImageData,
-            ImageMimeType = UserToEdit.ImageMimeType,
-            Tags = UserToEdit.Tags
+            ImageMimeType = UserToEdit.ImageMimeType
         };
-
-        if (!string.IsNullOrEmpty(_editingUser.Tags))
-        {
-            _selectedTags = _editingUser.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        }
 
         if (_editingUser.ImageData != null && !string.IsNullOrEmpty(_editingUser.ImageMimeType))
         {
             _imagePreviewUrl = $"data:{_editingUser.ImageMimeType};base64,{Convert.ToBase64String(_editingUser.ImageData)}";
         }
-
-        await LoadTags();
     }
 
-    private async Task LoadTags()
-    {
-        _availableTags = await Db.AccessTags.OrderBy(t => t.Name).ToListAsync();
-    }
 
     private string? ValidateEmail(string? email)
     {
@@ -442,10 +426,10 @@
                 userInDb.Email = _editingUser.Email;
                 userInDb.Password = _editingUser.Password;
                 userInDb.Fullname = _editingUser.Fullname;
-                userInDb.Position = _editingUser.Position;
-                userInDb.Area = _editingUser.Area;
+                userInDb.EmployeeNumber = _editingUser.EmployeeNumber;
+                userInDb.Designation = _editingUser.Designation;
+                userInDb.Status = _editingUser.Status;
                 userInDb.Role = _editingUser.Role;
-                userInDb.Tags = string.Join(",", _selectedTags);
 
                 if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
                 {

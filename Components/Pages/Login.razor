@@ -15,6 +15,7 @@
 @inject IDialogService DialogService
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject LdapService LdapService
 
 <PageTitle>Login | SMR Activity Tracker</PageTitle>
 
@@ -397,35 +398,87 @@
         try
         {
             using var db = await DbFactory.CreateDbContextAsync();
+            PDTActivityTracker.Components.Model.User? user = null;
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Username == Username);
-
-            if (user == null)
+            // Check if input is email (likely AD/LDAP login)
+            if (Username.Contains("@"))
             {
-                ErrorMessage = "Invalid credentials.";
-                return;
-            }
+                bool ldapSuccess = false;
+                try
+                {
+                    ldapSuccess = LdapService.Authenticate(Username, Password);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"LDAP unavailable: {ex.Message}");
+                }
 
-            var hashedPassword = HashPassword(Password);
+                if (ldapSuccess)
+                {
+                    var ldapDetails = LdapService.GetUserDetails(Username);
+                    user = await db.Users.FirstOrDefaultAsync(u => u.Email == Username);
 
-            if (user.Password != hashedPassword)
-            {
-                ErrorMessage = "Invalid credentials.";
-                return;
-            }
+                    if (user == null && ldapDetails != null)
+                    {
+                        // Create local user record if it doesn't exist but AD auth succeeded
+                        user = new PDTActivityTracker.Components.Model.User
+                        {
+                            Username = ldapDetails.Username,
+                            Email = ldapDetails.Email,
+                            Fullname = ldapDetails.DisplayName,
+                            Role = "User", // Default role for AD users
+                            Password = "LDAP_AUTHENTICATED" // Placeholder pass
+                        };
+                        db.Users.Add(user);
+                        await db.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    // Fallback to local database if LDAP fails or is unavailable
+                    user = await db.Users.FirstOrDefaultAsync(u => u.Email == Username);
 
-            await UserState.Login(user.Username);
-            await UserState.SetFullname(user.Fullname);
-            await UserState.SetRole(user.Role);
+                    if (user == null)
+                    {
+                        ErrorMessage = "Invalid credentials.";
+                        return;
+                    }
 
-            await Task.Delay(500);
-
-            if (user.Role == "Admin")
-            {
-                NavigationManager.NavigateTo("/", forceLoad: true);
+                    var hashedPassword = HashPassword(Password);
+                    if (user.Password != hashedPassword)
+                    {
+                        ErrorMessage = "Invalid credentials.";
+                        return;
+                    }
+                }
             }
             else
             {
+                // Traditional database login
+                user = await db.Users.FirstOrDefaultAsync(u => u.Username == Username);
+
+                if (user == null)
+                {
+                    ErrorMessage = "Invalid credentials.";
+                    return;
+                }
+
+                var hashedPassword = HashPassword(Password);
+
+                if (user.Password != hashedPassword)
+                {
+                    ErrorMessage = "Invalid credentials.";
+                    return;
+                }
+            }
+
+            if (user != null)
+            {
+                await UserState.Login(user.Username);
+                await UserState.SetFullname(user.Fullname);
+                await UserState.SetRole(user.Role);
+
+                await Task.Delay(500);
                 NavigationManager.NavigateTo("/", forceLoad: true);
             }
         }

@@ -21,9 +21,9 @@ namespace PDTActivityTracker.Components.Model
         [Required]
         public string Fullname { get; set; } = default!;
 
-        public string? Position { get; set; }
-        public string? Area { get; set; }
-        public string? Tags { get; set; } // Comma-separated access tags
+        public string? EmployeeNumber { get; set; }
+        public string? Designation { get; set; }
+        public string? Status { get; set; } = "Active";
 
         public byte[]? ImageData { get; set; }
         public string? ImageMimeType { get; set; }

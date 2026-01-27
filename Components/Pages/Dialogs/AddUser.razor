@@ -87,10 +87,20 @@
 
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
-                                  Label="Username"
-                                  @bind-Value="_newUser.Username"
+                                  Label="Employee Number"
+                                  @bind-Value="_newUser.EmployeeNumber"
                                   Required="true"
-                                  RequiredError="Username is required"
+                                  RequiredError="Employee number is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Designation"
+                                  @bind-Value="_newUser.Designation"
+                                  Required="true"
+                                  RequiredError="Designation is required"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -106,12 +116,22 @@
                                   Margin="Margin.Dense" />
                 </MudItem>
 
-                <MudItem xs="12" sm="6">
+                <MudItem xs="12" sm="4">
+                    <MudTextField T="string"
+                                  Label="Username"
+                                  @bind-Value="_newUser.Username"
+                                  Required="true"
+                                  RequiredError="Username is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
                     <MudSelect T="string"
-                               Label="Role"
+                               Label="Access Level"
                                @bind-Value="_newUser.Role"
                                Required="true"
-                               RequiredError="Role is required"
+                               RequiredError="Access level is required"
                                Variant="Variant.Outlined"
                                Margin="Margin.Dense">
                         <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
@@ -121,40 +141,19 @@
                     </MudSelect>
                 </MudItem>
 
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Position"
-                                  @bind-Value="_newUser.Position"
-                                  Required="true"
-                                  RequiredError="Position is required"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Area"
-                                  @bind-Value="_newUser.Area"
-                                  Required="true"
-                                  RequiredError="Area is required"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
-                </MudItem>
-
-                <MudItem xs="12">
+                <MudItem xs="12" sm="4">
                     <MudSelect T="string"
-                               Label="Access Tags"
-                               MultiSelection="true"
-                               @bind-Value="_dummyTag"
-                               @bind-SelectedValues="_selectedTags"
+                               Label="Status"
+                               @bind-Value="_newUser.Status"
+                               Required="true"
+                               RequiredError="Status is required"
                                Variant="Variant.Outlined"
                                Margin="Margin.Dense">
-                        @foreach (var tag in _availableTags)
-                        {
-                            <MudSelectItem Value="@tag.Name">@tag.Name</MudSelectItem>
-                        }
+                        <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
                     </MudSelect>
                 </MudItem>
+
 
                 <MudItem xs="12" sm="6">
                     <MudTextField T="string"
@@ -215,9 +214,6 @@
     private bool _showPassword = false;
     private bool _showConfirmPassword = false;
 
-    private List<AccessTag> _availableTags = new();
-    private IEnumerable<string> _selectedTags = new List<string>();
-    private string _dummyTag = string.Empty;
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
@@ -281,15 +277,6 @@
         return ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Primary;
     }
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadTags();
-    }
-
-    private async Task LoadTags()
-    {
-        _availableTags = await Db.AccessTags.OrderBy(t => t.Name).ToListAsync();
-    }
 
     private string? ValidateConfirmPassword(string confirmPassword)
     {
@@ -349,7 +336,6 @@
                 return;
             }
 
-            _newUser.Tags = string.Join(",", _selectedTags);
             _newUser.Password = HashPassword(_newUser.Password);
 
             Db.Users.Add(_newUser);

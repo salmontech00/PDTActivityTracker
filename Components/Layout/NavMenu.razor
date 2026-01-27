@@ -54,20 +54,7 @@
 </style>
 
 <MudNavMenu>
-    @if (UserState.Role == "Admin")
-    {
-        <div class="nav-section-header-v2">MENU</div>
-        <MudNavLink Href="/admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.People">
-            Manage Users
-        </MudNavLink>
-    }
-    else if (UserState.Role == "AVP" || UserState.Role == "Area Head" || UserState.Role == "Store Head")
-    {
-        <div class="nav-section-header-v2">Portal</div>
-        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Groups">
-            View Users
-        </MudNavLink>
-    }
+    <!-- Main content links can be added here -->
 </MudNavMenu>
 
 @code {

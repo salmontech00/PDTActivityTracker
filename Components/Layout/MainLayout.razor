@@ -209,12 +209,25 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-image: url('/BG/MainBG.png');
         background-size: cover;
         background-position: center;
         background-repeat: no-repeat;
+        background-attachment: fixed;
         z-index: -1;
+        transition: all 0.5s ease;
     }
+
+        .main-background.light {
+            background-image: linear-gradient(135deg, rgba(0, 114, 207, 1), rgba(0, 71, 130, 0.3)), url('/BG/MainBG.png');
+        }
+
+        .main-background.dark {
+            background-image: linear-gradient(135deg, rgba(15, 23, 42, 1), rgba(2, 6, 23, 0.3)), url('/BG/MainBG.png');
+        }
+
+        .main-background.lightest {
+            background-image: linear-gradient(135deg, rgba(248, 250, 252, 1), rgba(226, 232, 240, 0.3)), url('/BG/MainBG.png');
+        }
 
     .mud-layout {
         background: transparent !important;
@@ -244,7 +257,7 @@ else
     <MudSnackbarProvider />
 
     <MudLayout>
-        <div class="main-background"></div>
+        <div class="@GetBackgroundClass()"></div>
         <MudAppBar Elevation="1" Class="@GetAppBarClass()">
             <div class="desktop-nav">
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
@@ -263,16 +276,19 @@ else
             <MudSpacer />
 
             <div class="desktop-nav">
-                @if (!string.IsNullOrEmpty(_userImagePath))
-                {
-                    <div class="d-flex align-center mr-2 user-profile-section" style="gap: 8px;">
-                        <img src="@_userImagePath"
-                             alt="User Profile"
-                             style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer;"
-                             @onclick="OpenProfilePreviewDialog" />
-                        <MudText Typo="Typo.subtitle2">@UserState.Username</MudText>
-                    </div>
-                }
+                <div class="d-flex align-center mr-2 user-profile-section" style="gap: 8px;">
+                    <MudAvatar Size="Size.Small" Color="GetAvatarColor()" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;">
+                        @if (!string.IsNullOrEmpty(_userImagePath))
+                        {
+                            <MudImage Src="@_userImagePath" />
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Person" />
+                        }
+                    </MudAvatar>
+                    <MudText Typo="Typo.subtitle2" @onclick="@(async () => await OpenUpdateAccountDialog())" Style="cursor: pointer;">@UserState.Username</MudText>
+                </div>
 
                 <MudIconButton Icon="@DarkLightModeButtonIcon"
                                Color="Color.Inherit"
@@ -284,13 +300,16 @@ else
             </div>
 
             <div class="mobile-menu-toggle">
-                @if (!string.IsNullOrEmpty(_userImagePath))
-                {
-                    <img src="@_userImagePath"
-                         alt="User Profile"
-                         style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; cursor: pointer;"
-                         @onclick="OpenProfilePreviewDialog" />
-                }
+                <MudAvatar Size="Size.Small" Color="GetAvatarColor()" @onclick="OpenProfilePreviewDialog" Style="cursor: pointer;" Class="mr-1">
+                    @if (!string.IsNullOrEmpty(_userImagePath))
+                    {
+                        <MudImage Src="@_userImagePath" />
+                    }
+                    else
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                    }
+                </MudAvatar>
 
                 <MudIconButton Icon="@Icons.Material.Filled.Menu"
                                Color="Color.Inherit"
@@ -305,19 +324,19 @@ else
                    Class="@($"desktop-drawer {GetDrawerClass()}")">
             <NavMenu />
             <MudDivider Class="my-2" />
-            <MudNavLink OnClick="@(async () => await OpenUpdateAccountDialog())"
-                        Icon="@Icons.Material.Outlined.ManageAccounts">
-                Update Account
-            </MudNavLink>
-
-            @if (UserState.Role == "Admin")
-            {
-                <MudNavLink Href="/admin/settings"
-                            Match="NavLinkMatch.All"
-                            Icon="@Icons.Material.Outlined.Settings">
-                    Settings
-                </MudNavLink>
-            }
+            <MudNavMenu>
+                <MudNavGroup Title="Administration" Icon="@Icons.Material.Outlined.AdminPanelSettings" Expanded="false">
+                    @if (UserState.Role == "Admin")
+                    {
+                        <MudNavLink Href="/admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.People">
+                            Manage Users
+                        </MudNavLink>
+                        <MudNavLink Href="/admin/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Settings">
+                            Settings
+                        </MudNavLink>
+                    }
+                </MudNavGroup>
+            </MudNavMenu>
         </MudDrawer>
 
         <MudDrawer @bind-Open="_mobileDrawerOpen"
@@ -329,42 +348,29 @@ else
             <MudDrawerHeader>
                 <MudText Typo="Typo.h6">Menu</MudText>
             </MudDrawerHeader>
-            <MudNavMenu>
-                @if (UserState.Role == "Admin")
-                {
-                    <MudNavLink Href="/"
-                                Match="NavLinkMatch.Prefix"
-                                Icon="@Icons.Material.Filled.People"
-                                OnClick="@CloseMobileDrawer">
-                        Manage Users
-                    </MudNavLink>
-                }
-                else if (UserState.Role == "AVP" || UserState.Role == "Area Head" || UserState.Role == "Store Head")
-                {
-                    <MudNavLink Href="/"
-                                Match="NavLinkMatch.Prefix"
-                                Icon="@Icons.Material.Filled.Groups"
-                                OnClick="@CloseMobileDrawer">
-                        View Users
-                    </MudNavLink>
-                }
+            <MudNavMenu d-flex flex-column style="height: 100%;">
+                <!-- Main Links placeholder if needed, NavMenu already has one -->
+                <NavMenu />
+
+                <MudSpacer />
+
+                <MudNavGroup Title="Administration" Icon="@Icons.Material.Outlined.AdminPanelSettings" Expanded="false">
+                    @if (UserState.Role == "Admin")
+                    {
+                        <MudNavLink Href="/admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.People" OnClick="@CloseMobileDrawer">
+                            Manage Users
+                        </MudNavLink>
+                        <MudNavLink Href="/admin/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Settings" OnClick="@CloseMobileDrawer">
+                            Settings
+                        </MudNavLink>
+                    }
+                </MudNavGroup>
 
                 <MudDivider Class="my-2" Style="border-color: var(--mud-palette-secondary); border-width: 1px;" />
 
-                <MudNavLink OnClick="@(async () => { await OpenUpdateAccountDialog(); CloseMobileDrawer(); })"
-                            Icon="@Icons.Material.Outlined.ManageAccounts">
+                <MudNavLink OnClick="@(async () => { await OpenUpdateAccountDialog(); CloseMobileDrawer(); })" Icon="@Icons.Material.Outlined.ManageAccounts">
                     Update Account
                 </MudNavLink>
-
-                @if (UserState.Role == "Admin")
-                {
-                    <MudNavLink Href="/admin/settings"
-                                Match="NavLinkMatch.All"
-                                Icon="@Icons.Material.Outlined.Settings"
-                                OnClick="@CloseMobileDrawer">
-                        Settings
-                    </MudNavLink>
-                }
 
                 <MudNavLink OnClick="@DarkModeToggleAndClose"
                             Icon="@DarkLightModeButtonIcon">
@@ -455,7 +461,7 @@ else
 
             _userImagePath = currentUser.ImageData != null && !string.IsNullOrEmpty(currentUser.ImageMimeType)
                 ? $"data:{currentUser.ImageMimeType};base64,{Convert.ToBase64String(currentUser.ImageData)}"
-                : "/Uploads/UserImg.png";
+                : null;
 
             _isCheckingAuth = false;
             _isAuthenticated = true;
@@ -517,6 +523,15 @@ else
         await Logout();
     }
 
+    private Color GetAvatarColor()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => Color.Primary,
+            _ => Color.Inherit
+        };
+    }
+
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
@@ -562,6 +577,17 @@ else
             ThemeMode.Light => "admin-drawer-light",
             ThemeMode.Dark => "admin-drawer-dark",
             _ => "admin-drawer-lightest"
+        };
+    }
+
+    private string GetBackgroundClass()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "main-background lightest",
+            ThemeMode.Light => "main-background light",
+            ThemeMode.Dark => "main-background dark",
+            _ => "main-background lightest"
         };
     }
 
@@ -639,12 +665,16 @@ else
     private readonly PaletteLight _lightPalette = new()
     {
         Primary = "#0072cf",
+        Surface = "#005bb7",
         Black = "#ffffff",
         AppbarText = "#FFFFFF",
         AppbarBackground = "#0072cf",
         DrawerBackground = "#0072cf",
         DrawerIcon = "#ffffff",
         DrawerText = "#ffffff",
+        ActionDefault = "#ffffff",
+        LinesDefault = "rgba(255,255,255, 0.5)",
+        Divider = "rgba(255,255,255, 0.2)",
         GrayLight = "#e8e8e8",
         GrayLighter = "#f9f9f9",
         Background = "#0072cf",
@@ -734,7 +764,7 @@ else
 
                 _userImagePath = updatedUser.ImageData != null && !string.IsNullOrEmpty(updatedUser.ImageMimeType)
                     ? $"data:{updatedUser.ImageMimeType};base64,{Convert.ToBase64String(updatedUser.ImageData)}"
-                    : "/Uploads/UserImg.png";
+                    : null;
 
                 StateHasChanged();
             }
