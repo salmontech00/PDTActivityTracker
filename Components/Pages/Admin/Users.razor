@@ -344,7 +344,7 @@
         </MudButton>
 
         <MudGrid Spacing="3">
-            <MudItem xs="12" sm="4" md="4">
+            <MudItem xs="12" sm="4" md="8">
                 <MudTextField T="string"
                               @bind-Value="_searchTerm"
                               @bind-Value:after="ApplyFilters"
@@ -358,7 +358,7 @@
                               Margin="Margin.Dense"
                               Class="rounded-lg" />
             </MudItem>
-            <MudItem xs="12" sm="4" md="4">
+            <MudItem xs="12" sm="4" md="2">
                 <MudSelect T="string"
                            @bind-Value="_roleFilter"
                            @bind-Value:after="ApplyFilters"
@@ -373,7 +373,7 @@
                     <MudSelectItem Value="@("Store Head")">Store Head</MudSelectItem>
                 </MudSelect>
             </MudItem>
-            <MudItem xs="12" sm="4" md="4">
+            <MudItem xs="12" sm="4" md="2">
                 <MudSelect T="string"
                            @bind-Value="_statusFilter"
                            @bind-Value:after="ApplyFilters"
