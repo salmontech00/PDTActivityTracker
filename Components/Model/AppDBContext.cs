@@ -19,5 +19,6 @@ namespace PDTActivityTracker.Model
         }
 
         public DbSet<User> Users { get; set; }
+        public DbSet<ChecklistItem> ChecklistItems { get; set; }
     }
 }

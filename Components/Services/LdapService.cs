@@ -9,6 +9,7 @@ namespace PDTActivityTracker.Components.Services
         public string Server { get; set; } = string.Empty;
         public int Port { get; set; } = 389;
         public string Domain { get; set; } = string.Empty;
+        public string SearchBase { get; set; } = string.Empty;
         public bool UseSsl { get; set; } = false;
     }
 
@@ -34,21 +35,8 @@ namespace PDTActivityTracker.Components.Services
 
             try
             {
-                using var connection = new LdapConnection(new LdapDirectoryIdentifier(_settings.Server, _settings.Port));
-                connection.SessionOptions.ProtocolVersion = 3;
-
-                if (_settings.UseSsl)
-                {
-                    connection.SessionOptions.SecureSocketLayer = true;
-                }
-
-                // Bind with user credentials
-                // Note: For AD, the username might need to be 'domain\username' or the full email.
-                // We'll try the email as the credential.
-                var credential = new NetworkCredential(email, password);
-                connection.AuthType = AuthType.Negotiate; // Or AuthType.Basic depending on server config
-                connection.Bind(credential);
-
+                using var connection = CreateConnection();
+                connection.Bind(new NetworkCredential(email, password));
                 return true;
             }
             catch (LdapException ex)
@@ -63,16 +51,68 @@ namespace PDTActivityTracker.Components.Services
             }
         }
 
-        public LdapUser? GetUserDetails(string email)
+        private LdapConnection CreateConnection()
         {
-            // Implementation to fetch user details from AD after authentication
-            // Selective LDAP search would go here.
-            // For now, we return a basic object based on the email.
+            var connection = new LdapConnection(new LdapDirectoryIdentifier(_settings.Server, _settings.Port));
+            connection.SessionOptions.ProtocolVersion = 3;
+            if (_settings.UseSsl)
+            {
+                connection.SessionOptions.SecureSocketLayer = true;
+            }
+            connection.AuthType = AuthType.Negotiate;
+            return connection;
+        }
+
+        public LdapUser? GetUserDetails(string email, string password)
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                connection.Bind(new NetworkCredential(email, password));
+
+                var filter = $"(mail={email})";
+                var searchRequest = new SearchRequest(
+                    _settings.SearchBase,
+                    filter,
+                    SearchScope.Subtree,
+                    "displayName", "sAMAccountName", "mail", "givenName", "sn"
+                );
+
+                var response = (SearchResponse)connection.SendRequest(searchRequest);
+
+                if (response.Entries.Count > 0)
+                {
+                    var entry = response.Entries[0];
+                    var displayName = entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty;
+                    var samAccountName = entry.Attributes["sAMAccountName"]?[0]?.ToString() ?? email.Split('@')[0];
+                    var mail = entry.Attributes["mail"]?[0]?.ToString() ?? email;
+
+                    // If displayName is empty, fallback to givenName + sn
+                    if (string.IsNullOrEmpty(displayName))
+                    {
+                        var gn = entry.Attributes["givenName"]?[0]?.ToString() ?? string.Empty;
+                        var sn = entry.Attributes["sn"]?[0]?.ToString() ?? string.Empty;
+                        displayName = $"{gn} {sn}".Trim();
+                    }
+
+                    return new LdapUser
+                    {
+                        Username = samAccountName,
+                        Email = mail,
+                        DisplayName = string.IsNullOrEmpty(displayName) ? samAccountName : displayName
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching LDAP user details for {Email}", email);
+            }
+
             return new LdapUser
             {
                 Username = email.Split('@')[0],
                 Email = email,
-                DisplayName = email.Split('@')[0] // Placeholder
+                DisplayName = email.Split('@')[0]
             };
         }
     }

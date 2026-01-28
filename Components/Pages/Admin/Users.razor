@@ -574,18 +574,57 @@
         }
         else
         {
-            <MudCard Elevation="1" Style="padding: 15px; text-align: center;">
-                <MudText Typo="Typo.body1">
+            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                <div class="mobile-card-content" style="text-align: center; padding: 48px 24px;">
+                    <MudIcon Icon="@(HasActiveFilters() ? Icons.Material.Filled.PersonSearch : Icons.Material.Filled.PersonOff)"
+                             Size="Size.Large"
+                             Style="font-size: 4rem; opacity: 0.3; margin-bottom: 16px;" />
+
+                    <MudText Typo="Typo.h6" Style="font-weight: 700; margin-bottom: 8px;">
+                        @if (HasActiveFilters())
+                        {
+                            <text>No Users Found</text>
+                        }
+                        else
+                        {
+                            <text>No Users Available</text>
+                        }
+                    </MudText>
+
+                    <MudText Typo="Typo.body2" Style="opacity: 0.7; margin-bottom: 24px;">
+                        @if (HasActiveFilters())
+                        {
+                            <text>Try adjusting your search terms or filters to find the users you're looking for.</text>
+                        }
+                        else
+                        {
+                            <text>Start building your team by adding your first user to the system.</text>
+                        }
+                    </MudText>
+
                     @if (HasActiveFilters())
                     {
-                        <text>No users found matching your filters.</text>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.RestartAlt"
+                                   OnClick="ClearFilters"
+                                   Class="modern-button">
+                            Clear Filters
+                        </MudButton>
                     }
                     else
                     {
-                        <text>No users found</text>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                                   OnClick="OpenAddUserDialog"
+                                   Class="@($"modern-button {GetThemeClass()}")"
+                                   Style="@GetButtonStyle()">
+                            Add First User
+                        </MudButton>
                     }
-                </MudText>
-            </MudCard>
+                </div>
+            </MudPaper>
         }
     </div>
 </div>

@@ -106,6 +106,23 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         BEGIN
             ALTER TABLE [Users] DROP COLUMN [Area];
         END
+
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ChecklistItems]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [ChecklistItems] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [TaskName] nvarchar(max) NOT NULL,
+                [Description] nvarchar(max) NULL,
+                [Category] nvarchar(max) NOT NULL,
+                [IsPhotoRequired] bit NOT NULL,
+                [NumberOfPhotos] int NOT NULL,
+                [IsMandatory] bit NOT NULL,
+                [Frequency] nvarchar(max) NOT NULL,
+                [IsRemarksRequired] bit NOT NULL,
+                [SortOrder] int NOT NULL,
+                CONSTRAINT [PK_ChecklistItems] PRIMARY KEY ([Id])
+            );
+        END
     ");
 
     if (!await db.Users.AnyAsync())

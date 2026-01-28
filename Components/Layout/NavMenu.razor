@@ -54,7 +54,13 @@
 </style>
 
 <MudNavMenu>
-    <!-- Main content links can be added here -->
+    <div class="nav-section-header-v2" style="color: @GetMenuColor()">Menu</div>
+    @if (UserState.Role == "Admin")
+    {
+        <MudNavLink Href="/admin/checklist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.PlaylistAddCheck">
+            Manage Checklists
+        </MudNavLink>
+    }
 </MudNavMenu>
 
 @code {
@@ -67,6 +73,12 @@
     private void OnThemeChanged()
     {
         StateHasChanged();
+    }
+
+    private string GetMenuColor()
+    {
+        if (ThemeService == null) return "#64748b";
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "#64748b" : "rgba(255, 255, 255, 0.7)";
     }
 
     public void Dispose()

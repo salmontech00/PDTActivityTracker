@@ -415,7 +415,7 @@
 
                 if (ldapSuccess)
                 {
-                    var ldapDetails = LdapService.GetUserDetails(Username);
+                    var ldapDetails = LdapService.GetUserDetails(Username, Password);
                     user = await db.Users.FirstOrDefaultAsync(u => u.Email == Username);
 
                     if (user == null && ldapDetails != null)
@@ -431,6 +431,22 @@
                         };
                         db.Users.Add(user);
                         await db.SaveChangesAsync();
+                    }
+                    else if (user != null && ldapDetails != null)
+                    {
+                        // Update existing user details from LDAP if they've changed
+                        bool changed = false;
+                        if (user.Fullname != ldapDetails.DisplayName)
+                        {
+                            user.Fullname = ldapDetails.DisplayName;
+                            changed = true;
+                        }
+
+                        if (changed)
+                        {
+                            db.Users.Update(user);
+                            await db.SaveChangesAsync();
+                        }
                     }
                 }
                 else

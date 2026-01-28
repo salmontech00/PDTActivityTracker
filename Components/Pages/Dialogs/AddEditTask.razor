@@ -1,0 +1,172 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject ISnackbar Snackbar
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    .glass-dialog .mud-button {
+        border-radius: 12px !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-input-adornment,
+    .glass-dialog.light .mud-icon-root {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+</style>
+
+<MudDialog Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="@GetTitleStyle()">@(IsEdit ? "Edit Task" : "Add New Task")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="_model">
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Task Name" @bind-Value="_model.TaskName" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Category" @bind-Value="_model.Category" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var cat in CategoryOptions)
+                        {
+                            <MudSelectItem Value="@cat">@cat</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Frequency" @bind-Value="_model.Frequency" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
+                        <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
+                        <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudSwitch T="bool" Label="Mandatory Field?" @bind-Value="_model.IsMandatory" Color="Color.Primary" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudSwitch T="bool" Label="Remarks Required?" @bind-Value="_model.IsRemarksRequired" Color="Color.Primary" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudSwitch T="bool" Label="Photo Required?" @bind-Value="_model.IsPhotoRequired" Color="Color.Primary" />
+                </MudItem>
+                @if (_model.IsPhotoRequired)
+                {
+                    <MudItem xs="12" sm="12">
+                        <MudNumericField T="int" Label="Number of Photos" @bind-Value="_model.NumberOfPhotos" Min="1" Max="5" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                }
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Style="@GetButtonStyle()">
+            @(IsEdit ? "Update Task" : "Add Task")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public ChecklistItem? TaskToEdit { get; set; }
+    [Parameter] public List<string> CategoryOptions { get; set; } = new();
+
+    private ChecklistItem _model = new();
+    private MudForm _form = default!;
+    private bool IsEdit => TaskToEdit != null;
+
+    protected override void OnInitialized()
+    {
+        if (IsEdit)
+        {
+            _model = new ChecklistItem
+            {
+                Id = TaskToEdit!.Id,
+                TaskName = TaskToEdit.TaskName,
+                Description = TaskToEdit.Description,
+                Category = TaskToEdit.Category,
+                IsPhotoRequired = TaskToEdit.IsPhotoRequired,
+                NumberOfPhotos = TaskToEdit.NumberOfPhotos,
+                IsMandatory = TaskToEdit.IsMandatory,
+                Frequency = TaskToEdit.Frequency,
+                IsRemarksRequired = TaskToEdit.IsRemarksRequired,
+                SortOrder = TaskToEdit.SortOrder
+            };
+        }
+        else
+        {
+            _model.Category = CategoryOptions.FirstOrDefault() ?? "";
+        }
+    }
+
+    private string GetThemeClass() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+                                      ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleStyle() => $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")}; font-weight: 700;";
+    private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important; background-color: #ffffff !important;" : "";
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        if (IsEdit)
+        {
+            var taskInDb = await db.ChecklistItems.FindAsync(_model.Id);
+            if (taskInDb != null)
+            {
+                db.Entry(taskInDb).CurrentValues.SetValues(_model);
+                await db.SaveChangesAsync();
+                Snackbar.Add("Task updated", Severity.Success);
+            }
+        }
+        else
+        {
+            _model.SortOrder = await db.ChecklistItems.CountAsync();
+            db.ChecklistItems.Add(_model);
+            await db.SaveChangesAsync();
+            Snackbar.Add("Task added", Severity.Success);
+        }
+
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

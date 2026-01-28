@@ -179,9 +179,18 @@
 <MudDialog Class="profile-preview-dialog" Style="@GetDialogStyle()">
     <DialogContent>
         <div class="profile-preview-content">
-            <img src="@(ImagePath ?? "/Uploads/UserImg.png")"
-                 alt="User Profile"
-                 class="profile-preview-image" />
+            @if (!string.IsNullOrEmpty(ImagePath))
+            {
+                <img src="@ImagePath"
+                     alt="User Profile"
+                     class="profile-preview-image" />
+            }
+            else
+            {
+                <div class="profile-preview-image d-flex align-center justify-center" style="@GetPlaceholderStyle()">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="@GetPlaceholderIconStyle()" />
+                </div>
+            }
             <MudText Typo="Typo.h6" Class="@GetUsernameClass()">
                 @(Username ?? "User")
             </MudText>
@@ -252,5 +261,20 @@
     private string GetRoleClass()
     {
         return $"profile-preview-role {GetThemeClass()}";
+    }
+
+    private string GetPlaceholderStyle()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "background-color: rgba(0, 114, 207, 0.1); color: #0072cf;",
+            _ => "background-color: rgba(255, 255, 255, 0.1); color: #ffffff;"
+        };
+    }
+
+    private string GetPlaceholderIconStyle()
+    {
+        // Responsive icon sizing based on parent container size
+        return "font-size: clamp(150px, 40vw, 250px);";
     }
 }
