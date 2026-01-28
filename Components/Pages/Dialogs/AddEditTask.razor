@@ -87,8 +87,17 @@
                 </MudItem>
                 @if (_model.IsPhotoRequired)
                 {
-                    <MudItem xs="12" sm="12">
-                        <MudNumericField T="int" Label="Number of Photos" @bind-Value="_model.NumberOfPhotos" Min="1" Max="5" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudItem xs="12" sm="8">
+                        <MudNumericField T="int" Label="Number of Photos" @bind-Value="_model.NumberOfPhotos" Min="0" Max="20"
+                                         Disabled="@(_model.NumberOfPhotos == 0)"
+                                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         HelperText="@(_model.NumberOfPhotos == 0 ? "Infinite photos allowed" : "")" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4" class="d-flex align-center">
+                        <MudCheckBox T="bool" Label="Limitless"
+                                     Value="@(_model.NumberOfPhotos == 0)"
+                                     ValueChanged="@((bool val) => _model.NumberOfPhotos = val ? 0 : 1)"
+                                     Color="Color.Primary" Dense="true" />
                     </MudItem>
                 }
             </MudGrid>
@@ -136,6 +145,10 @@
         else
         {
             _model.Category = CategoryOptions.FirstOrDefault() ?? "";
+            _model.IsMandatory = true;
+            _model.IsRemarksRequired = true;
+            _model.IsPhotoRequired = true;
+            _model.NumberOfPhotos = 1;
         }
     }
 
