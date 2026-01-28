@@ -330,25 +330,33 @@
     .preview-task-header {
         display: flex;
         align-items: flex-start;
-        gap: 8px;
+        gap: 12px;
         width: 100%;
+    }
+
+    .preview-header-content-group {
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        gap: 8px;
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     .preview-task-name-container {
         display: flex;
         align-items: flex-start;
-        flex: 1;
         gap: 8px;
         padding-top: 2px;
+        flex: 0 0 auto;
     }
 
-    .preview-task-content {
+    .preview-description-row {
         display: flex;
-        flex-direction: row;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 8px 16px;
-        flex: 1;
+        align-items: flex-start;
+        gap: 4px;
+        flex: 0 1 auto;
+        min-width: 0;
     }
 
     .preview-upload-btn {
@@ -356,13 +364,8 @@
         text-transform: none !important;
         font-weight: 600 !important;
         font-size: 0.75rem !important;
-    }
-
-    .preview-description-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 4px;
-        flex: 1 1 auto;
+        flex: 0 0 auto;
+        margin-left: auto;
     }
 
     .preview-remarks-container {
@@ -377,6 +380,11 @@
             flex-wrap: wrap;
         }
 
+        .preview-header-content-group {
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
         .preview-task-name-container {
             width: 100%;
         }
@@ -385,12 +393,7 @@
             width: 100%;
             padding-left: 0;
             margin-top: 8px;
-        }
-
-        .preview-task-content {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 4px;
+            flex: 0 0 100%;
         }
 
         .preview-upload-btn {
@@ -723,28 +726,30 @@
 
                                 <div class="preview-task-card">
                                     <div class="preview-task-header">
-                                        <div class="preview-task-name-container">
-                                            <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
-                                            <MudCheckBox T="bool" Color="Color.Primary" Dense="true" Class="pa-0" />
+                                        <div class="preview-header-content-group">
+                                            <div class="preview-task-name-container">
+                                                <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
+                                                <MudCheckBox T="bool" Color="Color.Primary" Dense="true" Class="pa-0" />
 
-                                            <div class="d-flex align-center flex-wrap gap-2">
-                                                @if (task.IsMandatory)
-                                                {
-                                                    <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
-                                                }
-                                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
-                                                <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                    @task.TaskName
-                                                </MudText>
+                                                <div class="d-flex align-center flex-wrap gap-2">
+                                                    @if (task.IsMandatory)
+                                                    {
+                                                        <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
+                                                    }
+                                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
+                                                    <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
+                                                        @task.TaskName
+                                                    </MudText>
+                                                </div>
                                             </div>
+
+                                            @if (!string.IsNullOrEmpty(task.Description))
+                                            {
+                                                <div class="preview-description-row">
+                                                    <MudText Typo="Typo.body1" Style="opacity: 1;">@task.Description</MudText>
+                                                </div>
+                                            }
                                         </div>
-
-                                        @if (!string.IsNullOrEmpty(task.Description))
-                                        {
-                                            <div class="preview-description-row">
-                                                <MudText Typo="Typo.body1" Style="opacity: 1;">@task.Description</MudText>
-                                            </div>
-                                        }
 
                                         @if (task.IsPhotoRequired)
                                         {
