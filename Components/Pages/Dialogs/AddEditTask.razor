@@ -44,7 +44,7 @@
         <MudForm @ref="_form" Model="_model">
             <MudGrid Spacing="2">
                 <MudItem xs="12">
-                    <MudTextField T="string" Label="Task Name" @bind-Value="_model.TaskName" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField T="string" Label="Task Name (Optional)" @bind-Value="_model.TaskName" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12">
                     <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -63,6 +63,18 @@
                         <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
                         <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
                     </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudAutocomplete T="string"
+                                     Label="Section (Optional)"
+                                     @bind-Value="_model.Section"
+                                     SearchFunc="@SearchSections"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     CoerceText="false"
+                                     CoerceValue="false"
+                                     Clearable="true"
+                                     HelperText="Select existing or type a new section name" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
                     <MudSwitch T="bool" Label="Mandatory Field?" @bind-Value="_model.IsMandatory" Color="Color.Primary" />
@@ -97,10 +109,13 @@
 
     private ChecklistItem _model = new();
     private MudForm _form = default!;
+    private List<string> _existingSections = new();
     private bool IsEdit => TaskToEdit != null;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await LoadExistingSections();
+
         if (IsEdit)
         {
             _model = new ChecklistItem
@@ -114,13 +129,43 @@
                 IsMandatory = TaskToEdit.IsMandatory,
                 Frequency = TaskToEdit.Frequency,
                 IsRemarksRequired = TaskToEdit.IsRemarksRequired,
-                SortOrder = TaskToEdit.SortOrder
+                SortOrder = TaskToEdit.SortOrder,
+                Section = TaskToEdit.Section
             };
         }
         else
         {
             _model.Category = CategoryOptions.FirstOrDefault() ?? "";
         }
+    }
+
+    private async Task LoadExistingSections()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _existingSections = await db.ChecklistItems
+            .Where(c => !string.IsNullOrEmpty(c.Section))
+            .Select(c => c.Section!)
+            .Distinct()
+            .OrderBy(s => s)
+            .ToListAsync();
+    }
+
+    private Task<IEnumerable<string>> SearchSections(string value, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(_existingSections.AsEnumerable());
+
+        var filtered = _existingSections
+            .Where(s => s.Contains(value, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // If the typed value is not in the list, allow it as a new option
+        if (!filtered.Any(s => s.Equals(value, StringComparison.OrdinalIgnoreCase)))
+        {
+            filtered.Insert(0, value);
+        }
+
+        return Task.FromResult(filtered.AsEnumerable());
     }
 
     private string GetThemeClass() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
@@ -170,3 +215,4 @@
 
     private void Cancel() => MudDialog.Cancel();
 }
+

@@ -6,13 +6,14 @@ namespace PDTActivityTracker.Components.Model
     {
         public int Id { get; set; }
 
-        [Required]
-        public string TaskName { get; set; } = default!;
+        public string? TaskName { get; set; }
 
         public string? Description { get; set; }
 
         [Required]
         public string Category { get; set; } = default!;
+
+        public string? Section { get; set; }
 
         public bool IsPhotoRequired { get; set; } = false;
 

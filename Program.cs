@@ -111,9 +111,10 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         BEGIN
             CREATE TABLE [ChecklistItems] (
                 [Id] int NOT NULL IDENTITY(1, 1),
-                [TaskName] nvarchar(max) NOT NULL,
+                [TaskName] nvarchar(max) NULL,
                 [Description] nvarchar(max) NULL,
                 [Category] nvarchar(max) NOT NULL,
+                [Section] nvarchar(max) NULL,
                 [IsPhotoRequired] bit NOT NULL,
                 [NumberOfPhotos] int NOT NULL,
                 [IsMandatory] bit NOT NULL,
@@ -122,6 +123,17 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [SortOrder] int NOT NULL,
                 CONSTRAINT [PK_ChecklistItems] PRIMARY KEY ([Id])
             );
+        END
+
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Section' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [Section] nvarchar(max) NULL;
+        END
+
+        -- Make TaskName nullable for existing tables
+        IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'TaskName' AND Object_ID = Object_ID(N'ChecklistItems') AND is_nullable = 0)
+        BEGIN
+            ALTER TABLE [ChecklistItems] ALTER COLUMN [TaskName] nvarchar(max) NULL;
         END
     ");
 
