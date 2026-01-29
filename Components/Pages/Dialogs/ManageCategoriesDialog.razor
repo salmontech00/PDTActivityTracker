@@ -7,12 +7,36 @@
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 
 <style>
-    .category-dialog .mud-button {
-        border-radius: 12px !important;
+    /* SHARED GLASS DIALOG STYLES */
+
+    .glass-dialog .mud-button {
+        border: none !important;
         text-transform: none !important;
         font-weight: 600;
     }
 
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    /* White Text/Inputs */
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-icon-root,
+    .glass-dialog.light .mud-input-adornment {
+        color: #ffffff !important;
+    }
+
+    /* White Borders */
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #ffffff !important;
+        border-width: 2px !important;
+    }
+
+    /* Category Item Hover */
     .category-item {
         border-radius: 12px;
         transition: all 0.2s;
@@ -28,36 +52,43 @@
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.1);
     }
+
+    /* --- LIGHTEST MODE --- */
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.lightest .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 1) !important;
+    }
+
+    .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+    }
 </style>
 
-<MudDialog Class="@($"rounded-xl pa-2 category-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+<MudDialog Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
-        <MudText Typo="Typo.h6" Style="@GetTitleStyle()">Manage Categories</MudText>
+        <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Manage Categories</MudText>
     </TitleContent>
     <DialogContent>
-        <div class="mb-4">
-            <MudGrid Spacing="2" Class="align-end">
-                <MudItem xs="12" sm="4">
-                    <MudTextField @bind-Value="_newCategory.Name" Label="Category Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" sm="4">
-                    <MudTextField @bind-Value="_newCategory.Icon" Label="Icon (MudBlazor Icon String)" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                  HelperText="e.g., Icons.Material.Filled.List" />
-                </MudItem>
-                <MudItem xs="12" sm="2">
-                    <MudTextField @bind-Value="_newCategory.ColorClass" Label="CSS Class" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                </MudItem>
-                <MudItem xs="12" sm="2">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveCategory" FullWidth="true" Style="height: 40px;">
-                        @(_editingCategory == null ? "ADD" : "UPDATE")
-                    </MudButton>
-                </MudItem>
-            </MudGrid>
-            @if (_editingCategory != null)
-            {
-                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" OnClick="CancelEdit" Class="mt-1">Cancel Edit</MudButton>
-            }
+        <div class="mb-4 d-flex align-center gap-2">
+            <MudTextField @bind-Value="_newCategory.Name" Label="Category Name" Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveCategory" Style="@GetButtonStyle()">
+                @(_editingCategory == null ? "ADD" : "UPDATE")
+            </MudButton>
         </div>
+        @if (_editingCategory != null)
+        {
+            <MudButton Variant="Variant.Text" OnClick="CancelEdit" Class="mt-1" Style="@GetCancelButtonStyle()">Cancel Edit</MudButton>
+        }
 
         <MudDivider Class="my-4" Style="opacity: 0.1;" />
 
@@ -67,13 +98,12 @@
                 @foreach (var cat in _categories.OrderBy(c => c.SortOrder))
                 {
                     <div class="d-flex align-center pa-2 category-item mb-2">
-                        <MudIcon Icon="@cat.Icon" Class="mr-3" Color="Color.Primary" />
+                        <MudIcon Icon="@cat.Icon" Class="mr-3" Style="@GetCategoryIconStyle()" />
                         <div class="flex-grow-1">
-                            <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Class: @cat.ColorClass</MudText>
+                            <MudText Typo="Typo.body1" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">@cat.Name</MudText>
                         </div>
                         <div class="d-flex gap-1">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => StartEdit(cat))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Style="@GetCategoryIconStyle()" OnClick="@(() => StartEdit(cat))" />
                             <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(cat))" />
                         </div>
                     </div>
@@ -88,7 +118,7 @@
         </div>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Close" Color="Color.Primary">Close</MudButton>
+        <MudButton OnClick="Close" Style="@GetCancelButtonStyle()">Close</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -121,6 +151,7 @@
         using var db = await DbFactory.CreateDbContextAsync();
         if (_editingCategory == null)
         {
+            UpdateIconAndColor(_newCategory);
             _newCategory.SortOrder = _categories.Count;
             db.Categories.Add(_newCategory);
             Snackbar.Add("Category added", Severity.Success);
@@ -130,6 +161,15 @@
             var catInDb = await db.Categories.FindAsync(_editingCategory.Id);
             if (catInDb != null)
             {
+                // If the name changed, we could re-evaluate the icon,
+                // but "it is what it is" implies sticking to current unless it's a new entry.
+                // However, if the user RENAMEs it, they probably want a relevant icon.
+                // Let's only update if the name actually changed.
+                if (catInDb.Name != _newCategory.Name)
+                {
+                    UpdateIconAndColor(_newCategory);
+                }
+
                 catInDb.Name = _newCategory.Name;
                 catInDb.Icon = _newCategory.Icon;
                 catInDb.ColorClass = _newCategory.ColorClass;
@@ -139,9 +179,50 @@
         }
 
         await db.SaveChangesAsync();
+        ResetForm();
+        await LoadCategories();
+    }
+
+    private void UpdateIconAndColor(Category cat)
+    {
+        var name = cat.Name?.ToLower() ?? "";
+        cat.Icon = name switch
+        {
+            var s when s.Contains("opening") => Icons.Material.Filled.DoorFront,
+            var s when s.Contains("closing") => Icons.Material.Filled.DoorBack,
+            var s when s.Contains("asset") => Icons.Material.Filled.Devices,
+            var s when s.Contains("human resource") || s.Contains("hr") => Icons.Material.Filled.Groups,
+            var s when s.Contains("inventory") => Icons.Material.Filled.Inventory,
+            var s when s.Contains("marketing") => Icons.Material.Filled.Campaign,
+            var s when s.Contains("expense") || s.Contains("repair") => Icons.Material.Filled.Build,
+            var s when s.Contains("work") || s.Contains("office") || s.Contains("meeting") => Icons.Material.Filled.Work,
+            var s when s.Contains("home") || s.Contains("personal") || s.Contains("house") => Icons.Material.Filled.Home,
+            var s when s.Contains("shop") || s.Contains("buy") || s.Contains("store") || s.Contains("grocery") => Icons.Material.Filled.ShoppingCart,
+            var s when s.Contains("health") || s.Contains("gym") || s.Contains("fitness") || s.Contains("exercise") || s.Contains("sport") => Icons.Material.Filled.FitnessCenter,
+            var s when s.Contains("food") || s.Contains("eat") || s.Contains("lunch") || s.Contains("dinner") || s.Contains("restaurant") => Icons.Material.Filled.Restaurant,
+            var s when s.Contains("car") || s.Contains("travel") || s.Contains("trip") || s.Contains("drive") => Icons.Material.Filled.DirectionsCar,
+            var s when s.Contains("school") || s.Contains("study") || s.Contains("learn") || s.Contains("education") => Icons.Material.Filled.School,
+            var s when s.Contains("finance") || s.Contains("money") || s.Contains("bill") || s.Contains("pay") => Icons.Material.Filled.AttachMoney,
+            var s when s.Contains("fun") || s.Contains("entertain") || s.Contains("hobby") || s.Contains("game") => Icons.Material.Filled.Celebration,
+            var s when s.Contains("coding") || s.Contains("dev") || s.Contains("program") || s.Contains("software") => Icons.Material.Filled.Code,
+            var s when s.Contains("social") || s.Contains("friend") || s.Contains("chat") => Icons.Material.Filled.Chat,
+            var s when s.Contains("email") || s.Contains("mail") || s.Contains("message") => Icons.Material.Filled.Email,
+            var s when s.Contains("call") || s.Contains("phone") => Icons.Material.Filled.Phone,
+            var s when s.Contains("check") || s.Contains("todo") || s.Contains("task") => Icons.Material.Filled.PlaylistAddCheck,
+            var s when s.Contains("bug") || s.Contains("fix") || s.Contains("error") => Icons.Material.Filled.BugReport,
+            var s when s.Contains("music") || s.Contains("song") || s.Contains("audio") => Icons.Material.Filled.MusicNote,
+            var s when s.Contains("video") || s.Contains("movie") || s.Contains("watch") => Icons.Material.Filled.Movie,
+            var s when s.Contains("photo") || s.Contains("pic") || s.Contains("image") || s.Contains("camera") => Icons.Material.Filled.CameraAlt,
+            _ => Icons.Material.Filled.Category
+        };
+
+        cat.ColorClass = "category-default";
+    }
+
+    private void ResetForm()
+    {
         _newCategory = new() { Icon = Icons.Material.Filled.List, ColorClass = "category-default" };
         _editingCategory = null;
-        await LoadCategories();
     }
 
     private void StartEdit(Category cat)
@@ -159,8 +240,7 @@
 
     private void CancelEdit()
     {
-        _editingCategory = null;
-        _newCategory = new() { Icon = Icons.Material.Filled.List, ColorClass = "category-default" };
+        ResetForm();
     }
 
     private async Task DeleteCategory(Category cat)
@@ -192,7 +272,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 500px;";
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
         return ThemeService.CurrentTheme switch
         {
             ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
@@ -202,5 +282,32 @@
         };
     }
 
-    private string GetTitleStyle() => $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")}; font-weight: 700;";
+    private string GetTitleColor()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        var baseStyle = "height: 40px; min-width: 100px; border-radius: 12px; font-weight: 700; text-transform: none;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
+
+    private string GetCategoryIconStyle()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #0072cf;" : "color: #ffffff;";
+    }
 }

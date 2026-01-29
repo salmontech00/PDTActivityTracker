@@ -437,15 +437,23 @@
         }
 
         .button-group {
-            flex-direction: row !important;
+            flex-wrap: wrap;
             width: 100%;
-            justify-content: space-between;
+            gap: 8px;
         }
 
             .button-group .modern-button {
-                flex: 1;
-                font-size: 0.70rem !important;
+                font-size: 0.60rem !important;
+                padding: 6px 0px !important;
             }
+                /* First button (Preview) takes full width */
+                .button-group .modern-button:first-child {
+                    flex: 0 0 100%;
+                }
+                /* Other buttons split the second row */
+                .button-group .modern-button:not(:first-child) {
+                    flex: 1 1 calc(50% - 4px);
+                }
 
         .task-row-card {
             grid-template-columns: 24px 1fr auto;
@@ -802,7 +810,7 @@
     private List<ChecklistItem> _tasks = new();
     private List<ChecklistItem> _filteredTasks = new();
     private List<Category> _categories = new();
-    
+
     // UI state
     private bool _showFilters = false;
     private bool _initialized = false;
