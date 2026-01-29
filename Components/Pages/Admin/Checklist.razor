@@ -587,6 +587,7 @@
 
         <!-- Draggable List View (Unified) -->
         <MudDropContainer T="ChecklistItem"
+                          @ref="_dropContainer"
                           Items="_filteredTasks"
                           ItemsSelector="@((item, dropzone) => item.CategoryId.ToString() == dropzone)"
                           ItemDropped="ItemDropped"
@@ -612,7 +613,7 @@
                 }
             </ChildContent>
             <ItemRenderer>
-                <div class="task-drop-item">
+                <div class="task-drop-item" @key="context.Id">
                     <MudPaper Class="@($"glass-panel task-row-card {GetThemeClass()}")" Elevation="0">
                         <div class="d-flex align-center desktop-only">
                             <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Style="opacity: 0.5;" />
@@ -815,6 +816,7 @@
     private bool _showFilters = false;
     private bool _initialized = false;
     private bool _isPreviewMode = false;
+    private MudDropContainer<ChecklistItem>? _dropContainer;
 
     // Filter variables
     private string _searchTerm = string.Empty;
@@ -905,27 +907,32 @@
     private async Task LoadTasks()
     {
         await LoadData();
-        StateHasChanged();
+        _dropContainer?.Refresh();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void ApplyFilters()
     {
-        _filteredTasks = _tasks;
+        var query = _tasks.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))
         {
-            _filteredTasks = _filteredTasks.Where(t =>
+            query = query.Where(t =>
                 (t.TaskName?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
                 (t.Description?.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
-            ).ToList();
+            );
         }
 
         if (int.TryParse(_categoryFilter, out int categoryId))
         {
-            _filteredTasks = _filteredTasks.Where(t => t.CategoryId == categoryId).ToList();
+            query = query.Where(t => t.CategoryId == categoryId);
         }
 
-        StateHasChanged(); // Used when called from UI events
+        // Always create a new list reference to trigger MudDropContainer refresh
+        _filteredTasks = query.OrderBy(t => t.SortOrder).ToList();
+        
+        _dropContainer?.Refresh();
+        StateHasChanged(); 
     }
 
     private void ClearFilters()
@@ -957,8 +964,13 @@
 
     private async Task OpenAddTaskDialog()
     {
+        var parameters = new DialogParameters
+        {
+            { "OnTaskSaved", EventCallback.Factory.Create(this, LoadTasks) }
+        };
+
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
-        var dialog = await DialogService.ShowAsync<AddEditTask>("Add New Task", options);
+        var dialog = await DialogService.ShowAsync<AddEditTask>("Add New Task", parameters, options);
         var result = await dialog.Result;
 
         if (!(result?.Canceled ?? true))
@@ -971,7 +983,8 @@
     {
         var parameters = new DialogParameters
         {
-            { "TaskToEdit", task }
+            { "TaskToEdit", task },
+            { "OnTaskSaved", EventCallback.Factory.Create(this, LoadTasks) }
         };
 
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
@@ -1026,67 +1039,106 @@
 
     private int GetItemIndex(ChecklistItem item)
     {
-        // Reset the number per category
-        var itemsInCategory = _filteredTasks
-            .Where(t => t.CategoryId == item.CategoryId)
-            .OrderBy(t => t.SortOrder)
-            .ToList();
-
-        return itemsInCategory.IndexOf(item) + 1;
+        // Since _filteredTasks is already ordered by SortOrder, 
+        // we just need to find the index of the item among items of the same category.
+        int count = 0;
+        foreach (var t in _filteredTasks)
+        {
+            if (t.CategoryId == item.CategoryId)
+            {
+                count++;
+                if (t.Id == item.Id) return count;
+            }
+        }
+        return 0;
     }
 
     private async Task ItemDropped(MudItemDropInfo<ChecklistItem> dropInfo)
     {
         if (dropInfo.Item == null) return;
 
-        // dropInfo.DropzoneIdentifier is the CategoryId (string representation)
         var droppedItem = dropInfo.Item;
         if (!int.TryParse(dropInfo.DropzoneIdentifier, out int newCategoryId)) return;
 
-        // If moved to a different category, update it
-        if (droppedItem.CategoryId != newCategoryId)
-        {
-            droppedItem.CategoryId = newCategoryId;
-        }
+        // Find the actual item in _tasks by ID
+        var itemToMove = _tasks.FirstOrDefault(t => t.Id == droppedItem.Id);
+        if (itemToMove == null) return;
 
-        // Reorder within the absolute list
-        _tasks.Remove(droppedItem);
+        // Get original category and position BEFORE any changes
+        int originalCategoryId = itemToMove.CategoryId;
+        
+        // Prevent cross-category moves - only allow reordering within the same category
+        if (originalCategoryId != newCategoryId) return;
+        
+        var originalCategoryItems = _tasks
+            .Where(x => x.CategoryId == originalCategoryId)
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+        int originalIndexInCategory = originalCategoryItems.IndexOf(itemToMove);
 
-        // Find the index of the item it was dropped ON or near
-        var categoryItems = _tasks.Where(x => x.CategoryId == newCategoryId).ToList();
-        if (dropInfo.IndexInZone >= 0 && dropInfo.IndexInZone < categoryItems.Count)
+        // Remove from current position
+        _tasks.Remove(itemToMove);
+        
+        // Find items in the target category AFTER removal to determine insertion point
+        var targetCategoryItems = _tasks
+            .Where(x => x.CategoryId == newCategoryId)
+            .OrderBy(x => x.SortOrder)
+            .ToList();
+
+        int targetIndex = dropInfo.IndexInZone;
+
+        if (targetIndex >= 0 && targetIndex < targetCategoryItems.Count)
         {
-            var targetItem = categoryItems[dropInfo.IndexInZone];
-            var targetIdx = _tasks.IndexOf(targetItem);
-            _tasks.Insert(targetIdx, droppedItem);
+            var targetItem = targetCategoryItems[targetIndex];
+            var globalIdx = _tasks.IndexOf(targetItem);
+            _tasks.Insert(globalIdx, itemToMove);
         }
         else
         {
-            // If dropped at the end of the zone, find the last item of that category
-            var lastOfCategory = _tasks.LastOrDefault(x => x.CategoryId == newCategoryId);
+            // Dropped at the end of the zone or category
+            var lastOfCategory = targetCategoryItems.LastOrDefault();
             if (lastOfCategory != null)
             {
-                var targetIdx = _tasks.IndexOf(lastOfCategory) + 1;
-                _tasks.Insert(targetIdx, droppedItem);
+                var globalIdx = _tasks.IndexOf(lastOfCategory) + 1;
+                _tasks.Insert(globalIdx, itemToMove);
             }
             else
             {
-                // New category or no items, just add to end
-                _tasks.Add(droppedItem);
+                // New category or no items, add to end
+                _tasks.Add(itemToMove);
             }
         }
 
-        // Maintain global sort order across everything to preserve category groupings
+        // 3. Normalize SortOrder across the entire list
         for (int i = 0; i < _tasks.Count; i++)
         {
             _tasks[i].SortOrder = i;
         }
 
-        using var db = await DbFactory.CreateDbContextAsync();
-        db.ChecklistItems.UpdateRange(_tasks);
-        await db.SaveChangesAsync();
-
-        Snackbar.Add("Order updated!", Severity.Success);
+        // 4. Refresh UI immediately
         ApplyFilters();
+
+        // 5. Persist to DB asynchronously
+        try 
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            // Create a list of items to update with only necessary fields to avoid issues with tracking
+            foreach (var task in _tasks)
+            {
+                var dbTask = await db.ChecklistItems.FindAsync(task.Id);
+                if (dbTask != null)
+                {
+                    dbTask.SortOrder = task.SortOrder;
+                    dbTask.CategoryId = task.CategoryId;
+                }
+            }
+            await db.SaveChangesAsync();
+            Snackbar.Add("Order updated!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving order: {ex.Message}", Severity.Error);
+            await LoadData();
+        }
     }
 }

@@ -44,7 +44,7 @@
         <MudForm @ref="_form" Model="_model">
             <MudGrid Spacing="2">
                 <MudItem xs="12">
-                    <MudTextField T="string" Label="Task Name (Optional)" @bind-Value="_model.TaskName" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField T="string" Label="Task Name (Optional)" @bind-Value="_model.TaskName" Variant="Variant.Outlined" Margin="Margin.Dense" AutoFocus="true" />
                 </MudItem>
                 <MudItem xs="12">
                     <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
@@ -105,7 +105,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Style="@GetButtonStyle()">
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => Submit())" Style="@GetButtonStyle()">
             @(IsEdit ? "Update Task" : "Add Task")
         </MudButton>
     </DialogActions>
@@ -114,6 +114,7 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public ChecklistItem? TaskToEdit { get; set; }
+    [Parameter] public EventCallback OnTaskSaved { get; set; }
 
     private ChecklistItem _model = new();
     private MudForm _form = default!;
@@ -220,17 +221,46 @@
                 db.Entry(taskInDb).CurrentValues.SetValues(_model);
                 await db.SaveChangesAsync();
                 Snackbar.Add("Task updated", Severity.Success);
+
+                if (OnTaskSaved.HasDelegate)
+                {
+                    await OnTaskSaved.InvokeAsync();
+                }
+                MudDialog.Close(DialogResult.Ok(true));
             }
         }
         else
         {
+            // Set SortOrder as the last item
             _model.SortOrder = await db.ChecklistItems.CountAsync();
             db.ChecklistItems.Add(_model);
             await db.SaveChangesAsync();
             Snackbar.Add("Task added", Severity.Success);
-        }
 
-        MudDialog.Close(DialogResult.Ok(true));
+            if (OnTaskSaved.HasDelegate)
+            {
+                await OnTaskSaved.InvokeAsync();
+            }
+
+            // After adding, reset for next task but preserve context
+            var currentCategory = _model.CategoryId;
+            var currentSection = _model.Section;
+            var currentFrequency = _model.Frequency;
+
+            _model = new ChecklistItem
+            {
+                CategoryId = currentCategory,
+                Section = currentSection,
+                Frequency = currentFrequency,
+                IsMandatory = true,
+                IsRemarksRequired = true,
+                IsPhotoRequired = true,
+                NumberOfPhotos = 1
+            };
+
+            _form.ResetValidation();
+            StateHasChanged();
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();
