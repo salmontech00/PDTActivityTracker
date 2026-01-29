@@ -50,10 +50,10 @@
                     <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="string" Label="Category" @bind-Value="_model.Category" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
-                        @foreach (var cat in CategoryOptions)
+                    <MudSelect T="int" Label="Category" @bind-Value="_model.CategoryId" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        @foreach (var cat in _categories)
                         {
-                            <MudSelectItem Value="@cat">@cat</MudSelectItem>
+                            <MudSelectItem Value="@cat.Id">@cat.Name</MudSelectItem>
                         }
                     </MudSelect>
                 </MudItem>
@@ -114,15 +114,16 @@
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public ChecklistItem? TaskToEdit { get; set; }
-    [Parameter] public List<string> CategoryOptions { get; set; } = new();
 
     private ChecklistItem _model = new();
     private MudForm _form = default!;
     private List<string> _existingSections = new();
+    private List<Category> _categories = new();
     private bool IsEdit => TaskToEdit != null;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCategories();
         await LoadExistingSections();
 
         if (IsEdit)
@@ -132,7 +133,7 @@
                 Id = TaskToEdit!.Id,
                 TaskName = TaskToEdit.TaskName,
                 Description = TaskToEdit.Description,
-                Category = TaskToEdit.Category,
+                CategoryId = TaskToEdit.CategoryId,
                 IsPhotoRequired = TaskToEdit.IsPhotoRequired,
                 NumberOfPhotos = TaskToEdit.NumberOfPhotos,
                 IsMandatory = TaskToEdit.IsMandatory,
@@ -144,12 +145,18 @@
         }
         else
         {
-            _model.Category = CategoryOptions.FirstOrDefault() ?? "";
+            _model.CategoryId = _categories.FirstOrDefault()?.Id ?? 0;
             _model.IsMandatory = true;
             _model.IsRemarksRequired = true;
             _model.IsPhotoRequired = true;
             _model.NumberOfPhotos = 1;
         }
+    }
+
+    private async Task LoadCategories()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _categories = await db.Categories.OrderBy(c => c.SortOrder).ToListAsync();
     }
 
     private async Task LoadExistingSections()

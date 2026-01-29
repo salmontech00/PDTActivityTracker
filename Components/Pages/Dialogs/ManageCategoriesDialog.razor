@@ -1,0 +1,206 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject ISnackbar Snackbar
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    .category-dialog .mud-button {
+        border-radius: 12px !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    .category-item {
+        border-radius: 12px;
+        transition: all 0.2s;
+        border: 1px solid transparent;
+    }
+
+    .lightest .category-item:hover {
+        background: rgba(0, 114, 207, 0.05);
+        border-color: rgba(0, 114, 207, 0.1);
+    }
+
+    .light .category-item:hover, .dark .category-item:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+</style>
+
+<MudDialog Class="@($"rounded-xl pa-2 category-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="@GetTitleStyle()">Manage Categories</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="mb-4">
+            <MudGrid Spacing="2" Class="align-end">
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_newCategory.Name" Label="Category Name" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudTextField @bind-Value="_newCategory.Icon" Label="Icon (MudBlazor Icon String)" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                  HelperText="e.g., Icons.Material.Filled.List" />
+                </MudItem>
+                <MudItem xs="12" sm="2">
+                    <MudTextField @bind-Value="_newCategory.ColorClass" Label="CSS Class" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                </MudItem>
+                <MudItem xs="12" sm="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveCategory" FullWidth="true" Style="height: 40px;">
+                        @(_editingCategory == null ? "ADD" : "UPDATE")
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+            @if (_editingCategory != null)
+            {
+                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" OnClick="CancelEdit" Class="mt-1">Cancel Edit</MudButton>
+            }
+        </div>
+
+        <MudDivider Class="my-4" Style="opacity: 0.1;" />
+
+        <div style="max-height: 400px; overflow-y: auto;">
+            @if (_categories.Any())
+            {
+                @foreach (var cat in _categories.OrderBy(c => c.SortOrder))
+                {
+                    <div class="d-flex align-center pa-2 category-item mb-2">
+                        <MudIcon Icon="@cat.Icon" Class="mr-3" Color="Color.Primary" />
+                        <div class="flex-grow-1">
+                            <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Class: @cat.ColorClass</MudText>
+                        </div>
+                        <div class="d-flex gap-1">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => StartEdit(cat))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(cat))" />
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="pa-4 text-center" style="opacity: 0.5;">
+                    <MudText>No categories found.</MudText>
+                </div>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Primary">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private List<Category> _categories = new();
+    private Category _newCategory = new() { Icon = Icons.Material.Filled.List, ColorClass = "category-default" };
+    private Category? _editingCategory = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _categories = await db.Categories.OrderBy(c => c.SortOrder).ToListAsync();
+    }
+
+    private async Task SaveCategory()
+    {
+        if (string.IsNullOrWhiteSpace(_newCategory.Name))
+        {
+            Snackbar.Add("Category name is required", Severity.Warning);
+            return;
+        }
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        if (_editingCategory == null)
+        {
+            _newCategory.SortOrder = _categories.Count;
+            db.Categories.Add(_newCategory);
+            Snackbar.Add("Category added", Severity.Success);
+        }
+        else
+        {
+            var catInDb = await db.Categories.FindAsync(_editingCategory.Id);
+            if (catInDb != null)
+            {
+                catInDb.Name = _newCategory.Name;
+                catInDb.Icon = _newCategory.Icon;
+                catInDb.ColorClass = _newCategory.ColorClass;
+                db.Categories.Update(catInDb);
+                Snackbar.Add("Category updated", Severity.Success);
+            }
+        }
+
+        await db.SaveChangesAsync();
+        _newCategory = new() { Icon = Icons.Material.Filled.List, ColorClass = "category-default" };
+        _editingCategory = null;
+        await LoadCategories();
+    }
+
+    private void StartEdit(Category cat)
+    {
+        _editingCategory = cat;
+        _newCategory = new Category
+        {
+            Id = cat.Id,
+            Name = cat.Name,
+            Icon = cat.Icon,
+            ColorClass = cat.ColorClass,
+            SortOrder = cat.SortOrder
+        };
+    }
+
+    private void CancelEdit()
+    {
+        _editingCategory = null;
+        _newCategory = new() { Icon = Icons.Material.Filled.List, ColorClass = "category-default" };
+    }
+
+    private async Task DeleteCategory(Category cat)
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        // Check if any tasks use this category
+        var hasTasks = await db.ChecklistItems.AnyAsync(t => t.CategoryId == cat.Id);
+        if (hasTasks)
+        {
+            Snackbar.Add("Cannot delete category that is in use by tasks", Severity.Error);
+            return;
+        }
+
+        var catInDb = await db.Categories.FindAsync(cat.Id);
+        if (catInDb != null)
+        {
+            db.Categories.Remove(catInDb);
+            await db.SaveChangesAsync();
+            Snackbar.Add("Category deleted", Severity.Success);
+            await LoadCategories();
+        }
+    }
+
+    private void Close() => MudDialog.Close();
+
+    private string GetThemeClass() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+                                      ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 500px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleStyle() => $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")}; font-weight: 700;";
+}

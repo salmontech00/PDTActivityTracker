@@ -11,7 +11,9 @@ namespace PDTActivityTracker.Components.Model
         public string? Description { get; set; }
 
         [Required]
-        public string Category { get; set; } = default!;
+        public int CategoryId { get; set; }
+
+        public Category? Category { get; set; }
 
         public string? Section { get; set; }
 
