@@ -31,34 +31,55 @@
     };
 
     function dragStart(e) {
-        initialX = isTouchDevice() ? e.touches[0].clientX : e.clientX;
-        initialY = isTouchDevice() ? e.touches[0].clientY : e.clientY;
+        if (e.type.startsWith('touch')) {
+            initialX = e.touches[0].clientX;
+            initialY = e.touches[0].clientY;
+        } else {
+            initialX = e.clientX;
+            initialY = e.clientY;
+        }
 
         currentElement = e.target.closest('.task-drop-item');
         if (currentElement) {
             currentElement.style.opacity = '0.5';
-            e.dataTransfer.effectAllowed = "move";
-            // Required for Firefox
-            e.dataTransfer.setData("text/plain", currentElement.getAttribute("data-id"));
+            if (e.dataTransfer) {
+                e.dataTransfer.effectAllowed = "move";
+                // Required for Firefox
+                e.dataTransfer.setData("text/plain", currentElement.getAttribute("data-id"));
+            }
         }
     }
 
     function dragOver(e) {
         e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
+        if (e.dataTransfer) {
+            e.dataTransfer.dropEffect = "move";
+        }
     }
 
     function dragEnd(e) {
         if (currentElement) {
             currentElement.style.opacity = '1';
+            currentElement = null;
         }
     }
 
     async function drop(e) {
         e.preventDefault();
 
-        const newX = isTouchDevice() ? e.changedTouches[0].clientX : e.clientX;
-        const newY = isTouchDevice() ? e.changedTouches[0].clientY : e.clientY;
+        let newX, newY;
+
+        if (e.type.startsWith('touch')) {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                newX = e.changedTouches[0].clientX;
+                newY = e.changedTouches[0].clientY;
+            } else {
+                return; // No touch data
+            }
+        } else {
+            newX = e.clientX;
+            newY = e.clientY;
+        }
 
         // Identify target
         let targetElement = document.elementFromPoint(newX, newY);
@@ -71,14 +92,33 @@
         let targetCategory = targetElement.closest('.category-drop-zone');
         let sourceCategory = currentElement.closest('.category-drop-zone');
 
+        // 1. Category Boundary Check
         if (!targetCategory || targetCategory !== sourceCategory) {
-            // If dropped in empty space of SAME category, append to end
-            if (targetCategory && targetCategory === sourceCategory && !closestItem) {
-                targetCategory.appendChild(currentElement);
-                finalizeDrop(targetCategory);
-                return;
-            }
             return;
+        }
+
+        // 2. Section Boundary Check
+        // Get sections (handle empty/null sections gracefully)
+        let sourceSection = currentElement.getAttribute('data-section') || "";
+        let targetSection = "";
+
+        if (closestItem) {
+            targetSection = closestItem.getAttribute('data-section') || "";
+        } else {
+            // If dropping in empty space within category, we need to decide if allowed.
+            // If the category has mixed sections, dropping in "empty space" is ambiguous.
+            // Strategy: Allow only if the category has NO items or if it's the valid end of a section group.
+            // For safety/simplicity in this "flat list" view:
+            // If we can't find a closest item to anchor to, we might be dropping at the very end.
+            // We should check the LAST item's section.
+            let lastItem = targetCategory.querySelector('.task-drop-item:last-child');
+            if (lastItem) {
+                targetSection = lastItem.getAttribute('data-section') || "";
+            }
+        }
+
+        if (sourceSection !== targetSection) {
+            return; // Block move between different sections
         }
 
         if (!closestItem || closestItem === currentElement) return;
@@ -126,6 +166,7 @@
     container.addEventListener("dragend", dragEnd);
 
     // Touch events for mobile
+    // Touch events for mobile
     container.addEventListener("touchstart", (e) => {
         if (e.target.closest('.task-drop-item')) dragStart(e);
     }, { passive: false });
@@ -138,7 +179,10 @@
     }, { passive: false });
 
     container.addEventListener("touchend", (e) => {
-        if (currentElement) drop(e);
+        if (currentElement) {
+            drop(e);
+            dragEnd(e); // Ensure cleanup happens on touch end
+        }
     });
 
     // Initial numbering setup

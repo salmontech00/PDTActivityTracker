@@ -295,7 +295,7 @@
     }
 
     .modern-expansion-panel {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 16px !important;
         margin-bottom: 16px !important;
@@ -314,7 +314,7 @@
     }
 
     .preview-task-card {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 12px;
         padding: 16px;
@@ -610,7 +610,7 @@
                             }
                             @foreach (var context in itemsInCategory)
                             {
-                                <div class="task-drop-item" draggable="true" data-id="@context.Id" @key="context.Id">
+                                <div class="task-drop-item" draggable="true" data-id="@context.Id" data-section="@(context.Section ?? "")" @key="context.Id">
                                     <MudPaper Class="@($"glass-panel task-row-card {GetThemeClass()}")" Elevation="0">
                                         <div class="d-flex align-center desktop-only" style="cursor: grab;">
                                             <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Style="opacity: 0.5;" />
@@ -652,7 +652,7 @@
 
                                         <div class="desktop-only text-center">
                                             <MudText Typo="Typo.caption">
-                                                @(context.IsPhotoRequired ? (context.NumberOfPhotos == 0 ? "Limitless" : $"{context.NumberOfPhotos} Photos") : "No")
+                                                @(context.IsPhotoRequired ? (context.NumberOfPhotos == 0 ? "Multiple" : $"{context.NumberOfPhotos} Photos") : "No")
                                             </MudText>
                                         </div>
 
@@ -709,7 +709,7 @@
                     var itemsInCategory = _tasks.Where(t => t.CategoryId == category.Id).ToList();
                     @if (!itemsInCategory.Any()) continue;
 
-                    <MudExpansionPanel Class="modern-expansion-panel" MaxHeight="1000">
+                    <MudExpansionPanel Class="modern-expansion-panel" MaxHeight="340">
                         <TitleContent>
                             <div class="d-flex align-center py-2">
                                 <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" />

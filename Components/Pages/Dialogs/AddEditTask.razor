@@ -94,7 +94,7 @@
                                          HelperText="@(_model.NumberOfPhotos == 0 ? "Infinite photos allowed" : "")" />
                     </MudItem>
                     <MudItem xs="12" sm="4" class="d-flex align-center">
-                        <MudCheckBox T="bool" Label="Limitless"
+                        <MudCheckBox T="bool" Label="Multiple"
                                      Value="@(_model.NumberOfPhotos == 0)"
                                      ValueChanged="@((bool val) => _model.NumberOfPhotos = val ? 0 : 1)"
                                      Color="Color.Primary" Dense="true" />
