@@ -295,7 +295,7 @@
     }
 
     .modern-expansion-panel {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.1) !important;
         border: 1px solid rgba(255, 255, 255, 0.1) !important;
         border-radius: 16px !important;
         margin-bottom: 16px !important;
@@ -314,7 +314,7 @@
     }
 
     .preview-task-card {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: rgba(255, 255, 255, 0.08) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
         border-radius: 12px;
         padding: 16px;
@@ -585,109 +585,110 @@
             </div>
         </MudPaper>
 
-        <!-- Draggable List View (Unified) -->
-        <MudDropContainer T="ChecklistItem"
-                          @ref="_dropContainer"
-                          Items="_filteredTasks"
-                          ItemsSelector="@((item, dropzone) => item.CategoryId.ToString() == dropzone)"
-                          ItemDropped="ItemDropped"
-                          Class="drop-container">
-            <ChildContent>
-                @foreach (var category in _categories)
+        <!-- Custom JS-based Drag and Drop List -->
+        <div class="drop-container">
+            @foreach (var category in _categories)
+            {
+                @if (_filteredTasks.Any(t => t.CategoryId == category.Id) || _categoryFilter == "All" || _categoryFilter == category.Id.ToString())
                 {
-                    @if (_filteredTasks.Any(t => t.CategoryId == category.Id) || _categoryFilter == "All" || _categoryFilter == category.Id.ToString())
-                    {
-                        <div class="category-block">
-                            <div class="d-flex align-center mb-2 px-2">
-                                <MudIcon Icon="@category.Icon" Class="mr-2 category-icon" />
-                                <MudText Typo="Typo.subtitle1" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">@category.Name</MudText>
-                                <MudSpacer />
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {category.ColorClass}")">
-                                    @_filteredTasks.Count(t => t.CategoryId == category.Id) Tasks
-                                </MudChip>
-                            </div>
-
-                            <MudDropZone T="ChecklistItem" Identifier="@category.Id.ToString()" Class="category-drop-zone" />
-                        </div>
-                    }
-                }
-            </ChildContent>
-            <ItemRenderer>
-                <div class="task-drop-item" @key="context.Id">
-                    <MudPaper Class="@($"glass-panel task-row-card {GetThemeClass()}")" Elevation="0">
-                        <div class="d-flex align-center desktop-only">
-                            <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Style="opacity: 0.5;" />
-                        </div>
-
-                        <div class="task-number-container">
-                            <MudText Typo="Typo.body2" Class="task-number">
-                                @(GetItemIndex(context))
-                            </MudText>
-                        </div>
-
-                        <div class="task-info">
-                            @if (!string.IsNullOrEmpty(context.Section))
-                            {
-                                <MudText Typo="Typo.caption" Color="Color.Primary" Class="desktop-only" Style="font-weight: 600; line-height: 1;">@context.Section</MudText>
-                            }
-                            <MudText Typo="Typo.body1" Class="task-name">@context.TaskName</MudText>
-                            @if (!string.IsNullOrEmpty(context.Description))
-                            {
-                                <MudText Typo="Typo.caption" Class="task-description">@context.Description</MudText>
-                            }
-                        </div>
-
-                        <div class="desktop-only">
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {context.Category?.ColorClass}")">
-                                @context.Category?.Name
+                    <div class="category-block">
+                        <div class="d-flex align-center mb-2 px-2">
+                            <MudIcon Icon="@category.Icon" Class="mr-2 category-icon" />
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">@category.Name</MudText>
+                            <MudSpacer />
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {category.ColorClass}")">
+                                @_filteredTasks.Count(t => t.CategoryId == category.Id) Tasks
                             </MudChip>
                         </div>
 
-                        <div class="desktop-only text-center">
-                            <MudText Typo="Typo.body2">@context.Frequency</MudText>
-                        </div>
-
-                        <div class="desktop-only text-center">
-                            <MudIcon Icon="@(context.IsMandatory? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Circle)"
-                                     Color="@(context.IsMandatory ? Color.Success : Color.Default)"
-                                     Size="Size.Small" />
-                        </div>
-
-                        <div class="desktop-only text-center">
-                            <MudText Typo="Typo.caption">
-                                @(context.IsPhotoRequired ? (context.NumberOfPhotos == 0 ? "Limitless" : $"{context.NumberOfPhotos} Photos") : "No")
-                            </MudText>
-                        </div>
-
-                        <div class="task-actions d-flex justify-center gap-1">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           OnClick="@(() => EditTask(context))"
-                                           Title="Edit task" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           OnClick="@(() => DeleteTask(context))"
-                                           Title="Delete task" />
-                        </div>
-
-                        <div class="mobile-only task-details-mobile">
-                            <span>@context.Frequency</span>
-                            <span class="d-flex align-center gap-1">
-                                <MudIcon Icon="@(context.IsMandatory? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Circle)" Size="Size.Small" Color="@(context.IsMandatory? Color.Success: Color.Default)" /> Mandatory
-                            </span>
-                            @if (context.IsPhotoRequired)
+                        <div class="category-drop-zone" data-category-id="@category.Id">
+                            @{
+                                var itemsInCategory = _filteredTasks
+                                    .Where(t => t.CategoryId == category.Id)
+                                    .OrderBy(t => t.SortOrder)
+                                    .ToList();
+                            }
+                            @foreach (var context in itemsInCategory)
                             {
-                                <span class="d-flex align-center gap-1">
-                                    <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Size="Size.Small" /> @(context.NumberOfPhotos == 0 ? "∞" : context.NumberOfPhotos)
-                                </span>
+                                <div class="task-drop-item" draggable="true" data-id="@context.Id" data-section="@(context.Section ?? "")" @key="context.Id">
+                                    <MudPaper Class="@($"glass-panel task-row-card {GetThemeClass()}")" Elevation="0">
+                                        <div class="d-flex align-center desktop-only" style="cursor: grab;">
+                                            <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Style="opacity: 0.5;" />
+                                        </div>
+
+                                        <div class="task-number-container">
+                                            <MudText Typo="Typo.body2" Class="task-number">
+                                                @(context.SortOrder + 1)
+                                            </MudText>
+                                        </div>
+
+                                        <div class="task-info">
+                                            @if (!string.IsNullOrEmpty(context.Section))
+                                            {
+                                                <MudText Typo="Typo.caption" Color="Color.Primary" Class="desktop-only" Style="font-weight: 600; line-height: 1;">@context.Section</MudText>
+                                            }
+                                            <MudText Typo="Typo.body1" Class="task-name">@context.TaskName</MudText>
+                                            @if (!string.IsNullOrEmpty(context.Description))
+                                            {
+                                                <MudText Typo="Typo.caption" Class="task-description">@context.Description</MudText>
+                                            }
+                                        </div>
+
+                                        <div class="desktop-only">
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {context.Category?.ColorClass}")">
+                                                @context.Category?.Name
+                                            </MudChip>
+                                        </div>
+
+                                        <div class="desktop-only text-center">
+                                            <MudText Typo="Typo.body2">@context.Frequency</MudText>
+                                        </div>
+
+                                        <div class="desktop-only text-center">
+                                            <MudIcon Icon="@(context.IsMandatory? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Circle)"
+                                                     Color="@(context.IsMandatory ? Color.Success : Color.Default)"
+                                                     Size="Size.Small" />
+                                        </div>
+
+                                        <div class="desktop-only text-center">
+                                            <MudText Typo="Typo.caption">
+                                                @(context.IsPhotoRequired ? (context.NumberOfPhotos == 0 ? "Multiple" : $"{context.NumberOfPhotos} Photos") : "No")
+                                            </MudText>
+                                        </div>
+
+                                        <div class="task-actions d-flex justify-center gap-1">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                           Color="Color.Primary"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => EditTask(context))"
+                                                           Title="Edit task" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Color="Color.Error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => DeleteTask(context))"
+                                                           Title="Delete task" />
+                                        </div>
+
+                                        <div class="mobile-only task-details-mobile">
+                                            <span>@context.Frequency</span>
+                                            <span class="d-flex align-center gap-1">
+                                                <MudIcon Icon="@(context.IsMandatory? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Circle)" Size="Size.Small" Color="@(context.IsMandatory? Color.Success: Color.Default)" /> Mandatory
+                                            </span>
+                                            @if (context.IsPhotoRequired)
+                                            {
+                                                <span class="d-flex align-center gap-1">
+                                                    <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Size="Size.Small" /> @(context.NumberOfPhotos == 0 ? "∞" : context.NumberOfPhotos)
+                                                </span>
+                                            }
+                                        </div>
+                                    </MudPaper>
+                                </div>
                             }
                         </div>
-                    </MudPaper>
-                </div>
-            </ItemRenderer>
-        </MudDropContainer>
+                    </div>
+                }
+            }
+        </div>
     }
     else if (!_initialized)
     {
@@ -708,7 +709,7 @@
                     var itemsInCategory = _tasks.Where(t => t.CategoryId == category.Id).ToList();
                     @if (!itemsInCategory.Any()) continue;
 
-                    <MudExpansionPanel Class="modern-expansion-panel" MaxHeight="1000">
+                    <MudExpansionPanel Class="modern-expansion-panel" MaxHeight="340">
                         <TitleContent>
                             <div class="d-flex align-center py-2">
                                 <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" />
@@ -816,7 +817,11 @@
     private bool _showFilters = false;
     private bool _initialized = false;
     private bool _isPreviewMode = false;
-    private MudDropContainer<ChecklistItem>? _dropContainer;
+    
+    // JS Interop
+    @inject IJSRuntime JS
+    private IJSObjectReference? _jsModule;
+    private DotNetObjectReference<Checklist>? _objRef;
 
     // Filter variables
     private string _searchTerm = string.Empty;
@@ -838,6 +843,7 @@
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
+        _objRef?.Dispose();
     }
 
     private string GetThemeClass()
@@ -872,15 +878,53 @@
         return $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")}; font-weight: 800;";
     }
 
-    protected override Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            // Initial load is already handled in OnInitializedAsync,
-            // but we call StateHasChanged to ensure the UI is in sync.
+            _objRef = DotNetObjectReference.Create(this);
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/checklist-drag.js");
+            await _jsModule.InvokeVoidAsync("initializeDragAndDrop", _objRef);
+            
             StateHasChanged();
         }
-        return base.OnAfterRenderAsync(firstRender);
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    [JSInvokable]
+    public async Task UpdateOrderFromJS(int[] sortedIds)
+    {
+        if (sortedIds == null || sortedIds.Length == 0) return;
+
+        // Apply new order to memory
+        // We only worry about the tasks involved in the specific category update
+        var affectedTasks = _tasks.Where(t => sortedIds.Contains(t.Id)).ToList();
+        
+        foreach (var task in affectedTasks)
+        {
+            int newIndex = Array.IndexOf(sortedIds, task.Id);
+            if (newIndex != -1)
+            {
+                task.SortOrder = newIndex;
+            }
+        }
+        
+        // Refresh filter view to match
+        ApplyFilters();
+
+        // Save to DB
+        using var db = await DbFactory.CreateDbContextAsync();
+        foreach (var id in sortedIds)
+        {
+            var dbTask = await db.ChecklistItems.FindAsync(id);
+            if (dbTask != null)
+            {
+                int newIndex = Array.IndexOf(sortedIds, id);
+                dbTask.SortOrder = newIndex;
+            }
+        }
+        await db.SaveChangesAsync();
+        Snackbar.Add("Order updated", Severity.Success);
     }
 
     private async Task LoadData()
@@ -907,7 +951,6 @@
     private async Task LoadTasks()
     {
         await LoadData();
-        _dropContainer?.Refresh();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -931,7 +974,6 @@
         // Always create a new list reference to trigger MudDropContainer refresh
         _filteredTasks = query.OrderBy(t => t.SortOrder).ToList();
         
-        _dropContainer?.Refresh();
         StateHasChanged(); 
     }
 
@@ -1034,111 +1076,6 @@
             {
                 Snackbar.Add($"Error deleting task: {ex.Message}", Severity.Error);
             }
-        }
-    }
-
-    private int GetItemIndex(ChecklistItem item)
-    {
-        // Since _filteredTasks is already ordered by SortOrder, 
-        // we just need to find the index of the item among items of the same category.
-        int count = 0;
-        foreach (var t in _filteredTasks)
-        {
-            if (t.CategoryId == item.CategoryId)
-            {
-                count++;
-                if (t.Id == item.Id) return count;
-            }
-        }
-        return 0;
-    }
-
-    private async Task ItemDropped(MudItemDropInfo<ChecklistItem> dropInfo)
-    {
-        if (dropInfo.Item == null) return;
-
-        var droppedItem = dropInfo.Item;
-        if (!int.TryParse(dropInfo.DropzoneIdentifier, out int newCategoryId)) return;
-
-        // Find the actual item in _tasks by ID
-        var itemToMove = _tasks.FirstOrDefault(t => t.Id == droppedItem.Id);
-        if (itemToMove == null) return;
-
-        // Get original category and position BEFORE any changes
-        int originalCategoryId = itemToMove.CategoryId;
-        
-        // Prevent cross-category moves - only allow reordering within the same category
-        if (originalCategoryId != newCategoryId) return;
-        
-        var originalCategoryItems = _tasks
-            .Where(x => x.CategoryId == originalCategoryId)
-            .OrderBy(x => x.SortOrder)
-            .ToList();
-        int originalIndexInCategory = originalCategoryItems.IndexOf(itemToMove);
-
-        // Remove from current position
-        _tasks.Remove(itemToMove);
-        
-        // Find items in the target category AFTER removal to determine insertion point
-        var targetCategoryItems = _tasks
-            .Where(x => x.CategoryId == newCategoryId)
-            .OrderBy(x => x.SortOrder)
-            .ToList();
-
-        int targetIndex = dropInfo.IndexInZone;
-
-        if (targetIndex >= 0 && targetIndex < targetCategoryItems.Count)
-        {
-            var targetItem = targetCategoryItems[targetIndex];
-            var globalIdx = _tasks.IndexOf(targetItem);
-            _tasks.Insert(globalIdx, itemToMove);
-        }
-        else
-        {
-            // Dropped at the end of the zone or category
-            var lastOfCategory = targetCategoryItems.LastOrDefault();
-            if (lastOfCategory != null)
-            {
-                var globalIdx = _tasks.IndexOf(lastOfCategory) + 1;
-                _tasks.Insert(globalIdx, itemToMove);
-            }
-            else
-            {
-                // New category or no items, add to end
-                _tasks.Add(itemToMove);
-            }
-        }
-
-        // 3. Normalize SortOrder across the entire list
-        for (int i = 0; i < _tasks.Count; i++)
-        {
-            _tasks[i].SortOrder = i;
-        }
-
-        // 4. Refresh UI immediately
-        ApplyFilters();
-
-        // 5. Persist to DB asynchronously
-        try 
-        {
-            using var db = await DbFactory.CreateDbContextAsync();
-            // Create a list of items to update with only necessary fields to avoid issues with tracking
-            foreach (var task in _tasks)
-            {
-                var dbTask = await db.ChecklistItems.FindAsync(task.Id);
-                if (dbTask != null)
-                {
-                    dbTask.SortOrder = task.SortOrder;
-                    dbTask.CategoryId = task.CategoryId;
-                }
-            }
-            await db.SaveChangesAsync();
-            Snackbar.Add("Order updated!", Severity.Success);
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error saving order: {ex.Message}", Severity.Error);
-            await LoadData();
         }
     }
 }

@@ -162,6 +162,44 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         BEGIN
             ALTER TABLE [ChecklistItems] ALTER COLUMN [TaskName] nvarchar(max) NULL;
         END
+
+        -- Create Stores Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[Stores]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [Stores] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [StoreCode] nvarchar(max) NOT NULL,
+                [StoreName] nvarchar(max) NOT NULL,
+                [Location] nvarchar(max) NOT NULL,
+                [Status] nvarchar(max) NULL,
+                [GPSLatitude] float NULL,
+                [GPSLongitude] float NULL,
+                [ContactPhone] nvarchar(max) NULL,
+                [ContactEmail] nvarchar(max) NULL,
+                [StoreHeadId] int NULL,
+                [AreaHeadId] int NULL,
+                CONSTRAINT [PK_Stores] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_Stores_Users_StoreHeadId] FOREIGN KEY ([StoreHeadId]) REFERENCES [Users] ([Id]),
+                CONSTRAINT [FK_Stores_Users_AreaHeadId] FOREIGN KEY ([AreaHeadId]) REFERENCES [Users] ([Id])
+            );
+        END
+
+        -- Create StoreAssignmentLogs Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[StoreAssignmentLogs]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [StoreAssignmentLogs] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [StoreId] int NOT NULL,
+                [UserId] int NULL,
+                [Role] nvarchar(max) NOT NULL,
+                [Action] nvarchar(max) NOT NULL,
+                [Timestamp] datetime2 NOT NULL,
+                [Remarks] nvarchar(max) NULL,
+                CONSTRAINT [PK_StoreAssignmentLogs] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_StoreAssignmentLogs_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]) ON DELETE CASCADE,
+                CONSTRAINT [FK_StoreAssignmentLogs_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
+            );
+        END
     ");
 
     // Seed Categories if empty
