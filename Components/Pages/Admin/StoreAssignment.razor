@@ -1,0 +1,706 @@
+﻿@page "/admin/store-assignment"
+@layout PDTActivityTracker.Components.Layout.MainLayout
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using PDTActivityTracker.Components.Pages.Dialogs
+@inject IDialogService DialogService
+@inject PDTActivityTracker.Components.Services.UserStateService UserState
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@implements IDisposable
+
+<PageTitle>Store Assignment</PageTitle>
+
+<style>
+    .store-container {
+        padding: 1rem;
+    }
+
+    /* GLASS CONTAINER */
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #0072cf !important;
+        }
+
+        .glass-panel.light {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+    /* PAGE HEADER */
+    .page-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 0;
+    }
+
+    .page-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+        .page-title.lightest {
+            color: #0f172a;
+        }
+
+        .page-title.light {
+            color: #ffffff;
+        }
+
+        .page-title.dark {
+            color: #ffffff;
+        }
+
+    /* TABLE STYLING */
+    .mud-table {
+        background: transparent !important;
+    }
+
+    .mud-table-head {
+        background: rgba(0, 114, 207, 0.1);
+    }
+
+        .mud-table-head.lightest {
+            background: rgba(0, 114, 207, 0.05);
+        }
+
+    .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 12px 16px !important;
+    }
+
+    .lightest .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    .mud-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .lightest .mud-table-row:hover {
+        background-color: rgba(0, 114, 207, 0.05) !important;
+    }
+
+    /* Fix for Pager/Footer alignment */
+    .mud-table-pagination {
+        background-color: transparent !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: inherit !important;
+    }
+
+    .lightest .mud-table-pagination {
+        border-top: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    /* BUTTONS */
+    .modern-button {
+        text-transform: none !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+
+    /* CHIPS */
+    .role-chip {
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+    }
+
+    .role-chip-success {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: rgb(253, 212, 92) !important;
+        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    }
+
+    .role-chip-info {
+        background-color: rgba(14, 165, 233, 0.15) !important;
+        color: rgb(14, 165, 233) !important;
+        border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    }
+
+    .role-chip-inactive {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: rgb(239, 68, 68) !important;
+        border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    }
+
+    .lightest .role-chip-success {
+        background-color: rgb(0, 114, 207, 0.5) !important;
+    }
+
+    .button-group .modern-button.light {
+        background-color: #ffffff !important;
+        color: #0072cf !important;
+    }
+
+    /* MOBILE CARDS */
+    .mobile-card {
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .mobile-card-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lightest .mobile-card-header {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .mobile-card-content {
+        padding: 16px;
+    }
+
+    .mobile-card-actions {
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        display: flex;
+        gap: 8px;
+    }
+
+    .lightest .mobile-card-actions {
+        background: rgba(0, 114, 207, 0.03);
+    }
+
+    /* FILTER SECTION */
+    .filter-section {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+        .filter-section .mud-input-root {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+    .lightest .filter-section .mud-input-root {
+        background: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .light .filter-section .mud-input-root {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .light .filter-section .mud-input-label,
+    .light .filter-section .mud-input-adornment-start,
+    .light .filter-section .mud-select-input,
+    .light .filter-section .mud-input-slot {
+        color: #ffffff !important;
+    }
+
+    .light .filter-section .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
+        border-color: #ffffff !important;
+    }
+
+    .filter-toggle-button {
+        display: none;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 960px) {
+        .filter-toggle-button {
+            display: inline-flex !important;
+        }
+
+        .filter-section .mud-grid {
+            display: none;
+        }
+
+        .filter-section.filters-visible .mud-grid {
+            display: flex;
+        }
+
+        .desktop-view {
+            display: none;
+        }
+
+        .mobile-view {
+            display: block;
+        }
+
+        .page-header-row {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+            text-align: center;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .page-title {
+            display: none;
+        }
+    }
+
+    @@media (min-width: 961px) {
+        .desktop-view {
+            display: block;
+        }
+
+        .mobile-view {
+            display: none;
+        }
+    }
+</style>
+
+<div class="store-container">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Assignment</MudText>
+
+        <div class="d-flex gap-2">
+            @if (_selectedStores.Any())
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Filled.Flaky"
+                           OnClick="OpenBulkActionsDialog"
+                           Class="@($"modern-button {GetThemeClass()}")"
+                           Style="@GetButtonStyle()">
+                    Bulk Actions (@_selectedStores.Count)
+                </MudButton>
+            }
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Store"
+                       OnClick="OpenAddStoreDialog"
+                       Class="@($"modern-button {GetThemeClass()}")"
+                       Style="@GetButtonStyle()">
+                ADD STORE
+            </MudButton>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <MudGrid Class="mb-4">
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Total Stores</MudText>
+                <MudText Typo="Typo.h4" Class="font-weight-bold">@_allStores.Count</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Assigned</MudText>
+                <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@_allStores.Count(s => s.StoreHeadId != null)</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Unassigned</MudText>
+                <MudText Typo="Typo.h4" Class="font-weight-bold text-error">@_allStores.Count(s => s.StoreHeadId == null)</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Area Heads</MudText>
+                <MudText Typo="Typo.h4" Class="font-weight-bold text-info">@_allStores.Select(s => s.AreaHeadId).Distinct().Count(id => id != null)</MudText>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Filter Section -->
+    <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
+        <MudButton Variant="Variant.Outlined"
+                   StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                   FullWidth="true"
+                   OnClick="@(() => _showFilters = !_showFilters)"
+                   Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                   Style="@GetFilterButtonStyle()">
+            @(_showFilters ? "Hide Filters" : "Show Filters")
+        </MudButton>
+
+        <MudGrid Spacing="2" AlignItems="AlignItems.Center">
+            <MudItem xs="12" sm="4">
+                <MudTextField @bind-Value="_searchTerm" Placeholder="Search Store Name, Code, Location..."
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg"
+                              Immediate="true" TextChanged="ApplyFilters" />
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudSelect T="string" Label="Region/Location" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           @bind-Value="_locationFilter" SelectedValuesChanged="ApplyFilters">
+                    <MudSelectItem Value="@("All")">All Locations</MudSelectItem>
+                    @foreach (var loc in _allStores.Select(s => s.Location).Distinct().OrderBy(l => l))
+                    {
+                        <MudSelectItem Value="@loc">@loc</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudSelect T="string" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           @bind-Value="_statusFilter" SelectedValuesChanged="ApplyFilters">
+                    <MudSelectItem Value="@("All")">All Status</MudSelectItem>
+                    <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                    <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="2" Class="d-flex justify-end">
+                <MudToggleIconButton @bind-Toggled="_isMapView"
+                                     Icon="@Icons.Material.Filled.List" Color="Color.Default" Title="List View"
+                                     ToggledIcon="@Icons.Material.Filled.Map" ToggledColor="Color.Primary" ToggledTitle="Map View" />
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+
+    <!-- Main Content -->
+    @if (_isMapView)
+    {
+        <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0" Style="min-height: 400px; display: flex; justify-content: center; align-items: center;">
+            <div class="text-center">
+                <MudIcon Icon="@Icons.Material.Filled.Map" Size="Size.Large" Style="font-size: 4rem; opacity: 0.3;" />
+                <MudText Typo="Typo.h6" Class="mt-2" Style="opacity: 0.7;">Interactive Map View Placeholder</MudText>
+                <MudText Typo="Typo.body2" Style="opacity: 0.5;">(Google Maps / Leaflet Integration would go here)</MudText>
+                <div class="mt-4 d-flex gap-4 justify-center">
+                    <div class="d-flex align-center gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Success" /> Assigned
+                    </div>
+                    <div class="d-flex align-center gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Error" /> Unassigned
+                    </div>
+                </div>
+            </div>
+        </MudPaper>
+    }
+    else
+    {
+        <!-- Desktop Table View -->
+        <div class="desktop-view">
+            <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
+                <MudTable Items="_filteredStores" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass" MultiSelection="true" @bind-SelectedItems="_selectedStores">
+                    <HeaderContent>
+                        <MudTh>Store Code</MudTh>
+                        <MudTh>Store Name</MudTh>
+                        <MudTh>Location</MudTh>
+                        <MudTh>Store Head</MudTh>
+                        <MudTh>Area Head</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="text-align: center;">Action</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Store Code">@context.StoreCode</MudTd>
+                        <MudTd DataLabel="Store Name" Style="font-weight: 600;">@context.StoreName</MudTd>
+                        <MudTd DataLabel="Location">@context.Location</MudTd>
+                        <MudTd DataLabel="Store Head">
+                            @if (context.StoreHead != null)
+                            {
+                                <div class="d-flex flex-column">
+                                    <span style="font-weight: 500">@context.StoreHead.Fullname</span>
+                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Class="text-caption" Color="Color.Primary">Change ▼</MudLink>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex flex-column">
+                                    <span class="text-error">Unassigned</span>
+                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Class="text-caption" Color="Color.Primary">Assign ▼</MudLink>
+                                </div>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Area Head">
+                            @if (context.AreaHead != null)
+                            {
+                                <span>@context.AreaHead.Fullname</span>
+                            }
+                            else
+                            {
+                                <span style="opacity: 0.5">--</span>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                     Class="@(context.Status == "Active" ? "role-chip-success" : "role-chip-inactive")">
+                                @context.Status
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Action" Style="text-align: center;">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                    <ChildRowContent>
+                        <MudTr>
+                            <td colspan="8">
+                                <MudCard Elevation="0" Class="pa-4 ma-2" Style="background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                    <MudGrid>
+                                        <MudItem xs="12" md="4">
+                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Contact Info</MudText>
+                                            <MudDivider Class="mb-2" />
+                                            <MudText Typo="Typo.body2"><strong>Phone:</strong> @(context.ContactPhone ?? "N/A")</MudText>
+                                            <MudText Typo="Typo.body2"><strong>Email:</strong> @(context.ContactEmail ?? "N/A")</MudText>
+                                            <MudText Typo="Typo.body2"><strong>GPS:</strong> @(context.GPSLatitude), @(context.GPSLongitude)</MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" md="4">
+                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Assignment History</MudText>
+                                            <MudDivider Class="mb-2" />
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.7">No history available (Mock)</MudText>
+                                        </MudItem>
+                                        <MudItem xs="12" md="4" Class="d-flex align-end justify-end gap-2">
+                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.History">View Full History</MudButton>
+                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Map">View on Map</MudButton>
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudCard>
+                            </td>
+                        </MudTr>
+                    </ChildRowContent>
+                    <PagerContent>
+                        <MudTablePager />
+                    </PagerContent>
+                </MudTable>
+            </MudPaper>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="mobile-view">
+            @foreach (var store in _filteredStores)
+            {
+                <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                    <div class="mobile-card-header">
+                        <div>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@store.StoreName</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">@store.StoreCode</MudText>
+                        </div>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Class="@(store.Status == "Active" ? "role-chip-success" : "role-chip-inactive")">
+                            @store.Status
+                        </MudChip>
+                    </div>
+                    <div class="mobile-card-content">
+                        <MudGrid Spacing="1">
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Location</MudText>
+                                <MudText Typo="Typo.body2">@store.Location</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store Head</MudText>
+                                @if (store.StoreHead != null)
+                                {
+                                    <MudText Typo="Typo.body2">@store.StoreHead.Fullname</MudText>
+                                }
+                                else
+                                {
+                                    <MudText Typo="Typo.body2" Color="Color.Error">Unassigned</MudText>
+                                }
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Contact</MudText>
+                                <MudText Typo="Typo.body2">@(store.ContactPhone ?? "N/A")</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+                    <div class="mobile-card-actions">
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenAssignStoreHeadDialog(store))">Assign Head</MudButton>
+                        <MudSpacer />
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(store))" />
+                    </div>
+                </MudPaper>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Store> _allStores = new();
+    private List<Store> _filteredStores = new();
+    private HashSet<Store> _selectedStores = new();
+
+    private string _searchTerm = "";
+    private string _locationFilter = "All";
+    private string _statusFilter = "All";
+    private bool _isMapView = false;
+    private bool _showFilters = false;
+
+    // ... existing initialization ...
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _allStores = await db.Stores
+            .Include(s => s.StoreHead)
+            .Include(s => s.AreaHead)
+            .OrderBy(s => s.StoreCode)
+            .AsNoTracking()
+            .ToListAsync();
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var query = _allStores.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            query = query.Where(s =>
+                s.StoreName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                s.StoreCode.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                s.Location.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (_locationFilter != "All")
+        {
+            query = query.Where(s => s.Location == _locationFilter);
+        }
+
+        if (_statusFilter != "All")
+        {
+            query = query.Where(s => s.Status == _statusFilter);
+        }
+
+        _filteredStores = query.ToList();
+    }
+
+    private void OnThemeChanged()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "border-radius: 12px;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
+            : "border-radius: 12px; font-weight: bold;";
+    }
+
+    private string GetFilterButtonStyle()
+    {
+        if (ThemeService == null) return "";
+        return ThemeService.CurrentTheme == ThemeMode.Lightest
+            ? "color: #0072cf; border-color: #0072cf; border-radius: 12px;"
+            : "color: #ffffff; border-color: #ffffff; border-radius: 12px; background-color: transparent !important;";
+    }
+
+    private async Task OpenAddStoreDialog()
+    {
+        var parameters = new DialogParameters { ["Store"] = new Store() };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<AddEditStoreDialog>("Add Store", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Snackbar.Add("Store created successfully!", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task OpenEditStoreDialog(Store store)
+    {
+        var parameters = new DialogParameters { ["Store"] = store };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<AddEditStoreDialog>("Edit Store", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Snackbar.Add("Store updated successfully!", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task OpenAssignStoreHeadDialog(Store store)
+    {
+        var parameters = new DialogParameters { ["Store"] = store };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<AssignStoreHeadDialog>("Assign Store Head", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Snackbar.Add("Store Head assigned!", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task OpenBulkActionsDialog()
+    {
+        var selectedList = _selectedStores.ToList();
+        var parameters = new DialogParameters { ["SelectedStores"] = selectedList };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+
+        var dialog = await DialogService.ShowAsync<BulkActionsDialog>("Bulk Actions", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is BulkActionsDialog.BulkActionResult actionResult)
+        {
+            if (actionResult.Action == "AssignAreaHead")
+            {
+                // Chain to Open Assign Area Head Dialog
+                var areaParams = new DialogParameters { ["PreSelectedStores"] = actionResult.Stores };
+                var areaOptions = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+                var areaDialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", areaParams, areaOptions);
+
+                var areaResult = await areaDialog.Result;
+                if (areaResult != null && !areaResult.Canceled)
+                {
+                    Snackbar.Add("Area Head assigned to selected stores!", Severity.Success);
+                    await LoadData();
+                    _selectedStores.Clear();
+                }
+            }
+            else if (actionResult.Action == "StatusChanged")
+            {
+                Snackbar.Add("Status updated for selected stores!", Severity.Success);
+                await LoadData();
+                _selectedStores.Clear();
+            }
+            else if (actionResult.Action == "Export")
+            {
+                Snackbar.Add("Export feature coming soon!", Severity.Info);
+            }
+        }
+    }
+}

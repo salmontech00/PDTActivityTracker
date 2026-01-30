@@ -1,0 +1,196 @@
+﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject IDialogService DialogService
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@implements IDisposable
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+
+    /* Remove default button borders */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    /* White Text/Inputs */
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-icon-root,
+    .glass-dialog.light .mud-input-adornment {
+        color: #ffffff !important;
+    }
+
+    /* White Borders */
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #ffffff !important;
+        border-width: 2px !important;
+    }
+
+    /* Placeholder */
+    .glass-dialog.light .mud-input-slot::placeholder {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    /* Ensure inputs are NOT white (default visibility) */
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.lightest .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 1) !important;
+    }
+
+    .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Bulk Actions</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.subtitle1" Class="mb-3" Style="@($"color: {GetTitleColor()}")">Selected Stores: <strong>@SelectedStores.Count</strong></MudText>
+
+        <MudRadioGroup @bind-Value="_selectedAction">
+            <MudRadio Value="@("AssignAreaHead")" Color="Color.Primary" Dense="true" Style="@GetRadioStyle()">Assign to Area Head</MudRadio>
+            <MudRadio Value="@("ChangeStatus")" Color="Color.Primary" Dense="true" Style="@GetRadioStyle()">Change Status</MudRadio>
+            <MudRadio Value="@("Export")" Color="Color.Primary" Dense="true" Style="@GetRadioStyle()">Export Selected</MudRadio>
+        </MudRadioGroup>
+
+        @if (_selectedAction == "ChangeStatus")
+        {
+            <MudSelect T="string" Label="New Status" @bind-Value="_newStatus" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3">
+                <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
+                <MudSelectItem Value="@("Under Renovation")">Under Renovation</MudSelectItem>
+                <MudSelectItem Value="@("Closed")">Closed</MudSelectItem>
+            </MudSelect>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Style="@GetButtonStyle()">Apply to Selected</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public List<Store> SelectedStores { get; set; } = new();
+
+    private string _selectedAction = "AssignAreaHead";
+    private string _newStatus = "Active";
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged() => StateHasChanged();
+
+    public void Dispose() => ThemeService.OnThemeChanged -= OnThemeChanged;
+
+    private async Task Submit()
+    {
+        if (_selectedAction == "AssignAreaHead")
+        {
+            MudDialog.Close(DialogResult.Ok(new BulkActionResult { Action = "AssignAreaHead", Stores = SelectedStores }));
+        }
+        else if (_selectedAction == "ChangeStatus")
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var ids = SelectedStores.Select(s => s.Id).ToList();
+            var stores = await db.Stores.Where(s => ids.Contains(s.Id)).ToListAsync();
+
+            foreach (var s in stores)
+            {
+                s.Status = _newStatus;
+            }
+            await db.SaveChangesAsync();
+            MudDialog.Close(DialogResult.Ok(new BulkActionResult { Action = "StatusChanged" }));
+        }
+        else if (_selectedAction == "Export")
+        {
+            MudDialog.Close(DialogResult.Ok(new BulkActionResult { Action = "Export" }));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    public class BulkActionResult
+    {
+        public string Action { get; set; } = "";
+        public List<Store> Stores { get; set; } = new();
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null) return "#0f172a";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
+
+    private string GetRadioStyle()
+    {
+        if (ThemeService == null) return "";
+        return ThemeService.CurrentTheme == ThemeMode.Light ? "color: #ffffff !important;" : "";
+    }
+}
