@@ -231,8 +231,10 @@
         }
         else
         {
-            // Set SortOrder as the last item
-            _model.SortOrder = await db.ChecklistItems.CountAsync();
+            // Set SortOrder as the last item in the specific category
+            _model.SortOrder = (await db.ChecklistItems
+                .Where(t => t.CategoryId == _model.CategoryId)
+                .MaxAsync(t => (int?)t.SortOrder) ?? -1) + 1;
             db.ChecklistItems.Add(_model);
             await db.SaveChangesAsync();
             Snackbar.Add("Task added", Severity.Success);
