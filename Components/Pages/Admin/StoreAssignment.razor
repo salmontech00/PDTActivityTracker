@@ -9,6 +9,7 @@
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
@@ -359,9 +360,9 @@
                 </MudSelect>
             </MudItem>
             <MudItem xs="12" sm="2" Class="d-flex justify-end">
-                <MudToggleIconButton @bind-Toggled="_isMapView"
-                                     Icon="@Icons.Material.Filled.List" Color="Color.Default" Title="List View"
-                                     ToggledIcon="@Icons.Material.Filled.Map" ToggledColor="Color.Primary" ToggledTitle="Map View" />
+                <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
+                                      Icon="@Icons.Material.Filled.List" Color="Color.Default" Title="List View"
+                                      ToggledIcon="@Icons.Material.Filled.Map" ToggledColor="Color.Primary" ToggledTitle="Map View" />
             </MudItem>
         </MudGrid>
     </MudPaper>
@@ -369,20 +370,8 @@
     <!-- Main Content -->
     @if (_isMapView)
     {
-        <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0" Style="min-height: 400px; display: flex; justify-content: center; align-items: center;">
-            <div class="text-center">
-                <MudIcon Icon="@Icons.Material.Filled.Map" Size="Size.Large" Style="font-size: 4rem; opacity: 0.3;" />
-                <MudText Typo="Typo.h6" Class="mt-2" Style="opacity: 0.7;">Interactive Map View Placeholder</MudText>
-                <MudText Typo="Typo.body2" Style="opacity: 0.5;">(Google Maps / Leaflet Integration would go here)</MudText>
-                <div class="mt-4 d-flex gap-4 justify-center">
-                    <div class="d-flex align-center gap-2">
-                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Success" /> Assigned
-                    </div>
-                    <div class="d-flex align-center gap-2">
-                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Error" /> Unassigned
-                    </div>
-                </div>
-            </div>
+        <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0" Style="height: 600px; position: relative; overflow: hidden;">
+             <div id="map" style="width: 100%; height: 100%; z-index: 1;"></div>
         </MudPaper>
     }
     else
@@ -548,6 +537,40 @@
             await LoadData();
             StateHasChanged();
         }
+
+        if (_isMapView)
+        {
+            await UpdateMap();
+        }
+    }
+
+    private async Task OnViewToggled(bool isMapView)
+    {
+        _isMapView = isMapView;
+        if (!_isMapView)
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
+        }
+        else
+        {
+            // Map will be initialized in OnAfterRenderAsync
+        }
+    }
+
+    private async Task UpdateMap()
+    {
+        var mapData = _filteredStores.Select(s => new
+        {
+            gpsLatitude = s.GPSLatitude,
+            gpsLongitude = s.GPSLongitude,
+            storeName = s.StoreName,
+            storeCode = s.StoreCode,
+            status = s.Status,
+            storeHeadId = s.StoreHeadId,
+            storeHeadName = s.StoreHead?.Fullname
+        }).ToList();
+
+        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData);
     }
 
     private async Task LoadData()
@@ -560,10 +583,10 @@
             .AsNoTracking()
             .ToListAsync();
 
-        ApplyFilters();
+        await ApplyFilters();
     }
 
-    private void ApplyFilters()
+    private async Task ApplyFilters()
     {
         var query = _allStores.AsEnumerable();
 
@@ -586,6 +609,11 @@
         }
 
         _filteredStores = query.ToList();
+        
+        if (_isMapView)
+        {
+            await UpdateMap();
+        }
     }
 
     private void OnThemeChanged()
