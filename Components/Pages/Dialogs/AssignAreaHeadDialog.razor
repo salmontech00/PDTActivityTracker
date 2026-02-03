@@ -135,7 +135,7 @@
 
                 <MudItem xs="12">
                     <MudText Typo="Typo.caption" Style="@($"color: {GetTitleColor()}; opacity: 0.7")">
-                        Summary: Current: <strong>@_currentStores.Count</strong> | To Add: <strong>@_selectedStoresToAdd.Count</strong> | Total After: <strong>@(_currentStores.Count + _selectedStoresToAdd.Count)</strong>
+                        Summary: Current: <strong>@_currentStores.Count</strong> | To Add: <strong>@(_selectedStoresToAdd?.Count ?? 0)</strong> | Total After: <strong>@(_currentStores.Count + (_selectedStoresToAdd?.Count ?? 0))</strong>
                     </MudText>
                 </MudItem>
             }
@@ -208,39 +208,37 @@
 }
 
     private async Task LoadStores()
-{
-    using var db = await DbFactory.CreateDbContextAsync();
-
-    // Load stores currently assigned to this Area Head
-    _currentStores = await db.Stores.AsNoTracking()
-        .Where(s => s.AreaHeadId == _selectedUser!.Id)
-        .OrderBy(s => s.StoreCode)
-        .ToListAsync();
-    
-    _originalStores = new List<Store>(_currentStores);
-
-    // Load all stores EXCEPT those already assigned to THIS Area Head
-    _allAvailableStores = await db.Stores.AsNoTracking()
-        .Include(s => s.AreaHead)
-        .Where(s => s.AreaHeadId != _selectedUser!.Id)
-        .OrderBy(s => s.StoreCode)
-        .ToListAsync();
-
-    // Pre-select stores if passed via parameter
-    if (PreSelectedStores.Any())
     {
-        var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToHashSet();
-        var toSelect = _allAvailableStores.Where(s => preSelectedIds.Contains(s.Id)).ToList();
-        _selectedStoresToAdd = toSelect; // Assign directly as List
-    }
-    else
-    {
-        _selectedStoresToAdd = new List<Store>();
-    }
+        using var db = await DbFactory.CreateDbContextAsync();
 
-    FilterAvailableStores(_storeSearch);
-    StateHasChanged(); // Add this to ensure UI updates
-}
+        // Load stores currently assigned to this Area Head
+        _currentStores = await db.Stores.AsNoTracking()
+            .Where(s => s.AreaHeadId == _selectedUser!.Id)
+            .OrderBy(s => s.StoreCode)
+            .ToListAsync();
+        
+        _originalStores = new List<Store>(_currentStores);
+
+        // Load all stores EXCEPT those already assigned to THIS Area Head
+        _allAvailableStores = await db.Stores.AsNoTracking()
+            .Include(s => s.AreaHead)
+            .Where(s => s.AreaHeadId != _selectedUser!.Id)
+            .OrderBy(s => s.StoreCode)
+            .ToListAsync();
+
+        // Pre-select stores if passed via parameter (every time user changes to ensure fresh references)
+        if (PreSelectedStores != null && PreSelectedStores.Any())
+        {
+            var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToList();
+            var toSelect = _allAvailableStores.Where(s => preSelectedIds.Contains(s.Id)).ToList();
+            if (toSelect.Any())
+            {
+                _selectedStoresToAdd = toSelect;
+            }
+        }
+
+        FilterAvailableStores(_storeSearch);
+    }
 
     private void FilterAvailableStores(string search)
     {
@@ -303,7 +301,7 @@
         // 2. Handle Additions
         // Important: Filter out stores that are ALREADY in the current list to avoid redundant logs/operations
         // and reconcile with the user's manual selections in the MudList.
-        var selectedStores = _selectedStoresToAdd.Cast<Store>().ToList();
+        var selectedStores = _selectedStoresToAdd?.ToList() ?? new List<Store>();
         var currentStoreIds = _currentStores.Select(s => s.Id).ToHashSet();
         
         var newStoresToAdd = selectedStores.Where(s => !currentStoreIds.Contains(s.Id)).ToList();

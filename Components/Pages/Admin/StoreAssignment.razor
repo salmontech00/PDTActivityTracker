@@ -395,7 +395,7 @@
         <div class="desktop-view">
             <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
                 <MudTable Items="_filteredStores" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass" MultiSelection="true" @bind-SelectedItems="_selectedStores"
-                          @bind-ExpandedItems="_expandedRows">
+                          SelectOnRowClick="false" @bind-ExpandedItems="_expandedRows">
                     <HeaderContent>
                         <MudTh>Store Code</MudTh>
                         <MudTh>Store Name</MudTh>
