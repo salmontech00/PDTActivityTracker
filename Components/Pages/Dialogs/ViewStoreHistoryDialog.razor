@@ -1,0 +1,161 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+
+    /* Remove default button borders */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* TABLE STYLING */
+    .glass-dialog .mud-table {
+        background: transparent !important;
+    }
+
+    .glass-dialog.lightest .mud-table-head {
+        background: rgba(0, 114, 207, 0.05);
+    }
+
+    .glass-dialog.light .mud-table-head,
+    .glass-dialog.dark .mud-table-head {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .glass-dialog .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 12px 16px !important;
+    }
+
+    .glass-dialog.lightest .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.light .mud-table-cell,
+    .glass-dialog.dark .mud-table-cell {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog .mud-table-head .mud-table-cell {
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Class="@($"rounded-xl pa-4 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.History" Style="@($"color: {GetTitleColor()}; font-size: 2rem;")" />
+            <div>
+                <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700; line-height: 1.2;")">Assignment History</MudText>
+                <MudText Typo="Typo.caption" Style="@($"color: {GetTitleColor()}; opacity: 0.7;")">@Store.StoreName (@Store.StoreCode)</MudText>
+            </div>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="mt-4" style="max-height: 400px; overflow-y: auto;">
+            <MudTable Items="Logs" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Date & Time</MudTh>
+                    <MudTh>Action</MudTh>
+                    <MudTh>User</MudTh>
+                    <MudTh>Role</MudTh>
+                    <MudTh>Remarks</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudTd>
+                    <MudTd>
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                 Color="@GetActionColor(context.Action)" Class="font-weight-bold">
+                            @context.Action
+                        </MudChip>
+                    </MudTd>
+                    <MudTd>@(context.User?.Fullname ?? "Unknown")</MudTd>
+                    <MudTd>@context.Role</MudTd>
+                    <MudTd Style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        <MudTooltip Text="@context.Remarks">
+                            @context.Remarks
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText Typo="Typo.body2" Class="pa-4 text-center" Style="@($"color: {GetTitleColor()}; opacity: 0.5;")">No assignment history found.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Primary" Variant="Variant.Filled" Class="rounded-lg px-6" Style="@GetButtonStyle()">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public Store Store { get; set; } = default!;
+    [Parameter] public List<StoreAssignmentLog> Logs { get; set; } = new();
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null)
+            return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private Color GetActionColor(string action) => action switch
+    {
+        "Assigned" => Color.Success,
+        "Unassigned" => Color.Error,
+        "Removed" => Color.Error,
+        "Replaced" => Color.Warning,
+        _ => Color.Default
+    };
+
+    private void Close() => MudDialog.Close();
+}

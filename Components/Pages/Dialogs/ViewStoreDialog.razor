@@ -1,0 +1,230 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+
+    /* Remove default button borders */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    .glass-dialog.light .info-label {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    .glass-dialog.light .info-value {
+        color: #ffffff !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    .glass-dialog.lightest .info-label {
+        color: #64748b !important;
+    }
+
+    .glass-dialog.lightest .info-value {
+        color: #0f172a !important;
+    }
+
+    .info-item {
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .glass-dialog.lightest .info-item {
+        background: rgba(0, 114, 207, 0.05);
+        border: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .info-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .info-value {
+        font-size: 0.95rem;
+        font-weight: 600;
+        word-break: break-all;
+    }
+
+    .status-chip {
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Class="@($"rounded-xl pa-4 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Store" Style="@($"color: {GetTitleColor()}; font-size: 2rem;")" />
+            <div>
+                <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700; line-height: 1.2;")">@StoreToView.StoreName</MudText>
+                <MudText Typo="Typo.caption" Style="@($"color: {GetTitleColor()}; opacity: 0.7;")">@StoreToView.StoreCode</MudText>
+            </div>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid Spacing="2" Class="mt-2">
+            <MudItem xs="12" sm="6" md="4">
+                <div class="info-item">
+                    <div class="info-label">Store Code</div>
+                    <div class="info-value">@StoreToView.StoreCode</div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="8">
+                <div class="info-item">
+                    <div class="info-label">Store Name</div>
+                    <div class="info-value">@StoreToView.StoreName</div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="12" md="12">
+                <div class="info-item">
+                    <div class="info-label">Location</div>
+                    <div class="info-value">@StoreToView.Location</div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value">
+                        <MudChip T="string"
+                                 Size="Size.Small"
+                                 Variant="Variant.Text"
+                                 Class="@($"status-chip {GetStatusChipClass(StoreToView.Status)}")">
+                            @StoreToView.Status
+                        </MudChip>
+                    </div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <div class="info-item">
+                    <div class="info-label">Phone</div>
+                    <div class="info-value">@(string.IsNullOrEmpty(StoreToView.ContactPhone) ? "N/A" : StoreToView.ContactPhone)</div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="4">
+                <div class="info-item">
+                    <div class="info-label">Email</div>
+                    <div class="info-value">@(string.IsNullOrEmpty(StoreToView.ContactEmail) ? "N/A" : StoreToView.ContactEmail)</div>
+                </div>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-2" Style="opacity: 0.1" />
+                <MudText Typo="Typo.subtitle2" Style="@($"color: {GetTitleColor()}; font-weight: 700; opacity: 0.8;")">Assignments</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <div class="info-item">
+                    <div class="info-label">Store Head</div>
+                    <div class="info-value">@(StoreToView.StoreHead?.Fullname ?? "Unassigned")</div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <div class="info-item">
+                    <div class="info-label">Area Head</div>
+                    <div class="info-value">@(StoreToView.AreaHead?.Fullname ?? "Unassigned")</div>
+                </div>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-2" Style="opacity: 0.1" />
+                <MudText Typo="Typo.subtitle2" Style="@($"color: {GetTitleColor()}; font-weight: 700; opacity: 0.8;")">Geographic Info</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6">
+                <div class="info-item">
+                    <div class="info-label">Latitude</div>
+                    <div class="info-value">@(StoreToView.GPSLatitude?.ToString() ?? "N/A")</div>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <div class="info-item">
+                    <div class="info-label">Longitude</div>
+                    <div class="info-value">@(StoreToView.GPSLongitude?.ToString() ?? "N/A")</div>
+                </div>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Color="Color.Primary" Variant="Variant.Filled" Class="rounded-lg px-6" Style="@GetButtonStyle()">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public Store StoreToView { get; set; } = default!;
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null)
+            return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetStatusChipClass(string status) => status switch
+    {
+        "Active" => "role-chip-success",
+        "Inactive" => "role-chip-inactive",
+        _ => "role-chip-success"
+    };
+
+    private void Close() => MudDialog.Close();
+}

@@ -38,7 +38,7 @@ namespace PDTActivityTracker.Components.Services
         {
             IsAuthenticated = true;
             Username = username;
-            await _sessionStorage.SetItemAsync("username", username);
+            try { await _sessionStorage.SetItemAsync("username", username); } catch { }
         }
 
         public async Task Logout()
@@ -47,27 +47,31 @@ namespace PDTActivityTracker.Components.Services
             Username = null;
             Fullname = null;
             Role = null;
-            await _sessionStorage.RemoveItemAsync("username");
-            await _sessionStorage.RemoveItemAsync("fullname");
-            await _sessionStorage.RemoveItemAsync("role");
+            try
+            {
+                await _sessionStorage.RemoveItemAsync("username");
+                await _sessionStorage.RemoveItemAsync("fullname");
+                await _sessionStorage.RemoveItemAsync("role");
+            }
+            catch { }
         }
 
         public async Task SetUsername(string username)
         {
             Username = username;
-            await _sessionStorage.SetItemAsync("username", username);
+            try { await _sessionStorage.SetItemAsync("username", username); } catch { }
         }
 
         public async Task SetFullname(string fullname)
         {
             Fullname = fullname;
-            await _sessionStorage.SetItemAsync("fullname", fullname);
+            try { await _sessionStorage.SetItemAsync("fullname", fullname); } catch { }
         }
 
         public async Task SetRole(string role)
         {
             Role = role;
-            await _sessionStorage.SetItemAsync("role", role);
+            try { await _sessionStorage.SetItemAsync("role", role); } catch { }
         }
     }
 }

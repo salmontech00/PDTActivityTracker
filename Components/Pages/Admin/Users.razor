@@ -438,7 +438,7 @@
                     <MudTd DataLabel="Emp. No.">@context.EmployeeNumber</MudTd>
                     <MudTd DataLabel="Full Name" Style="font-weight: 600;">@context.Fullname</MudTd>
                     <MudTd DataLabel="Designation">@context.Designation</MudTd>
-                    <MudTd DataLabel="Username">@@@context.Username</MudTd>
+                    <MudTd DataLabel="Username">@context.Username</MudTd>
                     <MudTd DataLabel="Access Level">
                         <MudChip T="string"
                                  Size="Size.Small"
@@ -512,7 +512,7 @@
                             </MudAvatar>
                             <div>
                                 <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@user.Fullname</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@@@user.Username</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@user.Username</MudText>
                             </div>
                         </div>
                         <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"role-chip {GetRoleChipClass(user.Role)}")">
@@ -794,8 +794,8 @@
     private string GetRoleChipClass(string role) => role switch
     {
         "Admin" => "role-chip-success",
-        "AVP" => "role-chip-secondary",
-        "Area Head" => "role-chip-info",
+        "AVP" => "role-chip-success",
+        "Area Head" => "role-chip-success",
         "Store Head" => "role-chip-success",
         _ => "role-chip-success"
     };
@@ -810,8 +810,8 @@
     private Color GetRoleColor(string role) => role switch
     {
         "Admin" => Color.Success,
-        "AVP" => Color.Secondary,
-        "Area Head" => Color.Info,
+        "AVP" => Color.Success,
+        "Area Head" => Color.Success,
         "Store Head" => Color.Success,
         _ => Color.Success
     };
@@ -880,8 +880,20 @@
             try
             {
                 using var db = await DbFactory.CreateDbContextAsync();
-                var userToDelete = await db.Users.FindAsync(user.Id);
 
+                // 1. Handle foreign key constraints in Stores
+                var storesAsHead = await db.Stores.Where(s => s.StoreHeadId == user.Id).ToListAsync();
+                foreach (var s in storesAsHead) s.StoreHeadId = null;
+
+                var storesAsArea = await db.Stores.Where(s => s.AreaHeadId == user.Id).ToListAsync();
+                foreach (var s in storesAsArea) s.AreaHeadId = null;
+
+                // 2. Handle foreign key constraints in Assignment Logs (preserve log history but remove user reference)
+                var userLogs = await db.StoreAssignmentLogs.Where(l => l.UserId == user.Id).ToListAsync();
+                foreach (var l in userLogs) l.UserId = null;
+
+                // 3. Delete the user
+                var userToDelete = await db.Users.FindAsync(user.Id);
                 if (userToDelete != null)
                 {
                     db.Users.Remove(userToDelete);
