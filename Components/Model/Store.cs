@@ -33,5 +33,19 @@ namespace PDTActivityTracker.Components.Model
         public int? AreaHeadId { get; set; }
         [ForeignKey("AreaHeadId")]
         public User? AreaHead { get; set; }
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is Store other)
+            {
+                return Id == other.Id;
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id.GetHashCode();
+        }
     }
 }

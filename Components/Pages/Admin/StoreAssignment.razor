@@ -297,25 +297,25 @@
 
     <!-- Summary Cards -->
     <MudGrid Class="mb-4">
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="6" sm="6" md="3">
             <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
                 <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Total Stores</MudText>
                 <MudText Typo="Typo.h4" Class="font-weight-bold">@_allStores.Count</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="6" sm="6" md="3">
             <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
                 <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Assigned</MudText>
-                <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@_allStores.Count(s => s.StoreHeadId != null)</MudText>
+                <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@_allStores.Count(s => s.StoreHeadId != null && s.AreaHeadId != null)</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="6" sm="6" md="3">
             <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
                 <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Unassigned</MudText>
-                <MudText Typo="Typo.h4" Class="font-weight-bold text-error">@_allStores.Count(s => s.StoreHeadId == null)</MudText>
+                <MudText Typo="Typo.h4" Class="font-weight-bold text-error">@_allStores.Count(s => s.StoreHeadId == null || s.AreaHeadId == null)</MudText>
             </MudPaper>
         </MudItem>
-        <MudItem xs="12" sm="6" md="3">
+        <MudItem xs="6" sm="6" md="3">
             <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
                 <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Area Heads</MudText>
                 <MudText Typo="Typo.h4" Class="font-weight-bold text-info">@_allStores.Select(s => s.AreaHeadId).Distinct().Count(id => id != null)</MudText>
@@ -334,21 +334,19 @@
             @(_showFilters ? "Hide Filters" : "Show Filters")
         </MudButton>
 
-        <MudGrid Spacing="2" AlignItems="AlignItems.Center">
-            <MudItem xs="12" sm="4">
-                <MudTextField @bind-Value="_searchTerm" Placeholder="Search Store Name, Code, Location..."
+        <MudGrid Spacing="3" AlignItems="AlignItems.Center">
+            <MudItem xs="12" sm="5">
+                <MudTextField @bind-Value="_searchTerm" Label="Search Stores" Placeholder="Search Store Name, Code, Location..."
                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
                               Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg"
                               Immediate="true" TextChanged="ApplyFilters" />
             </MudItem>
             <MudItem xs="6" sm="3">
-                <MudSelect T="string" Label="Region/Location" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           @bind-Value="_locationFilter" SelectedValuesChanged="ApplyFilters">
-                    <MudSelectItem Value="@("All")">All Locations</MudSelectItem>
-                    @foreach (var loc in _allStores.Select(s => s.Location).Distinct().OrderBy(l => l))
-                    {
-                        <MudSelectItem Value="@loc">@loc</MudSelectItem>
-                    }
+                <MudSelect T="string" Label="Assignment" Variant="Variant.Outlined" Margin="Margin.Dense"
+                           @bind-Value="_assignmentFilter" SelectedValuesChanged="ApplyFilters">
+                    <MudSelectItem Value="@("All")">All Assignments</MudSelectItem>
+                    <MudSelectItem Value="@("Assigned")">Assigned (Both Heads)</MudSelectItem>
+                    <MudSelectItem Value="@("Unassigned")">Unassigned (Missing Any)</MudSelectItem>
                 </MudSelect>
             </MudItem>
             <MudItem xs="6" sm="3">
@@ -359,19 +357,36 @@
                     <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
                 </MudSelect>
             </MudItem>
-            <MudItem xs="12" sm="2" Class="d-flex justify-end">
+            <MudItem xs="12" sm="1" Class="d-flex justify-end">
                 <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
-                                      Icon="@Icons.Material.Filled.List" Color="Color.Default" Title="List View"
-                                      ToggledIcon="@Icons.Material.Filled.Map" ToggledColor="Color.Primary" ToggledTitle="Map View" />
+                                     Icon="@Icons.Material.Filled.Map" Color="Color.Default" Title="@(_isMapView ? "List View" : "Map View")"
+                                     ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Primary" />
             </MudItem>
         </MudGrid>
+
+        <div class="d-flex align-center justify-space-between">
+            <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                Showing @_filteredStores.Count of @_allStores.Count stores
+            </MudText>
+            @if (HasActiveFilters())
+            {
+                <MudButton Variant="Variant.Text"
+                           Color="Color.Error"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.RestartAlt"
+                           OnClick="ClearFilters"
+                           Class="modern-button">
+                    Reset Filters
+                </MudButton>
+            }
+        </div>
     </MudPaper>
 
     <!-- Main Content -->
     @if (_isMapView)
     {
         <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0" Style="height: 600px; position: relative; overflow: hidden;">
-             <div id="map" style="width: 100%; height: 100%; z-index: 1;"></div>
+            <div id="map" style="width: 100%; height: 100%; z-index: 1;"></div>
         </MudPaper>
     }
     else
@@ -379,7 +394,8 @@
         <!-- Desktop Table View -->
         <div class="desktop-view">
             <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
-                <MudTable Items="_filteredStores" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass" MultiSelection="true" @bind-SelectedItems="_selectedStores">
+                <MudTable Items="_filteredStores" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass" MultiSelection="true" @bind-SelectedItems="_selectedStores"
+                          @bind-ExpandedItems="_expandedRows">
                     <HeaderContent>
                         <MudTh>Store Code</MudTh>
                         <MudTh>Store Name</MudTh>
@@ -398,25 +414,31 @@
                             {
                                 <div class="d-flex flex-column">
                                     <span style="font-weight: 500">@context.StoreHead.Fullname</span>
-                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Class="text-caption" Color="Color.Primary">Change ▼</MudLink>
+                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
                                 </div>
                             }
                             else
                             {
                                 <div class="d-flex flex-column">
                                     <span class="text-error">Unassigned</span>
-                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Class="text-caption" Color="Color.Primary">Assign ▼</MudLink>
+                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
                                 </div>
                             }
                         </MudTd>
                         <MudTd DataLabel="Area Head">
                             @if (context.AreaHead != null)
                             {
-                                <span>@context.AreaHead.Fullname</span>
+                                <div class="d-flex flex-column">
+                                    <span style="font-weight: 500">@context.AreaHead.Fullname</span>
+                                    <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                </div>
                             }
                             else
                             {
-                                <span style="opacity: 0.5">--</span>
+                                <div class="d-flex flex-column">
+                                    <span class="text-error" style="opacity: 0.5">Unassigned</span>
+                                    <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                </div>
                             }
                         </MudTd>
                         <MudTd DataLabel="Status">
@@ -426,7 +448,11 @@
                             </MudChip>
                         </MudTd>
                         <MudTd DataLabel="Action" Style="text-align: center;">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                            <div class="d-flex justify-center gap-1">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                            </div>
                         </MudTd>
                     </RowTemplate>
                     <ChildRowContent>
@@ -444,11 +470,30 @@
                                         <MudItem xs="12" md="4">
                                             <MudText Typo="Typo.subtitle2" Color="Color.Primary">Assignment History</MudText>
                                             <MudDivider Class="mb-2" />
-                                            <MudText Typo="Typo.caption" Style="opacity: 0.7">No history available (Mock)</MudText>
+                                            @if (_storeLogs.ContainsKey(context.Id) && _storeLogs[context.Id].Any())
+                                            {
+                                                <div style="max-height: 150px; overflow-y: auto;">
+                                                    @foreach (var log in _storeLogs[context.Id].OrderByDescending(l => l.Timestamp).Take(5))
+                                                    {
+                                                        <div class="mb-2">
+                                                            <MudText Typo="Typo.caption" Class="d-block" Style="font-weight: 600;">@log.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudText>
+                                                            <MudText Typo="Typo.body2">@log.Action: @(log.User?.Fullname ?? "Unknown") (@log.Role)</MudText>
+                                                            @if (!string.IsNullOrEmpty(log.Remarks))
+                                                            {
+                                                                <MudText Typo="Typo.caption" Class="italic">@log.Remarks</MudText>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <MudText Typo="Typo.caption" Style="opacity: 0.7">No history available</MudText>
+                                            }
                                         </MudItem>
                                         <MudItem xs="12" md="4" Class="d-flex align-end justify-end gap-2">
-                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.History">View Full History</MudButton>
-                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Map">View on Map</MudButton>
+                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="@(() => ViewFullHistory(context))">View Full History</MudButton>
+                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Map" OnClick="@(() => ViewOnMap(context))">View on Map</MudButton>
                                         </MudItem>
                                     </MudGrid>
                                 </MudCard>
@@ -501,7 +546,10 @@
                         </MudGrid>
                     </div>
                     <div class="mobile-card-actions">
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenAssignStoreHeadDialog(store))">Assign Head</MudButton>
+                        <div class="d-flex flex-wrap gap-1">
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenAssignStoreHeadDialog(store))">Store Head</MudButton>
+                            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenAssignAreaHeadDialog(store))">Area Head</MudButton>
+                        </div>
                         <MudSpacer />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(store))" />
                     </div>
@@ -515,9 +563,11 @@
     private List<Store> _allStores = new();
     private List<Store> _filteredStores = new();
     private HashSet<Store> _selectedStores = new();
+    private Dictionary<int, List<StoreAssignmentLog>> _storeLogs = new();
+    private HashSet<Store> _expandedRows = new();
 
     private string _searchTerm = "";
-    private string _locationFilter = "All";
+    private string _assignmentFilter = "All";
     private string _statusFilter = "All";
     private bool _isMapView = false;
     private bool _showFilters = false;
@@ -583,6 +633,15 @@
             .AsNoTracking()
             .ToListAsync();
 
+        var logs = await db.StoreAssignmentLogs
+            .Include(l => l.User)
+            .AsNoTracking()
+            .OrderByDescending(l => l.Timestamp)
+            .ToListAsync();
+
+        _storeLogs = logs.GroupBy(l => l.StoreId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
         await ApplyFilters();
     }
 
@@ -598,9 +657,16 @@
                 s.Location.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
         }
 
-        if (_locationFilter != "All")
+        if (_assignmentFilter != "All")
         {
-            query = query.Where(s => s.Location == _locationFilter);
+            if (_assignmentFilter == "Assigned")
+            {
+                query = query.Where(s => s.StoreHeadId != null && s.AreaHeadId != null);
+            }
+            else
+            {
+                query = query.Where(s => s.StoreHeadId == null || s.AreaHeadId == null);
+            }
         }
 
         if (_statusFilter != "All")
@@ -609,11 +675,26 @@
         }
 
         _filteredStores = query.ToList();
-        
+
         if (_isMapView)
         {
             await UpdateMap();
         }
+    }
+
+    private async Task ClearFilters()
+    {
+        _searchTerm = string.Empty;
+        _assignmentFilter = "All";
+        _statusFilter = "All";
+        await ApplyFilters();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrWhiteSpace(_searchTerm) ||
+               _assignmentFilter != "All" ||
+               _statusFilter != "All";
     }
 
     private void OnThemeChanged()
@@ -624,6 +705,11 @@
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private string GetStatusTextColor()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "text-dark" : "text-white";
     }
 
     private string GetThemeClass()
@@ -693,6 +779,21 @@
         }
     }
 
+    private async Task OpenAssignAreaHeadDialog(Store store)
+    {
+        var parameters = new DialogParameters { ["PreSelectedStores"] = new List<Store> { store } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        var dialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            Snackbar.Add("Area Head assigned!", Severity.Success);
+            await LoadData();
+        }
+    }
+
     private async Task OpenBulkActionsDialog()
     {
         var selectedList = _selectedStores.ToList();
@@ -730,5 +831,80 @@
                 Snackbar.Add("Export feature coming soon!", Severity.Info);
             }
         }
+    }
+
+    private async Task OpenViewStoreDialog(Store store)
+    {
+        var parameters = new DialogParameters { ["StoreToView"] = store };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        await DialogService.ShowAsync<ViewStoreDialog>("Store Details", parameters, options);
+    }
+
+    private void ToggleDetails(Store store)
+    {
+        if (_expandedRows.Contains(store))
+        {
+            _expandedRows.Remove(store);
+        }
+        else
+        {
+            _expandedRows.Add(store);
+        }
+    }
+
+    private async Task DeleteStore(Store store)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = $"Are you sure you want to delete {store.StoreName} ({store.StoreCode})? This action cannot be undone.",
+            ["ButtonText"] = "Delete",
+            ["Color"] = Color.Error
+        };
+
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Store", parameters);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var s = await db.Stores.FindAsync(store.Id);
+            if (s != null)
+            {
+                db.Stores.Remove(s);
+                await db.SaveChangesAsync();
+                Snackbar.Add("Store deleted successfully!", Severity.Success);
+                await LoadData();
+            }
+        }
+    }
+
+    private async Task ViewOnMap(Store store)
+    {
+        if (store.GPSLatitude == null || store.GPSLongitude == null)
+        {
+            Snackbar.Add("GPS coordinates not available for this store.", Severity.Warning);
+            return;
+        }
+
+        _isMapView = true;
+        StateHasChanged();
+
+        // Wait a bit for map to render
+        await Task.Delay(300);
+        await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", store.GPSLatitude, store.GPSLongitude, 18);
+    }
+
+    private async Task ViewFullHistory(Store store)
+    {
+        var logs = _storeLogs.ContainsKey(store.Id) ? _storeLogs[store.Id] : new List<StoreAssignmentLog>();
+        var parameters = new DialogParameters
+        {
+            ["Store"] = store,
+            ["Logs"] = logs
+        };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+
+        await DialogService.ShowAsync<ViewStoreHistoryDialog>("Assignment History", parameters, options);
     }
 }

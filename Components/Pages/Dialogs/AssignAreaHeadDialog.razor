@@ -87,7 +87,12 @@
                             <MudList T="Store" Dense="true" ReadOnly="true">
                                 @foreach (var s in _currentStores)
                                 {
-                                    <MudListItem Text="@($"{s.StoreCode} - {s.StoreName}")" Icon="@Icons.Material.Outlined.Check" IconColor="Color.Success" />
+                                    <MudListItem>
+                                        <div class="d-flex justify-space-between width-100 align-center">
+                                            <span>@s.StoreCode - @s.StoreName</span>
+                                            <MudIconButton Icon="@Icons.Material.Filled.Close" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemoveStore(s))" Title="Remove Store" />
+                                        </div>
+                                    </MudListItem>
                                 }
                             </MudList>
                         }
@@ -101,19 +106,31 @@
                 <MudItem xs="12">
                     <MudText Typo="Typo.caption" Class="mb-1" Style="@($"color: {GetTitleColor()}")">Available Stores to Add (Unassigned to Area Head):</MudText>
                     <MudTextField @bind-Value="_storeSearch" Placeholder="Search stores..." Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" TextChanged="FilterAvailableStores" />
-                    <MudPaper Class="pa-2 mt-2 overflow-y-auto" Style="max-height: 200px; background: rgba(255,255,255,0.05);">
-                        <MudList T="Store" Dense="true" Clickable="true" @bind-SelectedValues="_selectedStoresToAdd" SelectionMode="SelectionMode.MultiSelection" CheckBoxColor="Color.Primary">
+                    <MudPaper @key="@(_selectedUser?.Id ?? 0)" Class="pa-2 mt-2 overflow-y-auto" Style="max-height: 200px; background: rgba(255,255,255,0.05);">
+                        <MudList @key="@(_selectedUser?.Id ?? 0)" T="Store" Dense="true" Clickable="true" 
+                                 SelectedValues="_selectedStoresToAdd" SelectedValuesChanged="OnSelectedStoresChanged" 
+                                 SelectionMode="SelectionMode.MultiSelection" CheckBoxColor="Color.Primary">
                             @foreach (var s in _filteredAvailableStores)
                             {
                                 <MudListItem Value="@s">
-                                    <div class="d-flex justify-space-between width-100">
-                                        <span>@s.StoreCode - @s.StoreName</span>
+                                    <div class="d-flex justify-space-between width-100 align-center">
+                                        <div class="d-flex flex-column">
+                                            <span>@s.StoreCode - @s.StoreName</span>
+                                            @if (s.AreaHead != null)
+                                            {
+                                                <span style="color: #ff9800; font-size: 0.75em">Currently: @s.AreaHead.Fullname</span>
+                                            }
+                                        </div>
                                         <span style="opacity: 0.6; font-size: 0.8em">@s.Location</span>
                                     </div>
                                 </MudListItem>
                             }
                         </MudList>
                     </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField Label="Remarks (Optional)" @bind-Value="_remarks" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" Class="mt-3" />
                 </MudItem>
 
                 <MudItem xs="12">
@@ -139,9 +156,11 @@
 
     private User? _selectedUser;
     private List<Store> _currentStores = new();
+    private List<Store> _originalStores = new();
     private List<Store> _allAvailableStores = new();
     private List<Store> _filteredAvailableStores = new();
-    private IReadOnlyCollection<Store> _selectedStoresToAdd = new HashSet<Store>(); // MudList uses object for Multiselection compatibility sometimes, checking doc behavior
+    private IReadOnlyCollection<Store> _selectedStoresToAdd = new List<Store>();
+    private string? _remarks;
 
     private string _storeSearch = "";
 
@@ -157,8 +176,8 @@
     private async Task<IEnumerable<User>> SearchAreaHeads(string value, CancellationToken token)
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        // Ideally filter by Role = "Area Head"
-        var query = db.Users.AsNoTracking().Where(u => u.Status == "Active" && (u.Role == "Area Head" || u.Role == "Admin" || u.Role == "AVP"));
+        // Strictly filter by Role = "Area Head"
+        var query = db.Users.AsNoTracking().Where(u => u.Status == "Active" && u.Role == "Area Head");
 
         if (!string.IsNullOrEmpty(value))
         {
@@ -169,40 +188,59 @@
     }
 
     private async Task OnAreaHeadSelected(User user)
+{
+    _selectedUser = user;
+    _remarks = null;
+    _selectedStoresToAdd = new List<Store>(); // Change to List instead of HashSet
+    
+    if (_selectedUser != null)
     {
-        _selectedUser = user;
-        if (_selectedUser != null)
-        {
-            await LoadStores();
-        }
-        else
-        {
-            _currentStores.Clear();
-            _allAvailableStores.Clear();
-            _filteredAvailableStores.Clear();
-        }
+        await LoadStores();
     }
+    else
+    {
+        _currentStores.Clear();
+        _originalStores.Clear();
+        _allAvailableStores.Clear();
+        _filteredAvailableStores.Clear();
+    }
+    StateHasChanged();
+}
 
     private async Task LoadStores()
+{
+    using var db = await DbFactory.CreateDbContextAsync();
+
+    // Load stores currently assigned to this Area Head
+    _currentStores = await db.Stores.AsNoTracking()
+        .Where(s => s.AreaHeadId == _selectedUser!.Id)
+        .OrderBy(s => s.StoreCode)
+        .ToListAsync();
+    
+    _originalStores = new List<Store>(_currentStores);
+
+    // Load all stores EXCEPT those already assigned to THIS Area Head
+    _allAvailableStores = await db.Stores.AsNoTracking()
+        .Include(s => s.AreaHead)
+        .Where(s => s.AreaHeadId != _selectedUser!.Id)
+        .OrderBy(s => s.StoreCode)
+        .ToListAsync();
+
+    // Pre-select stores if passed via parameter
+    if (PreSelectedStores.Any())
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-
-        // Load stores currently assigned to this Area Head
-        _currentStores = await db.Stores.AsNoTracking()
-            .Where(s => s.AreaHeadId == _selectedUser!.Id)
-            .OrderBy(s => s.StoreCode)
-            .ToListAsync();
-
-        // Load available stores (those NOT assigned to THIS Area Head - effectively reassignable or unassigned)
-        // OR restricted to those with NO Area Head depending on business rule.
-        // Assuming we show stores that are NOT assigned to THIS user.
-        _allAvailableStores = await db.Stores.AsNoTracking()
-            .Where(s => s.AreaHeadId != _selectedUser!.Id)
-            .OrderBy(s => s.StoreCode)
-            .ToListAsync();
-
-        FilterAvailableStores(_storeSearch);
+        var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToHashSet();
+        var toSelect = _allAvailableStores.Where(s => preSelectedIds.Contains(s.Id)).ToList();
+        _selectedStoresToAdd = toSelect; // Assign directly as List
     }
+    else
+    {
+        _selectedStoresToAdd = new List<Store>();
+    }
+
+    FilterAvailableStores(_storeSearch);
+    StateHasChanged(); // Add this to ensure UI updates
+}
 
     private void FilterAvailableStores(string search)
     {
@@ -219,18 +257,61 @@
         }
     }
 
+    private void RemoveStore(Store store)
+    {
+        _currentStores.Remove(store);
+        if (!_allAvailableStores.Any(as_ => as_.Id == store.Id))
+        {
+            _allAvailableStores.Add(store);
+            _allAvailableStores = _allAvailableStores.OrderBy(s => s.StoreCode).ToList();
+            FilterAvailableStores(_storeSearch);
+        }
+        StateHasChanged();
+    }
+
     private async Task Submit()
     {
         if (_selectedUser == null) return;
 
         using var db = await DbFactory.CreateDbContextAsync();
 
-        // Get IDs of selected stores
-        var selectedStoreIds = _selectedStoresToAdd.Cast<Store>().Select(s => s.Id).ToList();
+        // 1. Handle Unassignments
+        var originalIds = _originalStores.Select(s => s.Id).ToList();
+        var currentIds = _currentStores.Select(s => s.Id).ToList();
+        var removedStoreIds = originalIds.Except(currentIds).ToList();
 
-        if (selectedStoreIds.Any())
+        if (removedStoreIds.Any())
         {
-            var storesToUpdate = await db.Stores.Where(s => selectedStoreIds.Contains(s.Id)).ToListAsync();
+            var storesToUnassign = await db.Stores.Where(s => removedStoreIds.Contains(s.Id)).ToListAsync();
+            foreach (var store in storesToUnassign)
+            {
+                var previousHeadId = store.AreaHeadId;
+                store.AreaHeadId = null;
+
+                db.StoreAssignmentLogs.Add(new StoreAssignmentLog
+                {
+                    StoreId = store.Id,
+                    UserId = previousHeadId,
+                    Role = "Area Head",
+                    Action = "Unassigned",
+                    Timestamp = DateTime.Now,
+                    Remarks = string.IsNullOrEmpty(_remarks) ? "Removed from Area Head assignment in management dialog." : _remarks
+                });
+            }
+        }
+
+        // 2. Handle Additions
+        // Important: Filter out stores that are ALREADY in the current list to avoid redundant logs/operations
+        // and reconcile with the user's manual selections in the MudList.
+        var selectedStores = _selectedStoresToAdd.Cast<Store>().ToList();
+        var currentStoreIds = _currentStores.Select(s => s.Id).ToHashSet();
+        
+        var newStoresToAdd = selectedStores.Where(s => !currentStoreIds.Contains(s.Id)).ToList();
+
+        if (newStoresToAdd.Any())
+        {
+            var newIds = newStoresToAdd.Select(s => s.Id).ToList();
+            var storesToUpdate = await db.Stores.Where(s => newIds.Contains(s.Id)).ToListAsync();
             foreach (var store in storesToUpdate)
             {
                 store.AreaHeadId = _selectedUser.Id;
@@ -242,17 +323,22 @@
                     Role = "Area Head",
                     Action = "Assigned",
                     Timestamp = DateTime.Now,
-                    Remarks = "Bulk Area Head Assignment"
+                    Remarks = string.IsNullOrEmpty(_remarks) ? "Bulk Area Head Assignment" : _remarks
                 });
             }
-
-            await db.SaveChangesAsync();
         }
 
+        await db.SaveChangesAsync();
         MudDialog.Close(DialogResult.Ok(true));
     }
 
     private void Cancel() => MudDialog.Cancel();
+
+    private void OnSelectedStoresChanged(IEnumerable<Store> values)
+    {
+        _selectedStoresToAdd = values?.ToList() ?? new List<Store>();
+        StateHasChanged();
+    }
 
     private string GetThemeClass()
     {

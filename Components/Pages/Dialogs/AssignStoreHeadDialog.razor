@@ -98,6 +98,10 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
+        @if (Store.StoreHeadId != null)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="Unassign" Style="text-transform: none; font-weight: 600; border-radius: 4px;">Unassign</MudButton>
+        }
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_selectedUser == null)" Style="@GetButtonStyle()">Assign Store Head</MudButton>
     </DialogActions>
 </MudDialog>
@@ -123,15 +127,13 @@
     private async Task<IEnumerable<User>> SearchEmployees(string value, CancellationToken token)
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        var query = db.Users.AsNoTracking().Where(u => u.Status == "Active");
+        // Strictly filter by Role = "Store Head"
+        var query = db.Users.AsNoTracking().Where(u => u.Status == "Active" && u.Role == "Store Head");
 
         if (!string.IsNullOrEmpty(value))
         {
             query = query.Where(u => u.Fullname.Contains(value) || (u.EmployeeNumber != null && u.EmployeeNumber.Contains(value)));
         }
-
-        // Ideally filter by role, but strict role might be restrictive
-        // query = query.Where(u => u.Role == "Store Head" || u.Role == "Admin");
 
         return await query.ToListAsync();
     }
@@ -143,7 +145,6 @@
         var store = await db.Stores.FindAsync(Store.Id);
         if (store != null)
         {
-            // Log previous assignment removal if separate
             store.StoreHeadId = _selectedUser?.Id;
 
             // Log Assignment
@@ -157,6 +158,31 @@
                 Remarks = $"Effective: {_effectiveDate?.ToShortDateString()}. {_remarks}"
             });
 
+            await db.SaveChangesAsync();
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
+
+    private async Task Unassign()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        var store = await db.Stores.FindAsync(Store.Id);
+        if (store != null)
+        {
+            var previousHeadId = store.StoreHeadId;
+            store.StoreHeadId = null;
+
+            // Log Unassignment
+            db.StoreAssignmentLogs.Add(new StoreAssignmentLog
+            {
+                StoreId = store.Id,
+                UserId = previousHeadId,
+                Role = "Store Head",
+                Action = "Unassigned",
+                Timestamp = DateTime.Now,
+                Remarks = string.IsNullOrEmpty(_remarks) ? "Manual unassignment by admin." : _remarks
+            });
             await db.SaveChangesAsync();
             MudDialog.Close(DialogResult.Ok(true));
         }
