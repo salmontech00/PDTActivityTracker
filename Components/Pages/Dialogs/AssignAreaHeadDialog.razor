@@ -159,7 +159,7 @@
     private List<Store> _originalStores = new();
     private List<Store> _allAvailableStores = new();
     private List<Store> _filteredAvailableStores = new();
-    private IReadOnlyCollection<Store> _selectedStoresToAdd = new List<Store>();
+    private HashSet<Store> _selectedStoresToAdd = new();
     private string? _remarks;
 
     private string _storeSearch = "";
@@ -188,24 +188,23 @@
     }
 
     private async Task OnAreaHeadSelected(User user)
-{
-    _selectedUser = user;
-    _remarks = null;
-    _selectedStoresToAdd = new List<Store>(); // Change to List instead of HashSet
-    
-    if (_selectedUser != null)
     {
-        await LoadStores();
+        _selectedUser = user;
+        _remarks = null;
+        _selectedStoresToAdd = new HashSet<Store>();
+        
+        // Clear lists immediately to prevent stale data display while loading
+        _currentStores = new List<Store>();
+        _originalStores = new List<Store>();
+        _allAvailableStores = new List<Store>();
+        _filteredAvailableStores = new List<Store>();
+        
+        if (_selectedUser != null)
+        {
+            await LoadStores();
+        }
+        StateHasChanged();
     }
-    else
-    {
-        _currentStores.Clear();
-        _originalStores.Clear();
-        _allAvailableStores.Clear();
-        _filteredAvailableStores.Clear();
-    }
-    StateHasChanged();
-}
 
     private async Task LoadStores()
     {
@@ -226,15 +225,12 @@
             .OrderBy(s => s.StoreCode)
             .ToListAsync();
 
-        // Pre-select stores if passed via parameter (every time user changes to ensure fresh references)
+        // Pre-select stores if passed via parameter
         if (PreSelectedStores != null && PreSelectedStores.Any())
         {
-            var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToList();
+            var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToHashSet();
             var toSelect = _allAvailableStores.Where(s => preSelectedIds.Contains(s.Id)).ToList();
-            if (toSelect.Any())
-            {
-                _selectedStoresToAdd = toSelect;
-            }
+            _selectedStoresToAdd = new HashSet<Store>(toSelect);
         }
 
         FilterAvailableStores(_storeSearch);
@@ -334,7 +330,7 @@
 
     private void OnSelectedStoresChanged(IEnumerable<Store> values)
     {
-        _selectedStoresToAdd = values?.ToList() ?? new List<Store>();
+        _selectedStoresToAdd = values?.ToHashSet() ?? new HashSet<Store>();
         StateHasChanged();
     }
 

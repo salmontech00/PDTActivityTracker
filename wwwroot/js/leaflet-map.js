@@ -69,8 +69,11 @@ window.leafletMap = {
                         <h4 style="margin: 0 0 5px 0;">${store.storeName}</h4>
                         <div style="font-size: 0.9em; margin-bottom: 5px;"><strong>Code:</strong> ${store.storeCode}</div>
                         <div style="font-size: 0.9em; margin-bottom: 5px;"><strong>Status:</strong> ${store.status}</div>
+                        <div style="font-size: 0.9em; margin-bottom: 5px;">
+                            <strong>Store Head:</strong> ${store.storeHeadName || '<span style="color: red;">Unassigned</span>'}
+                        </div>
                         <div style="font-size: 0.9em;">
-                            <strong>Head:</strong> ${store.storeHeadName || '<span style="color: red;">Unassigned</span>'}
+                            <strong>Area Head:</strong> ${store.areaHeadName || '<span style="color: red;">Unassigned</span>'}
                         </div>
                     </div>
                 `;

@@ -62,6 +62,24 @@
     .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
         border-color: #0072cf !important;
     }
+
+    /* MOBILE RESPONSIVE DIALOG */
+    @@media (max-width: 600px) {
+        .glass-dialog .mud-dialog-actions {
+            flex-direction: column-reverse;
+            gap: 8px;
+            padding: 16px !important;
+        }
+        
+        .glass-dialog .mud-dialog-actions .mud-button {
+            width: 100% !important;
+            margin: 0 !important;
+        }
+
+        .glass-dialog .mud-dialog-content {
+            padding: 12px !important;
+        }
+    }
 </style>
 
 <MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
@@ -70,12 +88,14 @@
     </TitleContent>
     <DialogContent>
 
-        <MudPaper Class="pa-4 mb-4" Elevation="0" Style="background: rgba(255,255,255,0.05);">
-            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="@($"color: {GetTitleColor()}")">Store Information</MudText>
-            <MudDivider Class="mb-2" />
-            <MudText Typo="Typo.body2" Style="@($"color: {GetTitleColor()}")"><strong>Store Code:</strong> @Store.StoreCode</MudText>
-            <MudText Typo="Typo.body2" Style="@($"color: {GetTitleColor()}")"><strong>Store Name:</strong> @Store.StoreName</MudText>
-            <MudText Typo="Typo.body2" Style="@($"color: {GetTitleColor()}")"><strong>Location:</strong> @Store.Location</MudText>
+        <MudPaper Class="pa-4 mb-4" Elevation="0" Style="background: rgba(255,255,255,0.05); border-radius: 12px;">
+            <MudText Typo="Typo.subtitle2" Class="mb-2" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Store Information</MudText>
+            <MudDivider Class="mb-3" Style="opacity: 0.2;" />
+            <div class="d-flex flex-column gap-1">
+                <MudText Typo="Typo.body2" Style="@($"color: {GetTitleColor()}")"><strong>Code:</strong> @Store.StoreCode</MudText>
+                <MudText Typo="Typo.body2" Style="@($"color: {GetTitleColor()}")"><strong>Name:</strong> @Store.StoreName</MudText>
+                <MudText Typo="Typo.body2" Style="@($"color: {GetTitleColor()}")"><strong>Location:</strong> @Store.Location</MudText>
+            </div>
         </MudPaper>
 
         <MudAutocomplete T="User" Label="Select Store Head" @bind-Value="_selectedUser" SearchFunc="@SearchEmployees"
