@@ -23,5 +23,11 @@ namespace PDTActivityTracker.Model
         public DbSet<Category> Categories { get; set; }
         public DbSet<Store> Stores { get; set; }
         public DbSet<StoreAssignmentLog> StoreAssignmentLogs { get; set; }
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
+        public DbSet<TaskPhoto> TaskPhotos { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Issue> Issues { get; set; }
+        public DbSet<StoreDailyActivity> StoreDailyActivities { get; set; }
+        public DbSet<TaskProgress> TaskProgresses { get; set; }
     }
 }
