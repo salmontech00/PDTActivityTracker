@@ -28,6 +28,10 @@ namespace PDTActivityTracker.Components.Model
 
         public bool IsRemarksRequired { get; set; } = false;
 
+        public int? QuantityExpected { get; set; }
+
+        public string? TaskType { get; set; } // "Regular", "Manpower", "PhotoOnly"
+
         public int SortOrder { get; set; } = 0;
     }
 }

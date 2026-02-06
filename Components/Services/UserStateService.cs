@@ -10,6 +10,7 @@ namespace PDTActivityTracker.Components.Services
         public string? Username { get; private set; }
         public string? Fullname { get; private set; }
         public string? Role { get; private set; }
+        public int UserId { get; private set; }
 
         public async Task InitializeAsync()
         {
@@ -26,6 +27,9 @@ namespace PDTActivityTracker.Components.Services
 
                     var role = await _sessionStorage.GetItemAsync<string>("role");
                     Role = role;
+
+                    var userId = await _sessionStorage.GetItemAsync<int>("userId");
+                    UserId = userId;
                 }
             }
             catch (InvalidOperationException)
@@ -47,11 +51,13 @@ namespace PDTActivityTracker.Components.Services
             Username = null;
             Fullname = null;
             Role = null;
+            UserId = 0;
             try
             {
                 await _sessionStorage.RemoveItemAsync("username");
                 await _sessionStorage.RemoveItemAsync("fullname");
                 await _sessionStorage.RemoveItemAsync("role");
+                await _sessionStorage.RemoveItemAsync("userId");
             }
             catch { }
         }
@@ -72,6 +78,12 @@ namespace PDTActivityTracker.Components.Services
         {
             Role = role;
             try { await _sessionStorage.SetItemAsync("role", role); } catch { }
+        }
+
+        public async Task SetUserId(int userId)
+        {
+            UserId = userId;
+            try { await _sessionStorage.SetItemAsync("userId", userId); } catch { }
         }
     }
 }

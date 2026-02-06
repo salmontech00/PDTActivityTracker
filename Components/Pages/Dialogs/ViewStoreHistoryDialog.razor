@@ -42,11 +42,79 @@
         color: #ffffff !important;
     }
 
-    .glass-dialog .mud-table-head .mud-table-cell {
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
+    .glass-dialog.lightest .mud-table-head .mud-table-cell {
+        color: rgba(15, 23, 42, 0.7) !important;
+    }
+
+    .remarks-cell {
+        max-width: 250px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    /* RESPONSIVE TABLE FOR MOBILE */
+    @@media (max-width: 600px) {
+        .glass-dialog .mud-table-head {
+            display: none;
+        }
+
+        .glass-dialog .mud-table-row {
+            display: flex;
+            flex-direction: column;
+            padding: 8px !important;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .glass-dialog.lightest .mud-table-row {
+            border: 1px solid rgba(0, 114, 207, 0.1) !important;
+            background: rgba(0, 114, 207, 0.02);
+        }
+
+        .glass-dialog .mud-table-cell {
+            padding: 2px 6px !important;
+            border-bottom: none !important;
+            display: flex;
+            align-items: flex-start;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .remarks-cell {
+            max-width: none !important;
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+
+        .glass-dialog .mud-table-cell:before {
+            content: attr(data-label);
+            font-weight: 700;
+            min-width: 80px;
+            display: inline-block;
+            opacity: 0.5;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .glass-dialog .mud-table-cell:last-child {
+            padding-top: 6px !important;
+            border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+            margin-top: 4px;
+        }
+
+        .glass-dialog.lightest .mud-table-cell:last-child {
+            border-top: 1px solid rgba(0, 114, 207, 0.05) !important;
+        }
+
+        .glass-dialog .mud-dialog-content {
+            padding: 8px !important;
+        }
     }
 </style>
 
@@ -62,8 +130,8 @@
     </TitleContent>
 
     <DialogContent>
-        <div class="mt-4" style="max-height: 400px; overflow-y: auto;">
-            <MudTable Items="Logs" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+        <div class="mt-4" style="padding: 4px;">
+            <MudTable Items="Logs" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" Elevation="0">
                 <HeaderContent>
                     <MudTh>Date & Time</MudTh>
                     <MudTh>Action</MudTh>
@@ -72,16 +140,16 @@
                     <MudTh>Remarks</MudTh>
                 </HeaderContent>
                 <RowTemplate>
-                    <MudTd>@context.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudTd>
-                    <MudTd>
+                    <MudTd DataLabel="Date & Time">@context.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudTd>
+                    <MudTd DataLabel="Action">
                         <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
                                  Color="@GetActionColor(context.Action)" Class="font-weight-bold">
                             @context.Action
                         </MudChip>
                     </MudTd>
-                    <MudTd>@(context.User?.Fullname ?? "Unknown")</MudTd>
-                    <MudTd>@context.Role</MudTd>
-                    <MudTd Style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    <MudTd DataLabel="User">@(context.User?.Fullname ?? "Unknown")</MudTd>
+                    <MudTd DataLabel="Role">@context.Role</MudTd>
+                    <MudTd DataLabel="Remarks" Class="remarks-cell">
                         <MudTooltip Text="@context.Remarks">
                             @context.Remarks
                         </MudTooltip>

@@ -1,0 +1,506 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@using OfficeOpenXml
+@inject ISnackbar Snackbar
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject IJSRuntime JSRuntime
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-icon-root,
+    .glass-dialog.light .mud-input-adornment {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #ffffff !important;
+        border-width: 2px !important;
+    }
+
+    .glass-dialog.light .mud-input-slot::placeholder {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.lightest .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 1) !important;
+    }
+
+    .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+    }
+
+    .report-preview {
+        max-height: 400px;
+        overflow-y: auto;
+        margin-bottom: 16px;
+    }
+
+    .report-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .summary-card {
+        padding: 16px;
+        border-radius: 12px;
+        text-align: center;
+        background: rgba(0, 114, 207, 0.1);
+    }
+
+    .summary-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .summary-label {
+        font-size: 0.75rem;
+        opacity: 0.7;
+        text-transform: uppercase;
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Generate Report</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid Spacing="3" Class="mb-4">
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string"
+                           @bind-Value="_reportType"
+                           Label="Report Type"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Required="true">
+                    <MudSelectItem Value="@("Activity")">Activity Report</MudSelectItem>
+                    <MudSelectItem Value="@("TaskCompletion")">Task Completion Report</MudSelectItem>
+                    <MudSelectItem Value="@("StorePerformance")">Store Performance Report</MudSelectItem>
+                    <MudSelectItem Value="@("UserActivity")">User Activity Report</MudSelectItem>
+                    <MudSelectItem Value="@("PhotoUpload")">Photo Upload Report</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string"
+                           @bind-Value="_exportFormat"
+                           Label="Export Format"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense">
+                    <MudSelectItem Value="@("Excel")">Excel (.xlsx)</MudSelectItem>
+                    <MudSelectItem Value="@("PDF")">PDF</MudSelectItem>
+                    <MudSelectItem Value="@("CSV")">CSV</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDateRangePicker @bind-DateRange="_dateRange"
+                                    Label="Date Range"
+                                    Variant="Variant.Outlined"
+                                    Margin="Margin.Dense" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int?"
+                           @bind-Value="_storeFilter"
+                           Label="Store (Optional)"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    @foreach (var store in _stores)
+                    {
+                        <MudSelectItem Value="@((int?)store.Id)">@store.StoreName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int?"
+                           @bind-Value="_userFilter"
+                           Label="User (Optional)"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    @foreach (var user in _users)
+                    {
+                        <MudSelectItem Value="@((int?)user.Id)">@user.Fullname</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="int?"
+                           @bind-Value="_categoryFilter"
+                           Label="Category (Optional)"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Clearable="true">
+                    @foreach (var category in _categories)
+                    {
+                        <MudSelectItem Value="@((int?)category.Id)">@category.Name</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+
+        @if (_isGenerating)
+        {
+            <div class="d-flex justify-center py-8">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_reportGenerated)
+        {
+            <div class="report-summary">
+                <div class="summary-card">
+                    <div class="summary-value text-primary">@_totalRecords</div>
+                    <div class="summary-label">Total Records</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value text-success">@_uniqueUsers</div>
+                    <div class="summary-label">Unique Users</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value text-info">@_uniqueStores</div>
+                    <div class="summary-label">Stores Involved</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value text-warning">@_dateRangeText</div>
+                    <div class="summary-label">Date Range</div>
+                </div>
+            </div>
+
+            <MudAlert Severity="Severity.Success" Class="mb-4">
+                Report generated successfully! Click "Download" to save the report.
+            </MudAlert>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
+        @if (!_reportGenerated)
+        {
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       OnClick="GenerateReport"
+                       Disabled="@_isGenerating"
+                       Class="rounded-lg px-6"
+                       Style="@GetButtonStyle()">
+                @if (_isGenerating)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Generating...</span>
+                }
+                else
+                {
+                    <span>Generate</span>
+                }
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Color="Color.Secondary"
+                       Variant="Variant.Outlined"
+                       OnClick="ResetForm"
+                       Class="rounded-lg px-4">
+                New Report
+            </MudButton>
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       OnClick="DownloadReport"
+                       Disabled="@_isDownloading"
+                       Class="rounded-lg px-6"
+                       Style="@GetButtonStyle()">
+                @if (_isDownloading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Downloading...</span>
+                }
+                else
+                {
+                    <MudIcon Icon="@Icons.Material.Filled.FileDownload" Class="mr-2" />
+                    <span>Download @_exportFormat</span>
+                }
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private bool _isGenerating = false;
+    private bool _isDownloading = false;
+    private bool _reportGenerated = false;
+
+    // Form Fields
+    private string _reportType = "Activity";
+    private string _exportFormat = "Excel";
+    private DateRange? _dateRange;
+    private int? _storeFilter;
+    private int? _userFilter;
+    private int? _categoryFilter;
+
+    // Data
+    private List<Store> _stores = new();
+    private List<User> _users = new();
+    private List<Category> _categories = new();
+    private List<ActivityLog> _reportData = new();
+
+    // Summary
+    private int _totalRecords;
+    private int _uniqueUsers;
+    private int _uniqueStores;
+    private string _dateRangeText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFilterData();
+        _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+    }
+
+    private async Task LoadFilterData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _stores = await db.Stores.AsNoTracking().OrderBy(s => s.StoreName).ToListAsync();
+        _users = await db.Users.AsNoTracking().OrderBy(u => u.Fullname).ToListAsync();
+        _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
+    }
+
+    private async Task GenerateReport()
+    {
+        _isGenerating = true;
+        StateHasChanged();
+
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+
+            var query = db.ActivityLogs
+                .Include(a => a.User)
+                .Include(a => a.Store)
+                .AsNoTracking();
+
+            // Apply date filter
+            if (_dateRange?.Start != null)
+            {
+                query = query.Where(a => a.Timestamp >= _dateRange.Start.Value);
+            }
+            if (_dateRange?.End != null)
+            {
+                query = query.Where(a => a.Timestamp <= _dateRange.End.Value.AddDays(1));
+            }
+
+            // Apply other filters
+            if (_storeFilter.HasValue)
+            {
+                query = query.Where(a => a.StoreId == _storeFilter.Value);
+            }
+            if (_userFilter.HasValue)
+            {
+                query = query.Where(a => a.UserId == _userFilter.Value);
+            }
+
+            _reportData = await query.OrderByDescending(a => a.Timestamp).ToListAsync();
+
+            // Calculate summary
+            _totalRecords = _reportData.Count;
+            _uniqueUsers = _reportData.Where(r => r.UserId.HasValue).Select(r => r.UserId).Distinct().Count();
+            _uniqueStores = _reportData.Where(r => r.StoreId.HasValue).Select(r => r.StoreId).Distinct().Count();
+            _dateRangeText = _dateRange != null
+                ? $"{_dateRange.Start?.ToString("MMM dd")} - {_dateRange.End?.ToString("MMM dd")}"
+                : "All Time";
+
+            _reportGenerated = true;
+            Snackbar.Add($"Report generated with {_totalRecords} records", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error generating report: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isGenerating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadReport()
+    {
+        _isDownloading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (_exportFormat == "Excel")
+            {
+                await ExportToExcel();
+            }
+            else if (_exportFormat == "CSV")
+            {
+                await ExportToCsv();
+            }
+            else
+            {
+                Snackbar.Add("PDF export coming soon!", Severity.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error downloading report: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isDownloading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportToExcel()
+    {
+        using var package = new ExcelPackage();
+        var worksheet = package.Workbook.Worksheets.Add($"{_reportType} Report");
+
+        // Headers
+        worksheet.Cells[1, 1].Value = "Date/Time";
+        worksheet.Cells[1, 2].Value = "User";
+        worksheet.Cells[1, 3].Value = "Store";
+        worksheet.Cells[1, 4].Value = "Action";
+        worksheet.Cells[1, 5].Value = "Details";
+
+        // Style header
+        using (var range = worksheet.Cells[1, 1, 1, 5])
+        {
+            range.Style.Font.Bold = true;
+            range.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+            range.Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(0, 114, 207));
+            range.Style.Font.Color.SetColor(System.Drawing.Color.White);
+        }
+
+        // Data
+        var row = 2;
+        foreach (var item in _reportData)
+        {
+            worksheet.Cells[row, 1].Value = item.Timestamp.ToString("yyyy-MM-dd HH:mm:ss");
+            worksheet.Cells[row, 2].Value = item.User?.Fullname ?? "N/A";
+            worksheet.Cells[row, 3].Value = item.Store?.StoreName ?? "N/A";
+            worksheet.Cells[row, 4].Value = item.Action;
+            worksheet.Cells[row, 5].Value = item.Details ?? "-";
+            row++;
+        }
+
+        worksheet.Cells.AutoFitColumns();
+
+        var bytes = await package.GetAsByteArrayAsync();
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"{_reportType}_Report_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", base64);
+        Snackbar.Add("Excel file downloaded successfully!", Severity.Success);
+    }
+
+    private async Task ExportToCsv()
+    {
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Date/Time,User,Store,Action,Details");
+
+        foreach (var item in _reportData)
+        {
+            csv.AppendLine($"\"{item.Timestamp:yyyy-MM-dd HH:mm:ss}\",\"{item.User?.Fullname ?? "N/A"}\",\"{item.Store?.StoreName ?? "N/A"}\",\"{item.Action}\",\"{item.Details ?? "-"}\"");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        var fileName = $"{_reportType}_Report_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "text/csv", base64);
+        Snackbar.Add("CSV file downloaded successfully!", Severity.Success);
+    }
+
+    private void ResetForm()
+    {
+        _reportGenerated = false;
+        _reportData.Clear();
+        _totalRecords = 0;
+        _uniqueUsers = 0;
+        _uniqueStores = 0;
+        StateHasChanged();
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null) return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

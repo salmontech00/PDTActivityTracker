@@ -200,57 +200,214 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 CONSTRAINT [FK_StoreAssignmentLogs_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id])
             );
         END
+
+        -- Create ActivityLogs Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[ActivityLogs]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [ActivityLogs] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [UserId] int NULL,
+                [StoreId] int NULL,
+                [Action] nvarchar(max) NOT NULL,
+                [EntityType] nvarchar(max) NULL,
+                [EntityId] int NULL,
+                [Details] nvarchar(max) NULL,
+                [Timestamp] datetime2 NOT NULL,
+                [IPAddress] nvarchar(max) NULL,
+                CONSTRAINT [PK_ActivityLogs] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_ActivityLogs_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]),
+                CONSTRAINT [FK_ActivityLogs_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id])
+            );
+        END
+
+        -- Create TaskPhotos Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[TaskPhotos]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [TaskPhotos] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [UploadedById] int NULL,
+                [StoreId] int NULL,
+                [ChecklistItemId] int NULL,
+                [CategoryId] int NULL,
+                [Description] nvarchar(max) NULL,
+                [UploadedAt] datetime2 NOT NULL,
+                [ImageData] varbinary(max) NULL,
+                [ImageMimeType] nvarchar(max) NULL,
+                CONSTRAINT [PK_TaskPhotos] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_TaskPhotos_Users_UploadedById] FOREIGN KEY ([UploadedById]) REFERENCES [Users] ([Id]),
+                CONSTRAINT [FK_TaskPhotos_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]),
+                CONSTRAINT [FK_TaskPhotos_ChecklistItems_ChecklistItemId] FOREIGN KEY ([ChecklistItemId]) REFERENCES [ChecklistItems] ([Id]),
+                CONSTRAINT [FK_TaskPhotos_Categories_CategoryId] FOREIGN KEY ([CategoryId]) REFERENCES [Categories] ([Id])
+            );
+        END
+
+        -- Create Notifications Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[Notifications]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [Notifications] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [UserId] int NOT NULL,
+                [Message] nvarchar(max) NOT NULL,
+                [Type] nvarchar(max) NOT NULL,
+                [IsRead] bit NOT NULL,
+                [CreatedAt] datetime2 NOT NULL,
+                [RelatedEntityId] int NULL,
+                [RelatedEntityType] nvarchar(max) NULL,
+                CONSTRAINT [PK_Notifications] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_Notifications_Users_UserId] FOREIGN KEY ([UserId]) REFERENCES [Users] ([Id]) ON DELETE CASCADE
+            );
+        END
+
+        -- Create Issues Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[Issues]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [Issues] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [StoreId] int NOT NULL,
+                [Title] nvarchar(max) NOT NULL,
+                [Description] nvarchar(max) NULL,
+                [Priority] nvarchar(max) NOT NULL,
+                [Status] nvarchar(max) NOT NULL,
+                [ReportedById] int NOT NULL,
+                [ReportedAt] datetime2 NOT NULL,
+                [ResolvedAt] datetime2 NULL,
+                CONSTRAINT [PK_Issues] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_Issues_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]) ON DELETE CASCADE,
+                CONSTRAINT [FK_Issues_Users_ReportedById] FOREIGN KEY ([ReportedById]) REFERENCES [Users] ([Id])
+            );
+        END
+
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'QuantityExpected' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [QuantityExpected] int NULL;
+        END
+
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'TaskType' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [TaskType] nvarchar(max) NULL;
+        END
+
+        -- Create StoreDailyActivities Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[StoreDailyActivities]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [StoreDailyActivities] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [StoreId] int NOT NULL,
+                [Date] datetime2 NOT NULL,
+                [CurrentCategoryId] int NOT NULL,
+                [IsCompleted] bit NOT NULL,
+                [CompletedAt] datetime2 NULL,
+                [StartedById] int NOT NULL,
+                CONSTRAINT [PK_StoreDailyActivities] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_StoreDailyActivities_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]) ON DELETE CASCADE,
+                CONSTRAINT [FK_StoreDailyActivities_Categories_CurrentCategoryId] FOREIGN KEY ([CurrentCategoryId]) REFERENCES [Categories] ([Id]),
+                CONSTRAINT [FK_StoreDailyActivities_Users_StartedById] FOREIGN KEY ([StartedById]) REFERENCES [Users] ([Id])
+            );
+        END
+
+        -- Create TaskProgresses Table
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[TaskProgresses]') AND type in (N'U'))
+        BEGIN
+            CREATE TABLE [TaskProgresses] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [StoreDailyActivityId] int NOT NULL,
+                [ChecklistItemId] int NOT NULL,
+                [IsCompleted] bit NOT NULL,
+                [ActualQuantity] int NULL,
+                [Remarks] nvarchar(max) NULL,
+                [CompletedAt] datetime2 NULL,
+                [Latitude] float NULL,
+                [Longitude] float NULL,
+                CONSTRAINT [PK_TaskProgresses] PRIMARY KEY ([Id]),
+                CONSTRAINT [FK_TaskProgresses_StoreDailyActivities_StoreDailyActivityId] FOREIGN KEY ([StoreDailyActivityId]) REFERENCES [StoreDailyActivities] ([Id]) ON DELETE CASCADE,
+                CONSTRAINT [FK_TaskProgresses_ChecklistItems_ChecklistItemId] FOREIGN KEY ([ChecklistItemId]) REFERENCES [ChecklistItems] ([Id])
+            );
+        END
     ");
 
-    // Seed Categories if empty
+    // Seed Categories if empty or not fully updated
+    var expectedCategories = new List<Category>
+    {
+        new Category { Name = "Check In", Icon = Icons.Material.Filled.Login, ColorClass = "category-checkin", SortOrder = 0 },
+        new Category { Name = "Opening", Icon = Icons.Material.Filled.DoorFront, ColorClass = "category-opening", SortOrder = 1 },
+        new Category { Name = "Asset", Icon = Icons.Material.Filled.Devices, ColorClass = "category-asset", SortOrder = 2 },
+        new Category { Name = "Human Resource", Icon = Icons.Material.Filled.Groups, ColorClass = "category-hr", SortOrder = 3 },
+        new Category { Name = "Inventory", Icon = Icons.Material.Filled.Inventory, ColorClass = "category-inventory", SortOrder = 4 },
+        new Category { Name = "Marketing", Icon = Icons.Material.Filled.Campaign, ColorClass = "category-marketing", SortOrder = 5 },
+        new Category { Name = "Expenses & Repair", Icon = Icons.Material.Filled.Build, ColorClass = "category-expenses", SortOrder = 6 },
+        new Category { Name = "Check Out", Icon = Icons.Material.Filled.Logout, ColorClass = "category-checkout", SortOrder = 7 }
+    };
+
     if (!await db.Categories.AnyAsync())
     {
-        var defaultCategories = new List<Category>
-        {
-            new Category { Name = "Opening", Icon = Icons.Material.Filled.DoorFront, ColorClass = "category-opening", SortOrder = 0 },
-            new Category { Name = "Asset", Icon = Icons.Material.Filled.Devices, ColorClass = "category-asset", SortOrder = 1 },
-            new Category { Name = "Human Resource", Icon = Icons.Material.Filled.Groups, ColorClass = "category-hr", SortOrder = 2 },
-            new Category { Name = "Inventory", Icon = Icons.Material.Filled.Inventory, ColorClass = "category-inventory", SortOrder = 3 },
-            new Category { Name = "Marketing", Icon = Icons.Material.Filled.Campaign, ColorClass = "category-marketing", SortOrder = 4 },
-            new Category { Name = "Expenses & Repair", Icon = Icons.Material.Filled.Build, ColorClass = "category-expenses", SortOrder = 5 },
-            new Category { Name = "Closing", Icon = Icons.Material.Filled.DoorBack, ColorClass = "category-closing", SortOrder = 6 }
-        };
-
-        foreach (var cat in defaultCategories)
+        foreach (var cat in expectedCategories)
         {
             db.Categories.Add(cat);
         }
         await db.SaveChangesAsync();
-
-        // Data Migration for ChecklistItems if necessary
-        // We check if the legacy 'Category' column exists and has data
-        bool hasLegacyData = false;
-        using (var cmd = db.Database.GetDbConnection().CreateCommand())
+    }
+    else
+    {
+        // Update existing categories if names match, or add missing ones
+        var existingCategories = await db.Categories.ToListAsync();
+        foreach (var expected in expectedCategories)
         {
-            cmd.CommandText = "SELECT COUNT(*) FROM sys.columns WHERE Name = 'Category' AND Object_ID = Object_ID('ChecklistItems')";
-            if (db.Database.GetDbConnection().State != System.Data.ConnectionState.Open) await db.Database.GetDbConnection().OpenAsync();
-            var count = (int)(cmd.ExecuteScalar() ?? 0);
-            if (count > 0)
+            var existing = existingCategories.FirstOrDefault(c => c.Name == expected.Name);
+            if (existing != null)
             {
-                cmd.CommandText = "SELECT COUNT(*) FROM ChecklistItems WHERE CategoryId IS NULL AND Category IS NOT NULL";
-                hasLegacyData = (int)(cmd.ExecuteScalar() ?? 0) > 0;
+                existing.Icon = expected.Icon;
+                existing.ColorClass = expected.ColorClass;
+                existing.SortOrder = expected.SortOrder;
+            }
+            else
+            {
+                // Special case: Rename "Closing" to "Check Out" if it exists
+                var closing = existingCategories.FirstOrDefault(c => c.Name == "Closing");
+                if (closing != null && expected.Name == "Check Out")
+                {
+                    closing.Name = "Check Out";
+                    closing.Icon = expected.Icon;
+                    closing.ColorClass = expected.ColorClass;
+                    closing.SortOrder = expected.SortOrder;
+                }
+                else
+                {
+                    db.Categories.Add(expected);
+                }
             }
         }
+        await db.SaveChangesAsync();
+    }
 
-        if (hasLegacyData)
+    // Data Migration for ChecklistItems if necessary
+    // We check if the legacy 'Category' column exists and has data
+    bool hasLegacyData = false;
+    using (var cmd = db.Database.GetDbConnection().CreateCommand())
+    {
+        cmd.CommandText = "SELECT COUNT(*) FROM sys.columns WHERE Name = 'Category' AND Object_ID = Object_ID('ChecklistItems')";
+        if (db.Database.GetDbConnection().State != System.Data.ConnectionState.Open) await db.Database.GetDbConnection().OpenAsync();
+        var count = (int)(cmd.ExecuteScalar() ?? 0);
+        if (count > 0)
         {
-            var categoriesInDb = await db.Categories.ToListAsync();
-            foreach (var cat in categoriesInDb)
-            {
-                await db.Database.ExecuteSqlRawAsync("UPDATE ChecklistItems SET CategoryId = @p0 WHERE Category = @p1 AND CategoryId IS NULL", cat.Id, cat.Name);
-            }
+            cmd.CommandText = "SELECT COUNT(*) FROM ChecklistItems WHERE CategoryId IS NULL AND Category IS NOT NULL";
+            hasLegacyData = (int)(cmd.ExecuteScalar() ?? 0) > 0;
+        }
+    }
 
-            // Set default CategoryId for those that don't match any seeded name
-            var firstCatId = categoriesInDb.First().Id;
-            await db.Database.ExecuteSqlRawAsync("UPDATE ChecklistItems SET CategoryId = @p0 WHERE CategoryId IS NULL", firstCatId);
+    if (hasLegacyData)
+    {
+        var categoriesInDb = await db.Categories.ToListAsync();
+        foreach (var cat in categoriesInDb)
+        {
+            await db.Database.ExecuteSqlRawAsync("UPDATE ChecklistItems SET CategoryId = @p0 WHERE Category = @p1 AND CategoryId IS NULL", cat.Id, cat.Name);
+        }
 
-            // Finally drop the old column and make CategoryId non-nullable
-            await db.Database.ExecuteSqlRawAsync(@"
+        // Set default CategoryId for those that don't match any seeded name
+        var firstCatId = categoriesInDb.First().Id;
+        await db.Database.ExecuteSqlRawAsync("UPDATE ChecklistItems SET CategoryId = @p0 WHERE CategoryId IS NULL", firstCatId);
+
+        // Finally drop the old column and make CategoryId non-nullable
+        await db.Database.ExecuteSqlRawAsync(@"
                 ALTER TABLE [ChecklistItems] ALTER COLUMN [CategoryId] int NOT NULL;
                 ALTER TABLE [ChecklistItems] DROP COLUMN [Category];
                 IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_ChecklistItems_Categories_CategoryId')
@@ -258,7 +415,6 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                     ALTER TABLE [ChecklistItems] ADD CONSTRAINT [FK_ChecklistItems_Categories_CategoryId] FOREIGN KEY ([CategoryId]) REFERENCES [Categories] ([Id]) ON DELETE CASCADE;
                 END
             ");
-        }
     }
     else
     {
@@ -294,6 +450,61 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         }
     }
 
+    // Seed Checklist Items if empty
+    if (!await db.ChecklistItems.AnyAsync())
+    {
+        var categories = await db.Categories.ToListAsync();
+        var checkInCat = categories.First(c => c.Name == "Check In");
+        var openingCat = categories.First(c => c.Name == "Opening");
+        var assetCat = categories.First(c => c.Name == "Asset");
+        var hrCat = categories.First(c => c.Name == "Human Resource");
+        var invCat = categories.First(c => c.Name == "Inventory");
+        var mktCat = categories.First(c => c.Name == "Marketing");
+        var expCat = categories.First(c => c.Name == "Expenses & Repair");
+        var checkOutCat = categories.First(c => c.Name == "Check Out");
+
+        var items = new List<ChecklistItem>
+        {
+            // Check In
+            new ChecklistItem { TaskName = "Store Head Arrival Check In", CategoryId = checkInCat.Id, Section = "Arrival", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
+
+            // Opening
+            new ChecklistItem { TaskName = "Exterior Readiness (Sidewalks, Haz-mat)", CategoryId = openingCat.Id, Section = "Exterior", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
+            new ChecklistItem { TaskName = "Store Temperature (Target 27°C)", CategoryId = openingCat.Id, Section = "Interior", IsRemarksRequired = true, IsMandatory = true, SortOrder = 1 },
+            new ChecklistItem { TaskName = "Fresh Section Readiness & Display", CategoryId = openingCat.Id, Section = "Fresh", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 2 },
+
+            // Asset
+            new ChecklistItem { TaskName = "Push Carts & Baskets Availability/Cleanliness", CategoryId = assetCat.Id, Section = "Customer Service", IsMandatory = true, SortOrder = 0 },
+            new ChecklistItem { TaskName = "IT Equipment Verification (PDT, Printers, Scales)", CategoryId = assetCat.Id, Section = "Technology", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 1 },
+            new ChecklistItem { TaskName = "Emergency Lights & Fire Safety Check", CategoryId = assetCat.Id, Section = "Safety", IsMandatory = true, SortOrder = 2 },
+
+            // Human Resource
+            new ChecklistItem { TaskName = "Cashiers (Direct)", CategoryId = hrCat.Id, Section = "Manpower Count", TaskType = "Manpower", QuantityExpected = 5, IsMandatory = true, SortOrder = 0 },
+            new ChecklistItem { TaskName = "Baggers (Service Provider)", CategoryId = hrCat.Id, Section = "Manpower Count", TaskType = "Manpower", QuantityExpected = 8, IsMandatory = true, SortOrder = 1 },
+            new ChecklistItem { TaskName = "Daily PEP Talk / Huddle conducted", CategoryId = hrCat.Id, Section = "Engagement", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 2 },
+
+            // Inventory
+            new ChecklistItem { TaskName = "PDT Price Check & OOS Identification", CategoryId = invCat.Id, Section = "Scanning", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 0 },
+            new ChecklistItem { TaskName = "3 PM Store Readiness Photo (AVP Report)", CategoryId = invCat.Id, Section = "Reporting", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 1 },
+
+            // Marketing
+            new ChecklistItem { TaskName = "POSM Execution (Weekly Marketing Collaterals)", CategoryId = mktCat.Id, Section = "Promotions", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
+
+            // Expenses & Repair
+            new ChecklistItem { TaskName = "Maintain Weekly List of Pending Repair Tickets", CategoryId = expCat.Id, Section = "Maintenance", IsRemarksRequired = true, IsMandatory = true, SortOrder = 0 },
+
+            // Check Out
+            new ChecklistItem { TaskName = "End-of-Day (EOD) Report Generated", CategoryId = checkOutCat.Id, Section = "Documentation", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
+            new ChecklistItem { TaskName = "Night Refilling Activities Documentation", CategoryId = checkOutCat.Id, Section = "Restocking", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 1 },
+            new ChecklistItem { TaskName = "Store 100% Ready for Business Next Day", CategoryId = checkOutCat.Id, Section = "Final Check", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 2 }
+        };
+
+        foreach (var item in items)
+        {
+            db.ChecklistItems.Add(item);
+        }
+        await db.SaveChangesAsync();
+    }
     if (!await db.Users.AnyAsync())
     {
         var hashedPassword = HashPassword("admin123");

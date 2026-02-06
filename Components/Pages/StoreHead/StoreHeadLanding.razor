@@ -1,0 +1,527 @@
+﻿@page "/store-head/dashboard"
+@layout PDTActivityTracker.Components.Layout.MainLayout
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject UserStateService UserState
+@inject IJSRuntime JSRuntime
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IDisposable
+
+<PageTitle>Store Head Dashboard</PageTitle>
+
+<style>
+    .store-container {
+        padding: 1rem;
+    }
+
+    /* GLASS CONTAINER */
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        border-width: 1px;
+        border-style: solid;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 2px solid #0072cf !important;
+        }
+
+        .glass-panel.light {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 2px solid rgba(255, 255, 255, 0.4) !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+    /* PAGE HEADER */
+    .page-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 0;
+    }
+
+    .page-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+        .page-title.lightest {
+            color: #0f172a;
+        }
+
+        .page-title.light {
+            color: #ffffff;
+        }
+
+        .page-title.dark {
+            color: #ffffff;
+        }
+
+    /* DASHBOARD WRAPPER */
+    .dashboard-wrapper {
+        position: relative;
+        height: 600px;
+        width: 100%;
+        display: flex;
+        padding: 16px; /* Extra space like border */
+        gap: 16px;
+    }
+
+    /* MAP SECTION */
+    .map-section {
+        flex: 1;
+        position: relative;
+        height: 100%;
+        transition: width 0.3s ease;
+        z-index: 1;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .lightest .map-section, .light .map-section {
+        border: 1px solid rgba(0, 114, 207, 0.2);
+    }
+
+    /* DASHBOARD PANEL (DESKTOP) */
+    .dashboard-panel {
+        width: 0;
+        height: 100%;
+        backdrop-filter: blur(20px);
+        overflow-y: auto;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
+        position: relative;
+        border-radius: 12px;
+    }
+
+        .dashboard-panel.open {
+            width: 40%;
+        }
+
+        .dashboard-panel.lightest {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(0, 114, 207, 0.1) !important;
+            color: #0f172a;
+        }
+
+        .dashboard-panel.light {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #0f172a;
+        }
+
+        .dashboard-panel.dark {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: white;
+        }
+
+    .panel-content {
+        padding: 24px;
+        opacity: 0;
+        transition: opacity 0.2s ease 0.1s;
+        min-width: 400px;
+    }
+
+    .dashboard-panel.open .panel-content {
+        opacity: 1;
+    }
+
+    /* LIGHT MODE TEXT FIXES */
+    .lightest .panel-content, .light .panel-content {
+        color: #0f172a !important;
+    }
+
+        .lightest .panel-content .mud-typography, .light .panel-content .mud-typography {
+            color: #0f172a !important;
+        }
+
+        .lightest .panel-content .mud-icon-root, .light .panel-content .mud-icon-root {
+            color: #0072cf;
+        }
+
+    /* Ensure status cards show text correctly */
+    .lightest .status-card .mud-typography, .light .status-card .mud-typography {
+        color: inherit !important;
+    }
+
+    /* MAP LEGEND */
+    .map-legend-overlay {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        padding: 4px 12px;
+        border-radius: 12px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        align-items: center;
+        pointer-events: auto;
+    }
+
+        .map-legend-overlay.lightest {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 114, 207, 0.2);
+        }
+
+        .map-legend-overlay.light {
+            background: rgba(0, 114, 207, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .map-legend-overlay.dark {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-text {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        white-space: nowrap;
+    }
+
+    /* STATUS CARDS */
+    .status-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .status-card {
+        padding: 16px;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 140px;
+        transition: transform 0.2s ease;
+    }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+        }
+
+    /* MOBILE DRAWER OVERRIDES */
+    @@media (max-width: 960px) {
+        .dashboard-wrapper {
+            height: calc(100vh - 160px);
+        }
+
+        .dashboard-panel {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            width: auto !important;
+            height: 75%;
+            transform: translateY(120%);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+            .dashboard-panel.open {
+                transform: translateY(0);
+            }
+
+        .page-header-row {
+            margin-bottom: 16px;
+        }
+    }
+
+    /* PULSE ANIMATION */
+    .pin-pulse {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 32px;
+        height: 32px;
+        background: rgba(76, 175, 80, 0.4);
+        border-radius: 50%;
+        animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+    }
+
+    @@keyframes pulse-ring {
+        0% {
+            transform: translate(-50%, -50%) scale(0.5);
+            opacity: 0;
+        }
+
+        50% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 0;
+        }
+    }
+</style>
+
+<div class="store-container">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Dashboard</MudText>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.EventNote"
+                   OnClick="NavigateToPlanner"
+                   Class="rounded-xl px-6"
+                   Style="@GetButtonStyle()">
+            ACTIVITY PLANNER
+        </MudButton>
+    </div>
+
+    <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
+        <!-- MAP SECTION -->
+        <div class="map-section">
+            <div id="map" style="width: 100%; height: 100%;"></div>
+
+            <!-- Map Legend Overlay -->
+            <div class="@($"map-legend-overlay {GetThemeClass()}")">
+                <div class="legend-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
+                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                    </svg>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Store</MudText>
+                </div>
+                <div class="legend-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#9e9e9e" stroke="#fff" stroke-width="1.5" />
+                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                    </svg>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Others</MudText>
+                </div>
+            </div>
+
+            <!-- Quick control -->
+            <MudTooltip Text="Center on My Store">
+                <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
+                               Color="Color.Primary"
+                               Variant="Variant.Filled"
+                               OnClick="CenterMap"
+                               Style="position: absolute; bottom: 30px; right: 30px; z-index: 1000;" />
+            </MudTooltip>
+        </div>
+
+        <!-- RIGHT DASHBOARD PANEL -->
+        <div class="@($"dashboard-panel {GetThemeClass()} {(_isPanelOpen ? "open" : "")}")">
+            <div class="panel-content">
+                <!-- HEADER -->
+                <div class="d-flex justify-space-between align-start mb-6">
+                    <div>
+                        <MudText Typo="Typo.h5" Style="font-weight: 800;">@(_myStore?.StoreName ?? "Store")</MudText>
+                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@(_myStore?.StoreCode ?? "---") • @(_myStore?.Location ?? "---")</MudText>
+                    </div>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ClosePanel" Color="Color.Default" />
+                </div>
+
+                <!-- STATUS CARDS -->
+                <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">TODAY'S STATUS</MudText>
+                <div class="status-grid">
+                    <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("success")">
+                        <div>
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
+                                <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Style="font-weight: 700;">07:45 AM</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">On Time</MudText>
+                        </div>
+                    </MudPaper>
+
+                    <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("info")">
+                        <div>
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
+                                <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Style="font-weight: 700;">47%</MudText>
+                            <MudProgressLinear Color="Color.Info" Value="47" Class="mt-2" Rounded="true" />
+                        </div>
+                    </MudPaper>
+                </div>
+
+                <!-- TIMELINE SECTION -->
+                <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0" Style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Activity Timeline</MudText>
+
+                    <MudTimeline TimelinePosition="TimelinePosition.Start">
+                        <MudTimelineItem Color="Color.Success" Size="Size.Small">
+                            <ItemOpposite>
+                                <MudText Typo="Typo.caption" Color="Color.Success">07:45</MudText>
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2" Style="font-weight: 700;">Check In</MudText>
+                                <MudText Typo="Typo.caption">Completed</MudText>
+                            </ItemContent>
+                        </MudTimelineItem>
+                        <MudTimelineItem Color="Color.Info" Size="Size.Small">
+                            <ItemOpposite>
+                                <MudText Typo="Typo.caption" Color="Color.Info">Now</MudText>
+                            </ItemOpposite>
+                            <ItemContent>
+                                <MudText Typo="Typo.body2" Style="font-weight: 700;">Asset Check</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Info">In Progress (8/13)</MudText>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="mt-2 rounded-lg" FullWidth="true">Continue</MudButton>
+                            </ItemContent>
+                        </MudTimelineItem>
+                    </MudTimeline>
+                </MudPaper>
+
+                <!-- NOTIFICATIONS -->
+                <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
+                <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
+                    <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Error" IconSize="Size.Small">
+                        <div class="d-flex flex-column">
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Area Head commented on report</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">2 minutes ago</MudText>
+                        </div>
+                    </MudListItem>
+                    <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Warning" IconSize="Size.Small">
+                        <div class="d-flex flex-column">
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Equipment cleaning due</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">3 hours ago</MudText>
+                        </div>
+                    </MudListItem>
+                </MudList>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isPanelOpen = false;
+    private Store? _myStore;
+    private List<Store> _stores = new();
+    private static StoreHeadLanding? _instance;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ThemeService.OnThemeChanged += OnThemeChanged;
+        _instance = this;
+    }
+
+    private void OnThemeChanged() => StateHasChanged();
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+        _instance = null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UserState.InitializeAsync();
+            await LoadData();
+            await InitializeMap();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        var userId = UserState.UserId;
+        _stores = await db.Stores.AsNoTracking().ToListAsync();
+        _myStore = _stores.FirstOrDefault(s => s.StoreHeadId == userId);
+    }
+
+    private async Task InitializeMap()
+    {
+        var mapData = _stores.Select(s => new
+        {
+            id = s.Id,
+            gpsLatitude = s.GPSLatitude,
+            gpsLongitude = s.GPSLongitude,
+            storeName = s.StoreName,
+            storeCode = s.StoreCode,
+            isMyStore = s.StoreHeadId == UserState.UserId
+        }).ToList();
+
+        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData);
+    }
+
+    private async Task CenterMap()
+    {
+        if (_myStore?.GPSLatitude != null && _myStore?.GPSLongitude != null)
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", _myStore.GPSLatitude.Value, _myStore.GPSLongitude.Value, 16);
+        }
+    }
+
+    [JSInvokable("OnStorePinClicked")]
+    public static void OnStorePinClicked(int storeId)
+    {
+        if (_instance != null)
+        {
+            _instance._isPanelOpen = true;
+            _instance.StateHasChanged();
+        }
+    }
+
+    private void ClosePanel() => _isPanelOpen = false;
+
+    private void NavigateToPlanner()
+    {
+        if (_myStore != null)
+        {
+            NavigationManager.NavigateTo($"/store-head/planner/{_myStore.Id}");
+        }
+        else
+        {
+            Snackbar.Add("No store assigned to your account.", Severity.Error);
+        }
+    }
+
+    private string GetThemeClass() => ThemeService.CurrentTheme switch
+    {
+        ThemeMode.Lightest => "lightest",
+        ThemeMode.Light => "light",
+        ThemeMode.Dark => "dark",
+        _ => "lightest"
+    };
+
+    private string GetLegendTextColor() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+
+    private string GetCardStyle(string type)
+    {
+        var isLight = ThemeService.CurrentTheme == ThemeMode.Light || ThemeService.CurrentTheme == ThemeMode.Lightest;
+        var bg = type == "success" ? (isLight ? "rgba(76, 175, 80, 0.1)" : "rgba(76, 175, 80, 0.15)")
+                                   : (isLight ? "rgba(3, 169, 244, 0.1)" : "rgba(3, 169, 244, 0.15)");
+        return $"background: {bg}; border: 1px solid {(type == "success" ? "rgba(76, 175, 80, 0.2)" : "rgba(3, 169, 244, 0.2)")};";
+    }
+
+    private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "background-color: #ffffff !important; color: #0072cf !important;" : "";
+}

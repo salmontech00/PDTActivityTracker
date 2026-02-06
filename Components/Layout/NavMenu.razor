@@ -57,11 +57,25 @@
     <div class="nav-section-header-v2" style="color: @GetMenuColor()">Menu</div>
     @if (UserState.Role == "Admin")
     {
+        <MudNavLink Href="/admin/reports-monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Assessment">
+            Reports & Monitoring
+        </MudNavLink>
         <MudNavLink Href="/admin/checklist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.PlaylistAddCheck">
             Manage Checklists
         </MudNavLink>
         <MudNavLink Href="/admin/store-assignment" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Store">
             Store Assignment
+        </MudNavLink>
+    }
+
+    @if (UserState.Role == "Store Head")
+    {
+        <div class="nav-section-header-v2" style="color: @GetMenuColor(); margin-top: 16px;">Store Management</div>
+        <MudNavLink Href="/store-head/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Dashboard">
+            Dashboard
+        </MudNavLink>
+        <MudNavLink Href="/store-head/planner" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.EventNote">
+            Activity Planner
         </MudNavLink>
     }
 </MudNavMenu>

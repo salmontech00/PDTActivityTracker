@@ -493,9 +493,18 @@
                 await UserState.Login(user.Username);
                 await UserState.SetFullname(user.Fullname);
                 await UserState.SetRole(user.Role);
+                await UserState.SetUserId(user.Id);
 
                 await Task.Delay(500);
-                NavigationManager.NavigateTo("/", forceLoad: true);
+
+                if (user.Role == "Store Head")
+                {
+                    NavigationManager.NavigateTo("/store-head/dashboard", forceLoad: true);
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("/", forceLoad: true);
+                }
             }
         }
         catch (Exception ex)
