@@ -9,7 +9,7 @@
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @inject NavigationManager NavigationManager
 @inject ISnackbar Snackbar
-@implements IDisposable
+@implements IAsyncDisposable
 
 <PageTitle>Store Head Dashboard</PageTitle>
 
@@ -34,8 +34,9 @@
         }
 
         .glass-panel.light {
-            background-color: rgba(255, 255, 255, 0.15) !important;
-            border: 2px solid rgba(255, 255, 255, 0.4) !important;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white !important;
         }
 
         .glass-panel.dark {
@@ -63,6 +64,7 @@
 
         .page-title.light {
             color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .page-title.dark {
@@ -75,7 +77,7 @@
         height: 600px;
         width: 100%;
         display: flex;
-        padding: 16px; /* Extra space like border */
+        padding: 16px;
         gap: 16px;
     }
 
@@ -112,20 +114,20 @@
         }
 
         .dashboard-panel.lightest {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0);
             border: 1px solid rgba(0, 114, 207, 0.1) !important;
             color: #0f172a;
         }
 
         .dashboard-panel.light {
-            background: rgba(255, 255, 255, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            color: #0f172a;
+            background: rgba(255, 255, 255, 0) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
         }
 
         .dashboard-panel.dark {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            background: rgba(15, 23, 42, 0);
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
             color: white;
         }
 
@@ -140,22 +142,29 @@
         opacity: 1;
     }
 
-    /* LIGHT MODE TEXT FIXES */
-    .lightest .panel-content, .light .panel-content {
+    .lightest .panel-content {
         color: #0f172a !important;
     }
 
-        .lightest .panel-content .mud-typography, .light .panel-content .mud-typography {
+        .lightest .panel-content .mud-typography {
             color: #0f172a !important;
         }
 
-        .lightest .panel-content .mud-icon-root, .light .panel-content .mud-icon-root {
-            color: #0072cf;
-        }
+    .light .panel-content .mud-icon-root, .light .panel-content .mud-typography {
+        color: white !important;
+    }
+
+    .lightest .panel-content .mud-icon-root, .light .panel-content .mud-icon-root {
+        color: #0072cf;
+    }
 
     /* Ensure status cards show text correctly */
-    .lightest .status-card .mud-typography, .light .status-card .mud-typography {
+    .lightest .status-card .mud-typography {
         color: inherit !important;
+    }
+
+    .light .status-card .mud-typography {
+        color: white !important;
     }
 
     /* MAP LEGEND */
@@ -226,33 +235,105 @@
             transform: translateY(-2px);
         }
 
-    /* MOBILE DRAWER OVERRIDES */
+    /* DESKTOP/MOBILE VIEWS */
+    .desktop-view {
+        display: block;
+    }
+
+    .mobile-view {
+        display: none;
+    }
+
+    /* MOBILE PANEL CARD */
+    .mobile-panel-card {
+        margin-top: 16px;
+        overflow: hidden;
+    }
+
+    .mobile-panel-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lightest .mobile-panel-header {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .mobile-panel-content {
+        padding: 16px;
+    }
+
+    /* RESPONSIVE */
     @@media (max-width: 960px) {
-        .dashboard-wrapper {
-            height: calc(100vh - 160px);
-        }
+        .desktop-view
 
-        .dashboard-panel {
-            position: absolute;
-            bottom: 16px;
-            left: 16px;
-            right: 16px;
-            width: auto !important;
-            height: 75%;
-            transform: translateY(120%);
-            border-bottom-left-radius: 0;
-            border-bottom-right-radius: 0;
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.2);
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        }
+    {
+        display: none;
+    }
 
-            .dashboard-panel.open {
-                transform: translateY(0);
-            }
+    .mobile-view {
+        display: block;
+    }
 
-        .page-header-row {
-            margin-bottom: 16px;
-        }
+    .dashboard-wrapper {
+        height: auto;
+        min-height: auto;
+        flex-direction: column;
+        padding: 8px;
+        gap: 0;
+    }
+
+    .map-section {
+        height: 400px;
+        flex: none;
+    }
+
+    .dashboard-panel {
+        display: none !important;
+    }
+
+    .status-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .page-header-row {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        padding: 0;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .map-legend-overlay {
+        top: 10px;
+        right: 10px;
+        padding: 2px 8px;
+        gap: 8px;
+    }
+
+    .legend-text {
+        font-size: 0.55rem;
+    }
+
+    .mobile-panel-content .panel-content {
+        padding: 0;
+        opacity: 1;
+        min-width: 0;
+    }
+
+    .status-card {
+        min-height: 120px;
+    }
+
     }
 
     /* PULSE ANIMATION */
@@ -287,134 +368,285 @@
 
 <div class="store-container">
     <div class="page-header-row">
-        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Dashboard</MudText>
-
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.EventNote"
-                   OnClick="NavigateToPlanner"
-                   Class="rounded-xl px-6"
-                   Style="@GetButtonStyle()">
-            ACTIVITY PLANNER
-        </MudButton>
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Stores Map</MudText>
     </div>
 
-    <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
-        <!-- MAP SECTION -->
-        <div class="map-section">
-            <div id="map" style="width: 100%; height: 100%;"></div>
+    <!-- Desktop View -->
+    <div class="desktop-view">
+        <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
+            <!-- MAP SECTION -->
+            <div class="map-section">
+                <div id="map" style="width: 100%; height: 100%;"></div>
 
-            <!-- Map Legend Overlay -->
-            <div class="@($"map-legend-overlay {GetThemeClass()}")">
-                <div class="legend-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
-                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
-                    </svg>
-                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Store</MudText>
-                </div>
-                <div class="legend-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#9e9e9e" stroke="#fff" stroke-width="1.5" />
-                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
-                    </svg>
-                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Others</MudText>
-                </div>
-            </div>
-
-            <!-- Quick control -->
-            <MudTooltip Text="Center on My Store">
-                <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
-                               Color="Color.Primary"
-                               Variant="Variant.Filled"
-                               OnClick="CenterMap"
-                               Style="position: absolute; bottom: 30px; right: 30px; z-index: 1000;" />
-            </MudTooltip>
-        </div>
-
-        <!-- RIGHT DASHBOARD PANEL -->
-        <div class="@($"dashboard-panel {GetThemeClass()} {(_isPanelOpen ? "open" : "")}")">
-            <div class="panel-content">
-                <!-- HEADER -->
-                <div class="d-flex justify-space-between align-start mb-6">
-                    <div>
-                        <MudText Typo="Typo.h5" Style="font-weight: 800;">@(_myStore?.StoreName ?? "Store")</MudText>
-                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@(_myStore?.StoreCode ?? "---") • @(_myStore?.Location ?? "---")</MudText>
+                <!-- Map Legend Overlay -->
+                <div class="@($"map-legend-overlay {GetThemeClass()}")">
+                    <div class="legend-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
+                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                        </svg>
+                        <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Store</MudText>
                     </div>
-                    <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ClosePanel" Color="Color.Default" />
+                    <div class="legend-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#9e9e9e" stroke="#fff" stroke-width="1.5" />
+                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                        </svg>
+                        <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Others</MudText>
+                    </div>
                 </div>
 
-                <!-- STATUS CARDS -->
-                <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">TODAY'S STATUS</MudText>
-                <div class="status-grid">
-                    <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("success")">
+                <!-- Quick control -->
+                <MudTooltip Text="Center on My Store">
+                    <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   OnClick="CenterMap"
+                                   Style="position: absolute; bottom: 30px; right: 30px; z-index: 1000;" />
+                </MudTooltip>
+            </div>
+
+            <!-- RIGHT DASHBOARD PANEL -->
+            <div class="@($"dashboard-panel {GetThemeClass()} {(_isPanelOpen ? "open" : "")}")">
+                <div class="panel-content">
+                    <!-- HEADER -->
+                    <div class="d-flex justify-space-between align-start mb-6">
                         <div>
-                            <div class="d-flex align-center gap-2 mb-2">
-                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
-                                <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
-                            </div>
-                            <MudText Typo="Typo.h5" Style="font-weight: 700;">07:45 AM</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">On Time</MudText>
+                            <MudText Typo="Typo.h5" Style="font-weight: 800;">@(GetSelectedStore()?.StoreName ?? "Store")</MudText>
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;">@(GetSelectedStore()?.StoreCode ?? "---") • @(GetSelectedStore()?.Location ?? "---")</MudText>
                         </div>
+                        <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ClosePanel" Color="Color.Default" />
+                    </div>
+
+                    @if (_selectedStoreId == _myStore?.Id)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.EventNote"
+                                   OnClick="NavigateToPlanner"
+                                   Class="rounded-xl px-6 mb-6 py-3"
+                                   Style="@GetButtonStyle()">
+                            ACTIVITY PLANNER
+                        </MudButton>
+                    }
+
+                    <!-- STATUS CARDS -->
+                    <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">TODAY'S STATUS</MudText>
+                    <div class="status-grid">
+                        <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("success")">
+                            <div>
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
+                                </div>
+                                <MudText Typo="Typo.h5" Style="font-weight: 700;">07:45 AM</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">On Time</MudText>
+                            </div>
+                        </MudPaper>
+
+                        <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("info")">
+                            <div>
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
+                                </div>
+                                <MudText Typo="Typo.h5" Style="font-weight: 700;">47%</MudText>
+                                <MudProgressLinear Color="Color.Info" Value="47" Class="mt-2" Rounded="true" />
+                            </div>
+                        </MudPaper>
+                    </div>
+
+                    <!-- TIMELINE SECTION -->
+                    <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0"
+                              Style="@(ThemeService.CurrentTheme == ThemeMode.Light ? "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.15);" : "background: rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.15);")">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Activity Timeline</MudText>
+
+                        <MudTimeline TimelinePosition="TimelinePosition.Start">
+                            <MudTimelineItem Color="Color.Success" Size="Size.Small">
+                                <ItemOpposite>
+                                    <MudText Typo="Typo.caption" Color="Color.Success">07:45</MudText>
+                                </ItemOpposite>
+                                <ItemContent>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">Check In</MudText>
+                                    <MudText Typo="Typo.caption">Completed</MudText>
+                                </ItemContent>
+                            </MudTimelineItem>
+                            <MudTimelineItem Color="Color.Info" Size="Size.Small">
+                                <ItemOpposite>
+                                    <MudText Typo="Typo.caption" Color="Color.Info">Now</MudText>
+                                </ItemOpposite>
+                                <ItemContent>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">Asset Check</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Info">In Progress (8/13)</MudText>
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="mt-2 rounded-lg" FullWidth="true">Continue</MudButton>
+                                </ItemContent>
+                            </MudTimelineItem>
+                        </MudTimeline>
                     </MudPaper>
 
-                    <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("info")">
-                        <div>
-                            <div class="d-flex align-center gap-2 mb-2">
-                                <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
-                                <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
+                    <!-- NOTIFICATIONS -->
+                    <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
+                    <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
+                        <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Error" IconSize="Size.Small">
+                            <div class="d-flex flex-column">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">Area Head commented on report</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">2 minutes ago</MudText>
                             </div>
-                            <MudText Typo="Typo.h5" Style="font-weight: 700;">47%</MudText>
-                            <MudProgressLinear Color="Color.Info" Value="47" Class="mt-2" Rounded="true" />
-                        </div>
-                    </MudPaper>
+                        </MudListItem>
+                        <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Warning" IconSize="Size.Small">
+                            <div class="d-flex flex-column">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">Equipment cleaning due</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">3 hours ago</MudText>
+                            </div>
+                        </MudListItem>
+                    </MudList>
                 </div>
-
-                <!-- TIMELINE SECTION -->
-                <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0" Style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05);">
-                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Activity Timeline</MudText>
-
-                    <MudTimeline TimelinePosition="TimelinePosition.Start">
-                        <MudTimelineItem Color="Color.Success" Size="Size.Small">
-                            <ItemOpposite>
-                                <MudText Typo="Typo.caption" Color="Color.Success">07:45</MudText>
-                            </ItemOpposite>
-                            <ItemContent>
-                                <MudText Typo="Typo.body2" Style="font-weight: 700;">Check In</MudText>
-                                <MudText Typo="Typo.caption">Completed</MudText>
-                            </ItemContent>
-                        </MudTimelineItem>
-                        <MudTimelineItem Color="Color.Info" Size="Size.Small">
-                            <ItemOpposite>
-                                <MudText Typo="Typo.caption" Color="Color.Info">Now</MudText>
-                            </ItemOpposite>
-                            <ItemContent>
-                                <MudText Typo="Typo.body2" Style="font-weight: 700;">Asset Check</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Info">In Progress (8/13)</MudText>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="mt-2 rounded-lg" FullWidth="true">Continue</MudButton>
-                            </ItemContent>
-                        </MudTimelineItem>
-                    </MudTimeline>
-                </MudPaper>
-
-                <!-- NOTIFICATIONS -->
-                <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
-                <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
-                    <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Error" IconSize="Size.Small">
-                        <div class="d-flex flex-column">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Area Head commented on report</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">2 minutes ago</MudText>
-                        </div>
-                    </MudListItem>
-                    <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Warning" IconSize="Size.Small">
-                        <div class="d-flex flex-column">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Equipment cleaning due</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">3 hours ago</MudText>
-                        </div>
-                    </MudListItem>
-                </MudList>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile View -->
+    <div class="mobile-view">
+        <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
+            <!-- MAP SECTION -->
+            <div class="map-section">
+                <div id="map" style="width: 100%; height: 100%;"></div>
+
+                <!-- Map Legend Overlay -->
+                <div class="@($"map-legend-overlay {GetThemeClass()}")">
+                    <div class="legend-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
+                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                        </svg>
+                        <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Store</MudText>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#9e9e9e" stroke="#fff" stroke-width="1.5" />
+                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                        </svg>
+                        <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Others</MudText>
+                    </div>
+                </div>
+
+                <!-- Quick control -->
+                <MudTooltip Text="Center on My Store">
+                    <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
+                                   Color="Color.Primary"
+                                   Variant="Variant.Filled"
+                                   Size="Size.Small"
+                                   OnClick="CenterMap"
+                                   Style="position: absolute; bottom: 20px; right: 20px; z-index: 1000;" />
+                </MudTooltip>
+            </div>
+        </div>
+
+        <!-- Mobile Panel Card (ONLY shown when store is selected AND panel is open) -->
+        @if (_isPanelOpen && _selectedStoreId.HasValue && GetSelectedStore() != null)
+        {
+            <MudPaper Class="@($"glass-panel mobile-panel-card {GetThemeClass()}")" Elevation="0">
+                <div class="mobile-panel-header">
+                    <div>
+                        <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@(GetSelectedStore()?.StoreName ?? "Store")</MudText>
+                        <MudText Typo="Typo.caption" Style="opacity: 0.7;">@(GetSelectedStore()?.StoreCode ?? "---") • @(GetSelectedStore()?.Location ?? "---")</MudText>
+                    </div>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                   Size="Size.Small"
+                                   OnClick="ClosePanel"
+                                   Color="Color.Default" />
+                </div>
+
+                <div class="mobile-panel-content">
+                    <div class="panel-content">
+                        @if (_selectedStoreId == _myStore?.Id)
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       FullWidth="true"
+                                       StartIcon="@Icons.Material.Filled.EventNote"
+                                       OnClick="NavigateToPlanner"
+                                       Class="rounded-xl mb-4"
+                                       Style="@GetButtonStyle()">
+                                ACTIVITY PLANNER
+                            </MudButton>
+                        }
+
+                        <!-- STATUS CARDS -->
+                        <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">TODAY'S STATUS</MudText>
+                        <div class="status-grid">
+                            <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("success")">
+                                <div>
+                                    <div class="d-flex align-center gap-2 mb-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
+                                        <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
+                                    </div>
+                                    <MudText Typo="Typo.h5" Style="font-weight: 700;">07:45 AM</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">On Time</MudText>
+                                </div>
+                            </MudPaper>
+
+                            <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("info")">
+                                <div>
+                                    <div class="d-flex align-center gap-2 mb-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
+                                        <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
+                                    </div>
+                                    <MudText Typo="Typo.h5" Style="font-weight: 700;">47%</MudText>
+                                    <MudProgressLinear Color="Color.Info" Value="47" Class="mt-2" Rounded="true" />
+                                </div>
+                            </MudPaper>
+                        </div>
+
+                        <!-- TIMELINE SECTION -->
+                        <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0"
+                                  Style="@(ThemeService.CurrentTheme == ThemeMode.Light ? "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.15);" : "background: rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.15);")">
+                            <MudText Typo="Typo.subtitle2" Style="font-weight: 700;" Class="mb-3">Activity Timeline</MudText>
+
+                            <MudTimeline TimelinePosition="TimelinePosition.Start">
+                                <MudTimelineItem Color="Color.Success" Size="Size.Small">
+                                    <ItemOpposite>
+                                        <MudText Typo="Typo.caption" Color="Color.Success">07:45</MudText>
+                                    </ItemOpposite>
+                                    <ItemContent>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">Check In</MudText>
+                                        <MudText Typo="Typo.caption">Completed</MudText>
+                                    </ItemContent>
+                                </MudTimelineItem>
+                                <MudTimelineItem Color="Color.Info" Size="Size.Small">
+                                    <ItemOpposite>
+                                        <MudText Typo="Typo.caption" Color="Color.Info">Now</MudText>
+                                    </ItemOpposite>
+                                    <ItemContent>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">Asset Check</MudText>
+                                        <MudText Typo="Typo.caption" Color="Color.Info">In Progress (8/13)</MudText>
+                                        <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="mt-2 rounded-lg" FullWidth="true">Continue</MudButton>
+                                    </ItemContent>
+                                </MudTimelineItem>
+                            </MudTimeline>
+                        </MudPaper>
+
+                        <!-- NOTIFICATIONS -->
+                        <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
+                        <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
+                            <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Error" IconSize="Size.Small">
+                                <div class="d-flex flex-column">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">Area Head commented on report</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">2 minutes ago</MudText>
+                                </div>
+                            </MudListItem>
+                            <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Warning" IconSize="Size.Small">
+                                <div class="d-flex flex-column">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">Equipment cleaning due</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">3 hours ago</MudText>
+                                </div>
+                            </MudListItem>
+                        </MudList>
+                    </div>
+                </div>
+            </MudPaper>
+        }
     </div>
 </div>
 
@@ -423,6 +655,7 @@
     private Store? _myStore;
     private List<Store> _stores = new();
     private static StoreHeadLanding? _instance;
+    private bool _mapInitialized = false;
 
     protected override void OnInitialized()
     {
@@ -433,10 +666,16 @@
 
     private void OnThemeChanged() => StateHasChanged();
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
         _instance = null;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
+            _mapInitialized = false;
+        }
+        catch { }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -445,8 +684,16 @@
         {
             await UserState.InitializeAsync();
             await LoadData();
+            // Small delay to ensure DOM is ready
+            await Task.Delay(100);
             await InitializeMap();
             StateHasChanged();
+        }
+        else if (!_mapInitialized && _stores.Any())
+        {
+            // Re-initialize if map was destroyed or not initialized
+            await Task.Delay(100);
+            await InitializeMap();
         }
     }
 
@@ -460,6 +707,8 @@
 
     private async Task InitializeMap()
     {
+        if (!_stores.Any()) return;
+
         var mapData = _stores.Select(s => new
         {
             id = s.Id,
@@ -470,28 +719,63 @@
             isMyStore = s.StoreHeadId == UserState.UserId
         }).ToList();
 
-        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData);
+        try
+        {
+            // Destroy existing map first to ensure clean initialization
+            await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
+            await Task.Delay(50);
+
+            // Initialize with the "map" container (works for both desktop and mobile)
+            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData);
+            _mapInitialized = true;
+
+            // Force map resize after initialization
+            await Task.Delay(200);
+            await JSRuntime.InvokeVoidAsync("eval", "if(window.leafletMap && mapInstance) { mapInstance.invalidateSize(); }");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Map initialization error: {ex.Message}");
+            _mapInitialized = false;
+        }
     }
 
     private async Task CenterMap()
     {
         if (_myStore?.GPSLatitude != null && _myStore?.GPSLongitude != null)
         {
-            await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", _myStore.GPSLatitude.Value, _myStore.GPSLongitude.Value, 16);
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", _myStore.GPSLatitude.Value, _myStore.GPSLongitude.Value, 16);
+            }
+            catch { }
         }
     }
+
+    private int? _selectedStoreId;
 
     [JSInvokable("OnStorePinClicked")]
     public static void OnStorePinClicked(int storeId)
     {
         if (_instance != null)
         {
+            _instance._selectedStoreId = storeId;
             _instance._isPanelOpen = true;
             _instance.StateHasChanged();
         }
     }
 
-    private void ClosePanel() => _isPanelOpen = false;
+    private Store? GetSelectedStore()
+    {
+        if (!_selectedStoreId.HasValue) return null;
+        return _stores.FirstOrDefault(s => s.Id == _selectedStoreId.Value);
+    }
+
+    private void ClosePanel()
+    {
+        _isPanelOpen = false;
+        _selectedStoreId = null;
+    }
 
     private void NavigateToPlanner()
     {
@@ -518,9 +802,9 @@
     private string GetCardStyle(string type)
     {
         var isLight = ThemeService.CurrentTheme == ThemeMode.Light || ThemeService.CurrentTheme == ThemeMode.Lightest;
-        var bg = type == "success" ? (isLight ? "rgba(76, 175, 80, 0.1)" : "rgba(76, 175, 80, 0.15)")
-                                   : (isLight ? "rgba(3, 169, 244, 0.1)" : "rgba(3, 169, 244, 0.15)");
-        return $"background: {bg}; border: 1px solid {(type == "success" ? "rgba(76, 175, 80, 0.2)" : "rgba(3, 169, 244, 0.2)")};";
+        var bg = type == "success" ? (isLight ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.15)")
+                                   : (isLight ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.15)");
+        return $"background: {bg}; border: 1px solid {(type == "success" ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.15)")};";
     }
 
     private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "background-color: #ffffff !important; color: #0072cf !important;" : "";

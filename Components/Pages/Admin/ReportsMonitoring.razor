@@ -746,7 +746,14 @@
         using var db = await DbFactory.CreateDbContextAsync();
 
         // Load stores
-        _stores = await db.Stores.AsNoTracking().OrderBy(s => s.StoreName).ToListAsync();
+        if (UserState.Role == "Store Head")
+        {
+            _stores = await db.Stores.AsNoTracking().Where(s => s.StoreHeadId == UserState.UserId).OrderBy(s => s.StoreName).ToListAsync();
+        }
+        else
+        {
+            _stores = await db.Stores.AsNoTracking().OrderBy(s => s.StoreName).ToListAsync();
+        }
         _totalStores = _stores.Count;
         _activeStores = _stores.Count(s => s.Status == "Active");
 
@@ -758,22 +765,34 @@
         _activeUsers = _users.Count(u => u.Status == "Active");
 
         // Load photos
-        _allPhotos = await db.TaskPhotos
+        var photoQuery = db.TaskPhotos
             .Include(p => p.UploadedBy)
             .Include(p => p.Store)
             .Include(p => p.Category)
             .Include(p => p.ChecklistItem)
-            .AsNoTracking()
-            .OrderByDescending(p => p.UploadedAt)
-            .ToListAsync();
+            .AsNoTracking();
+
+        if (UserState.Role == "Store Head")
+        {
+            photoQuery = photoQuery.Where(p => p.Store != null && p.Store.StoreHeadId == UserState.UserId);
+        }
+
+        _allPhotos = await photoQuery.OrderByDescending(p => p.UploadedAt).ToListAsync();
         _filteredPhotos = _allPhotos;
         _totalPhotos = _allPhotos.Count;
 
         // Load recent activities
-        _recentActivities = await db.ActivityLogs
+        var activityQuery = db.ActivityLogs
             .Include(a => a.User)
             .Include(a => a.Store)
-            .AsNoTracking()
+            .AsNoTracking();
+
+        if (UserState.Role == "Store Head")
+        {
+            activityQuery = activityQuery.Where(a => a.Store != null && a.Store.StoreHeadId == UserState.UserId);
+        }
+
+        _recentActivities = await activityQuery
             .OrderByDescending(a => a.Timestamp)
             .Take(50)
             .ToListAsync();
@@ -793,6 +812,11 @@
             .Include(a => a.User)
             .Include(a => a.Store)
             .AsNoTracking();
+
+        if (UserState.Role == "Store Head")
+        {
+            query = query.Where(a => a.Store != null && a.Store.StoreHeadId == UserState.UserId);
+        }
 
         // Apply date filter
         if (_dateRange?.Start != null)

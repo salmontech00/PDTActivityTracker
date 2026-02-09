@@ -325,17 +325,17 @@ else
             <NavMenu />
             <MudDivider Class="my-2" />
             <MudNavMenu>
-                <MudNavGroup Title="Administration" Icon="@Icons.Material.Outlined.AdminPanelSettings" Expanded="false">
-                    @if (UserState.Role == "Admin")
-                    {
+                @if (UserState.Role == "Admin")
+                {
+                    <MudNavGroup Title="Administration" Icon="@Icons.Material.Outlined.AdminPanelSettings" Expanded="false">
                         <MudNavLink Href="/admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.People">
                             Manage Users
                         </MudNavLink>
                         <MudNavLink Href="/admin/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Settings">
                             Settings
                         </MudNavLink>
-                    }
-                </MudNavGroup>
+                    </MudNavGroup>
+                }
             </MudNavMenu>
         </MudDrawer>
 
@@ -354,17 +354,17 @@ else
 
                 <MudSpacer />
 
-                <MudNavGroup Title="Administration" Icon="@Icons.Material.Outlined.AdminPanelSettings" Expanded="false">
-                    @if (UserState.Role == "Admin")
-                    {
+                @if (UserState.Role == "Admin")
+                {
+                    <MudNavGroup Title="Administration" Icon="@Icons.Material.Outlined.AdminPanelSettings" Expanded="false">
                         <MudNavLink Href="/admin/users" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.People" OnClick="@CloseMobileDrawer">
                             Manage Users
                         </MudNavLink>
                         <MudNavLink Href="/admin/settings" Match="NavLinkMatch.All" Icon="@Icons.Material.Outlined.Settings" OnClick="@CloseMobileDrawer">
                             Settings
                         </MudNavLink>
-                    }
-                </MudNavGroup>
+                    </MudNavGroup>
+                }
 
                 <MudDivider Class="my-2" Style="border-color: var(--mud-palette-secondary); border-width: 1px;" />
 

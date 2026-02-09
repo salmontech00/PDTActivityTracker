@@ -70,12 +70,8 @@
 
     @if (UserState.Role == "Store Head")
     {
-        <div class="nav-section-header-v2" style="color: @GetMenuColor(); margin-top: 16px;">Store Management</div>
-        <MudNavLink Href="/store-head/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Dashboard">
-            Dashboard
-        </MudNavLink>
-        <MudNavLink Href="/store-head/planner" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.EventNote">
-            Activity Planner
+        <MudNavLink Href="/store-head/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Map">
+            Stores Map
         </MudNavLink>
     }
 </MudNavMenu>
