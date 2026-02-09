@@ -760,7 +760,7 @@
             areaHeadName = s.AreaHead?.Fullname
         }).ToList();
 
-        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData);
+        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true });
     }
 
     private async Task LoadData()

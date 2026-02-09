@@ -2,7 +2,7 @@
 var markersLayer = null;
 
 window.leafletMap = {
-    initialize: function (elementId, stores) {
+    initialize: function (elementId, stores, options) {
         var mapContainer = document.getElementById(elementId);
         if (!mapContainer) return;
 
@@ -13,7 +13,7 @@ window.leafletMap = {
 
         // If map is already initialized and valid, just update data
         if (mapInstance) {
-            this.updateMarkers(stores);
+            this.updateMarkers(stores, options);
             return;
         }
 
@@ -29,7 +29,7 @@ window.leafletMap = {
 
         markersLayer = L.layerGroup().addTo(mapInstance);
 
-        this.updateMarkers(stores);
+        this.updateMarkers(stores, options);
 
         // Force a resize calculation after a short delay to ensure correct rendering if container was hidden
         setTimeout(() => {
@@ -37,8 +37,12 @@ window.leafletMap = {
         }, 100);
     },
 
-    updateMarkers: function (stores) {
+    updateMarkers: function (stores, options) {
         if (!mapInstance || !markersLayer) return;
+
+        // Default options
+        options = options || { fitBounds: true };
+        if (options.fitBounds === undefined) options.fitBounds = true;
 
         markersLayer.clearLayers();
 
@@ -51,7 +55,6 @@ window.leafletMap = {
                 // Mode A: Store Head Dashboard (Explicit 'isMyStore' boolean present)
                 // Mode B: Admin Assignment (Original logic checking assignments)
 
-                var isStoreHeadMode = typeof store.isMyStore === 'boolean';
                 var isStoreHeadMode = typeof store.isMyStore === 'boolean';
                 var color, opacity, zIndex, pulseHtml, statusBadge;
                 var clickAction = null;
@@ -129,9 +132,8 @@ window.leafletMap = {
                 // Click Event
                 marker.on('click', function (e) {
                     if (clickAction === 'dashboard') {
-                        // Store Head: Open Dashboard
+                        // Store Head: Open Dashboard (Centering is handled by Blazor via JSInvokable)
                         DotNet.invokeMethodAsync('PDTActivityTracker', 'OnStorePinClicked', store.id);
-                        mapInstance.setView(e.latlng, 15);
                     }
                     // Admin: Default popup behavior (handled by Leaflet auto-open)
                 });
@@ -143,9 +145,11 @@ window.leafletMap = {
             }
         });
 
-        // Fit bounds if we have markers
-        if (hasValidMarkers) {
-            mapInstance.fitBounds(bounds, { padding: [50, 50] });
+        // Fit bounds if we have markers and requested
+        if (hasValidMarkers && options.fitBounds) {
+            var fitOptions = { padding: [50, 50] };
+            if (options.maxZoom) fitOptions.maxZoom = options.maxZoom;
+            mapInstance.fitBounds(bounds, fitOptions);
         }
     },
 

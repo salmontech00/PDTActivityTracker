@@ -188,6 +188,8 @@
         var name = cat.Name?.ToLower() ?? "";
         cat.Icon = name switch
         {
+            var s when s.Contains(" in") => Icons.Material.Outlined.Login,
+            var s when s.Contains(" out") => Icons.Material.Outlined.Logout,
             var s when s.Contains("opening") => Icons.Material.Filled.DoorFront,
             var s when s.Contains("closing") => Icons.Material.Filled.DoorBack,
             var s when s.Contains("asset") => Icons.Material.Filled.Devices,
