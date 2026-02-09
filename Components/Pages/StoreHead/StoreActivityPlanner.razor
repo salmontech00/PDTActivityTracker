@@ -432,9 +432,9 @@
             <MudExpansionPanels MultiExpansion="true" Class="modern-expansion-panels">
                 @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                 {
-                    var isLocked = category.SortOrder > _currentCategoryOrder;
+                    var isLocked = category.SortOrder > _currentCategoryOrder || _categories.Any(c => c.SortOrder < category.SortOrder && !CanCompleteCategory(c.Id));
                     var isActive = category.Id == _currentCategoryId;
-                    var isCompleted = category.SortOrder < _currentCategoryOrder;
+                    var isCompleted = category.SortOrder < _currentCategoryOrder && CanCompleteCategory(category.Id);
                     var itemsInCategory = _checklistItems.Where(t => t.CategoryId == category.Id).OrderBy(t => t.SortOrder).ToList();
 
                     <MudExpansionPanel Class="@($"modern-expansion-panel {(isActive ? "active" : "")} {(isLocked ? "locked" : "")}")"
