@@ -3,14 +3,19 @@ var markersLayer = null;
 
 window.leafletMap = {
     initialize: function (elementId, stores) {
-        // If map is already initialized, just update data or return
+        var mapContainer = document.getElementById(elementId);
+        if (!mapContainer) return;
+
+        // If map is already initialized but attached to a different/dead container
+        if (mapInstance && mapInstance.getContainer() !== mapContainer) {
+            this.destroy();
+        }
+
+        // If map is already initialized and valid, just update data
         if (mapInstance) {
             this.updateMarkers(stores);
             return;
         }
-
-        var mapContainer = document.getElementById(elementId);
-        if (!mapContainer) return;
 
         // Initialize map centered on a default location (e.g., Philippines mostly central)
         // Adjust center and zoom based on your actual data or preference
