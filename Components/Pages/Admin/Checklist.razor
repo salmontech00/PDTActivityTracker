@@ -10,7 +10,7 @@
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
-<PageTitle>Checklist Management</PageTitle>
+<PageTitle>Activity Planner Management</PageTitle>
 
 <style>
     .checklist-container {
@@ -491,7 +491,7 @@
 
 <div class="checklist-container @GetThemeClass()">
     <div class="page-header-row">
-        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Checklist Management</MudText>
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Activity Planner Management</MudText>
 
         <div class="button-group">
             <MudButton Variant="Variant.Filled"
@@ -694,14 +694,14 @@
     {
         <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
-            <MudText Typo="Typo.h6">Loading Checklist...</MudText>
+            <MudText Typo="Typo.h6">Loading Tasks...</MudText>
         </div>
     }
     else if (_isPreviewMode)
     {
         <!-- Preview Mode -->
         <div class="preview-mode">
-            <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6" Style="@GetTitleStyle()">Checklist Preview</MudText>
+            <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6" Style="@GetTitleStyle()">Planner Preview</MudText>
 
             <MudExpansionPanels MultiExpansion="true" Class="modern-expansion-panels">
                 @foreach (var category in _categories.OrderBy(c => c.SortOrder))
@@ -780,7 +780,7 @@
                                                        Color="Color.Primary"
                                                        Class="preview-upload-btn"
                                                        Style="border-radius: 8px; font-weight: bold;">
-                                                UPLOAD (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
                                             </MudButton>
                                         }
                                     </div>

@@ -11,7 +11,7 @@
 @inject ISnackbar Snackbar
 @implements IAsyncDisposable
 
-<PageTitle>Store Head Dashboard</PageTitle>
+<PageTitle>Store Maps</PageTitle>
 
 <style>
     .store-container {
@@ -339,7 +339,7 @@
 
 <div class="store-container">
     <div class="page-header-row">
-        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Stores Map</MudText>
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Maps</MudText>
     </div>
 
     <!-- UNIFIED DASHBOARD LAYOUT -->
@@ -395,9 +395,9 @@
                                FullWidth="true"
                                StartIcon="@Icons.Material.Filled.EventNote"
                                OnClick="NavigateToPlanner"
-                               Class="rounded-xl px-6 mb-6 py-3"
+                               Class="rounded-xl mb-6"
                                Style="@GetButtonStyle()">
-                        ACTIVITY PLANNER
+                        STORE ACTIVITY PLANNER
                     </MudButton>
                 }
 

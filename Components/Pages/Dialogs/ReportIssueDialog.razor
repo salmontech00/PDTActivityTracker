@@ -1,91 +1,193 @@
 ﻿@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
-
-<MudDialog Class="@($"glass-dialog {GetThemeClass()}")">
-    <TitleContent>
-        <div class="d-flex align-center gap-3">
-            <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" />
-            <MudText Typo="Typo.h6" Style="font-weight: 800;">Report Operational Issue</MudText>
-        </div>
-    </TitleContent>
-    <DialogContent>
-        <div class="pa-4">
-            <MudGrid Spacing="3">
-                <MudItem xs="12" sm="6">
-                    <MudSelect T="string" @bind-Value="_issue.Title" Label="Issue Category" Variant="Variant.Outlined" Required="true">
-                        <MudSelectItem Value="@("EMS (Electrical/Mechanical)")">EMS (Electrical/Mechanical)</MudSelectItem>
-                        <MudSelectItem Value="@("BMS (Building Maintenance)")">BMS (Building Maintenance)</MudSelectItem>
-                        <MudSelectItem Value="@("HVAC (Refrigeration/AC)")">HVAC (Refrigeration/AC)</MudSelectItem>
-                        <MudSelectItem Value="@("IT (Equipment/Systems)")">IT (Equipment/Systems)</MudSelectItem>
-                        <MudSelectItem Value="@("Other")">Other</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12" sm="6">
-                    <MudSelect T="string" @bind-Value="_issue.Priority" Label="Priority Level" Variant="Variant.Outlined" Required="true">
-                        <MudSelectItem Value="@("Low")">Low</MudSelectItem>
-                        <MudSelectItem Value="@("Medium")">Medium</MudSelectItem>
-                        <MudSelectItem Value="@("High")">High</MudSelectItem>
-                        <MudSelectItem Value="@("Critical")">Critical</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudTextField T="string" @bind-Value="_issue.Description" Label="Description of Problem" 
-                                  Variant="Variant.Outlined" Lines="4" Required="true" 
-                                  Placeholder="Describe the issue in detail..." />
-                </MudItem>
-                <MudItem xs="12">
-                    <div class="d-flex flex-column gap-2">
-                        <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Evidence Photo</MudText>
-                        @if (_imageData == null)
-                        {
-                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.PhotoCamera" 
-                                       FullWidth="true" Color="Color.Info" OnClick="SimulateCapture"
-                                       Style="border-radius: 12px; height: 100px; border-style: dashed;">
-                                TAKE EVIDENCE PHOTO
-                            </MudButton>
-                        }
-                        else
-                        {
-                            <div class="evidence-preview">
-                                <img src="data:@_mimeType;base64,@Convert.ToBase64String(_imageData)" style="max-height: 200px; border-radius: 12px;" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="@(() => _imageData = null)" />
-                            </div>
-                        }
-                    </div>
-                </MudItem>
-            </MudGrid>
-        </div>
-    </DialogContent>
-    <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text" Class="px-6">CANCEL</MudButton>
-        <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="Submit" 
-                   Disabled="@(string.IsNullOrEmpty(_issue.Description) || _imageData == null)"
-                   Class="rounded-xl px-10 ml-4">SUBMIT REPORT</MudButton>
-    </DialogActions>
-</MudDialog>
+@implements IDisposable
 
 <style>
+    /* SHARED GLASS DIALOG STYLES */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-input-adornment {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog.light .mud-icon-root {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #ffffff !important;
+        border-width: 2px !important;
+    }
+
+    .glass-dialog.light .mud-input-slot::placeholder {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* Force icon color on light theme submit button */
+    .glass-dialog.light .submit-report-btn .mud-button-icon-start {
+        color: #0072cf !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.lightest .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 1) !important;
+    }
+
+    .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+    }
+
+    /* DIALOG STYLING */
     .glass-dialog {
         backdrop-filter: blur(20px);
         border-radius: 24px !important;
     }
-    .lightest .glass-dialog { background: rgba(255, 255, 255, 0.9); }
-    .light .glass-dialog { background: rgba(0, 114, 207, 0.8); color: white; }
-    .dark .glass-dialog { background: rgba(15, 23, 42, 0.9); color: white; }
 
+    /* EVIDENCE PREVIEW */
     .evidence-preview {
         position: relative;
         display: inline-block;
+        width: 100%;
     }
-    .evidence-preview .mud-icon-button {
+
+    .remove-photo-btn {
         position: absolute;
         top: 8px;
         right: 8px;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0,0,0,0.5) !important;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 600px) {
+        .glass-dialog .mud-dialog-actions {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+            .glass-dialog .mud-dialog-actions .mud-button {
+                width: 100%;
+                margin: 0 !important;
+            }
     }
 </style>
+
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <div class="d-flex align-center gap-3">
+            <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="Color.Error" />
+            <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Report Operational Issue</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string"
+                           @bind-Value="_issue.Title"
+                           Label="Issue Category"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           Margin="Margin.Dense">
+                    <MudSelectItem Value="@("EMS (Electrical/Mechanical)")">EMS (Electrical/Mechanical)</MudSelectItem>
+                    <MudSelectItem Value="@("BMS (Building Maintenance)")">BMS (Building Maintenance)</MudSelectItem>
+                    <MudSelectItem Value="@("HVAC (Refrigeration/AC)")">HVAC (Refrigeration/AC)</MudSelectItem>
+                    <MudSelectItem Value="@("IT (Equipment/Systems)")">IT (Equipment/Systems)</MudSelectItem>
+                    <MudSelectItem Value="@("Other")">Other</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string"
+                           @bind-Value="_issue.Priority"
+                           Label="Priority Level"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           Margin="Margin.Dense">
+                    <MudSelectItem Value="@("Low")">Low</MudSelectItem>
+                    <MudSelectItem Value="@("Medium")">Medium</MudSelectItem>
+                    <MudSelectItem Value="@("High")">High</MudSelectItem>
+                    <MudSelectItem Value="@("Critical")">Critical</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField T="string"
+                              @bind-Value="_issue.Description"
+                              Label="Description of Problem"
+                              Variant="Variant.Outlined"
+                              Lines="4"
+                              Required="true"
+                              Margin="Margin.Dense"
+                              Placeholder="Describe the issue in detail..." />
+            </MudItem>
+            <MudItem xs="12">
+                <div class="d-flex flex-column gap-2">
+                    <MudText Typo="Typo.subtitle2" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Evidence Photo</MudText>
+                    @if (_imageData == null)
+                    {
+                        <MudButton Variant="Variant.Outlined"
+                                   StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                   FullWidth="true"
+                                   Color="Color.Info"
+                                   OnClick="OpenCamera"
+                                   Class="rounded-lg"
+                                   Style="@($"height: 100px; border-style: dashed; {GetCameraButtonStyle()}")">
+                            TAKE EVIDENCE PHOTO
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <div class="evidence-preview">
+                            <img src="data:@_mimeType;base64,@Convert.ToBase64String(_imageData)"
+                                 style="max-height: 200px; border-radius: 12px; width: 100%; object-fit: cover;"
+                                 alt="Evidence" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Color="Color.Error"
+                                           OnClick="@(() => { _imageData = null; _mimeType = null; })"
+                                           Class="remove-photo-btn" />
+                        </div>
+                    }
+                </div>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">CANCEL</MudButton>
+        <MudButton Color="Color.Error"
+                   Variant="Variant.Filled"
+                   StartIcon="@Icons.Material.Filled.Send"
+                   OnClick="Submit"
+                   Disabled="@(string.IsNullOrEmpty(_issue.Description) || _imageData == null)"
+                   Style="@GetButtonStyle()"
+                   Class="@($"rounded-lg px-6 ml-2 {(GetThemeClass() == "light" ? "submit-report-btn" : "")}")">
+            SUBMIT REPORT
+        </MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
@@ -96,14 +198,32 @@
     private byte[]? _imageData;
     private string? _mimeType;
 
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged() => StateHasChanged();
+
+    public void Dispose() => ThemeService.OnThemeChanged -= OnThemeChanged;
+
     private void Cancel() => MudDialog.Cancel();
 
-    private void SimulateCapture()
+    private async Task OpenCamera()
     {
-        // Simulate photo capture for now
-        _imageData = new byte[100];
-        _mimeType = "image/jpeg";
-        Snackbar.Add("Evidence photo captured.", Severity.Info);
+        var parameters = new DialogParameters { };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+        var dialog = await DialogService.ShowAsync<PDTActivityTracker.Components.Pages.Dialogs.CameraCaptureDialog>("Take Evidence Photo", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: (byte[] imageData, string mimeType) })
+        {
+            _imageData = imageData;
+            _mimeType = mimeType;
+            Snackbar.Add("Evidence photo captured.", Severity.Info);
+            StateHasChanged();
+        }
     }
 
     private void Submit()
@@ -111,16 +231,64 @@
         _issue.StoreId = StoreId;
         _issue.ReportedById = UserId;
         _issue.ReportedAt = DateTime.Now;
-        
+
         // Pass back the issue and photo data
         MudDialog.Close(DialogResult.Ok((_issue, _imageData, _mimeType)));
     }
 
-    private string GetThemeClass() => ThemeService.CurrentTheme switch
+    private string GetThemeClass()
     {
-        ThemeMode.Lightest => "lightest",
-        ThemeMode.Light => "light",
-        ThemeMode.Dark => "dark",
-        _ => "lightest"
-    };
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null)
+            return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCameraButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #ffffff !important; border-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
 }

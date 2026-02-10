@@ -28,6 +28,10 @@ namespace PDTActivityTracker.Components.Model
 
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
 
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public DateTime? CaptureTimestamp { get; set; }
+
         // Image storage (same pattern as User.cs)
         public byte[]? ImageData { get; set; }
         public string? ImageMimeType { get; set; }
