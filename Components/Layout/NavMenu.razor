@@ -61,17 +61,17 @@
             Reports & Monitoring
         </MudNavLink>
         <MudNavLink Href="/admin/checklist" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.PlaylistAddCheck">
-            Manage Checklists
+            Manage Activity Planner
         </MudNavLink>
         <MudNavLink Href="/admin/store-assignment" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Store">
-            Store Assignment
+            Manage Stores
         </MudNavLink>
     }
 
     @if (UserState.Role == "Store Head")
     {
         <MudNavLink Href="/store-head/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Map">
-            Stores Map
+            Store Maps
         </MudNavLink>
     }
 </MudNavMenu>

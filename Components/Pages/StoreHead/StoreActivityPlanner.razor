@@ -12,7 +12,7 @@
 @inject IDialogService DialogService
 @implements IDisposable
 
-<PageTitle>Activity Tracker - @(_store?.StoreName ?? "Loading...")</PageTitle>
+<PageTitle>Activity Planner - @(_store?.StoreName ?? "Loading...")</PageTitle>
 
 
 <style>
@@ -413,7 +413,7 @@
 <div class="planner-container @GetThemeClass()">
     <!-- HEADER -->
     <div class="page-header-row">
-        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Activity Tracker</MudText>
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Activity Planner</MudText>
 
         <div class="button-group">
             <MudButton Variant="Variant.Filled"
@@ -558,7 +558,7 @@
                                                        Class="preview-upload-btn"
                                                        Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
                                                        Style="border-radius: 8px; font-weight: bold;">
-                                                UPLOAD (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
                                             </MudButton>
                                         }
                                     </div>
