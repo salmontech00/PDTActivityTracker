@@ -14,7 +14,6 @@
 
 <PageTitle>Activity Tracker - @(_store?.StoreName ?? "Loading...")</PageTitle>
 
-<input type="file" id="cameraInput" accept="image/*" capture="camera" style="display: none;" @onchange="OnPhotoCaptured" />
 
 <style>
     .planner-container {
@@ -210,26 +209,55 @@
 
     /* PHOTO GRID */
     .photo-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        gap: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
         margin-top: 8px;
         padding-left: 32px;
     }
 
-    .photo-box {
-        aspect-ratio: 1;
-        border-radius: 8px;
+    .photo-thumb-wrapper {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.15);
         background: rgba(0,0,0,0.1);
+    }
+
+        .photo-thumb-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .photo-remove-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.65);
+        color: #fff;
+        border: none;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        overflow: hidden;
-        border: 1px dashed rgba(255,255,255,0.2);
+        font-size: 11px;
+        line-height: 1;
+        padding: 0;
+        transition: background 0.2s;
     }
 
-    .lightest .photo-box {
-        border: 1px dashed rgba(0, 114, 207, 0.2);
+        .photo-remove-btn:hover {
+            background: rgba(220, 38, 38, 0.9);
+        }
+
+    .lightest .photo-thumb-wrapper {
+        border: 1px solid rgba(0, 114, 207, 0.2);
         background: rgba(0,0,0,0.05);
     }
 
@@ -495,9 +523,9 @@
                                                 <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
                                                 <MudCheckBox T="bool"
                                                              Value="@progress.IsCompleted"
-                                                             ValueChanged="@((val) => OnTaskToggle(task, val))"
                                                              Color="Color.Primary"
                                                              Dense="true"
+                                                             Disabled="true"
                                                              Class="pa-0" />
 
                                                 <div class="d-flex align-center flex-wrap gap-2">
@@ -528,6 +556,7 @@
                                                        Color="Color.Primary"
                                                        OnClick="@(() => CapturePhoto(task))"
                                                        Class="preview-upload-btn"
+                                                       Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
                                                        Style="border-radius: 8px; font-weight: bold;">
                                                 UPLOAD (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
                                             </MudButton>
@@ -545,20 +574,8 @@
                                                                  Variant="Variant.Outlined"
                                                                  Margin="Margin.Dense"
                                                                  Class="manpower-input"
-                                                                 @bind-Value:after="@(() => ValidateManpower(task, progress))" />
+                                                                 @bind-Value:after="@(() => OnManpowerChanged(task, progress))" />
                                             </div>
-                                        </div>
-                                    }
-
-                                    @if (task.IsPhotoRequired && GetStoredPhotos(task.Id).Any())
-                                    {
-                                        <div class="photo-grid">
-                                            @foreach (var photo in GetStoredPhotos(task.Id))
-                                            {
-                                                <div class="photo-box">
-                                                    <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" style="width: 100%; height: 100%; object-fit: cover;" />
-                                                </div>
-                                            }
                                         </div>
                                     }
 
@@ -572,25 +589,27 @@
                                                           Margin="Margin.Dense"
                                                           Dense="true"
                                                           Placeholder="Enter remarks here..."
-                                                          Class="rounded-lg" />
+                                                          Class="rounded-lg"
+                                                          @bind-Value:after="@(() => OnRemarksChanged(task))" />
+                                        </div>
+                                    }
+
+                                    @if (task.IsPhotoRequired && GetStoredPhotos(task.Id).Any())
+                                    {
+                                        <div class="photo-grid">
+                                            @foreach (var photo in GetStoredPhotos(task.Id))
+                                            {
+                                                <div class="photo-thumb-wrapper">
+                                                    <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
+                                                    <button class="photo-remove-btn" @onclick="@(() => RemovePhoto(photo))" title="Remove">✕</button>
+                                                </div>
+                                            }
                                         </div>
                                     }
                                 </div>
                             }
 
-                            @if (isActive && !isLocked)
-                            {
-                                <div class="d-flex justify-end mt-6">
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Primary"
-                                               Size="Size.Large"
-                                               Disabled="@(!CanCompleteCategory(category.Id))"
-                                               OnClick="@(() => CompleteCategory(category))"
-                                               Class="complete-section-btn">
-                                        @(category.Name == "Check Out" ? "FINISH WORKDAY" : "COMPLETE SECTION")
-                                    </MudButton>
-                                </div>
-                            }
+                            @* Removed Complete Section Button - Now Automatic *@
                         </ChildContent>
                     </MudExpansionPanel>
                 }
@@ -689,12 +708,17 @@
         _currentCategoryOrder = currentCat?.SortOrder ?? 0;
 
         _taskProgresses = await db.TaskProgresses
-            .Where(tp => tp.StoreDailyActivityId == _currentSession.Id)
+            .Where(tp => tp.StoreDailyActivityId == _currentSession!.Id)
             .ToListAsync();
 
         _loadedPhotos = await db.TaskPhotos
             .Where(p => p.StoreId == StoreId && p.UploadedAt >= today)
             .ToListAsync();
+
+        foreach (var task in _checklistItems)
+        {
+            CheckAndSyncTaskCompletion(task);
+        }
 
         UpdateCompletedCount();
         _initialized = true;
@@ -717,12 +741,48 @@
         return prog;
     }
 
-    private void OnTaskToggle(ChecklistItem task, bool val)
+    private async Task CheckAndAutoProgress()
+    {
+        if (CanCompleteCategory(_currentCategoryId))
+        {
+            var currentCat = _categories.FirstOrDefault(c => c.Id == _currentCategoryId);
+            if (currentCat != null)
+            {
+                await CompleteCategory(currentCat);
+            }
+        }
+    }
+
+    private void CheckAndSyncTaskCompletion(ChecklistItem task)
     {
         var prog = GetTaskProgress(task.Id);
-        prog.IsCompleted = val;
-        if (val) prog.CompletedAt = DateTime.Now;
-        UpdateCompletedCount();
+        bool isNowCompleted = true;
+
+        if (task.IsPhotoRequired)
+        {
+            var photoCount = GetPhotoCount(task.Id);
+            if (task.NumberOfPhotos > 0)
+            {
+                if (photoCount < task.NumberOfPhotos) isNowCompleted = false;
+            }
+            else
+            {
+                if (photoCount == 0) isNowCompleted = false;
+            }
+        }
+
+        if (isNowCompleted && task.TaskType == "Manpower" && !prog.ActualQuantity.HasValue)
+        {
+            isNowCompleted = false;
+        }
+
+        if (prog.IsCompleted != isNowCompleted)
+        {
+            prog.IsCompleted = isNowCompleted;
+            if (isNowCompleted) prog.CompletedAt = DateTime.Now;
+            else prog.CompletedAt = null;
+            UpdateCompletedCount();
+        }
     }
 
     private void UpdateCompletedCount()
@@ -740,17 +800,7 @@
     private bool CanCompleteCategory(int categoryId)
     {
         var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId).ToList();
-        foreach (var task in categoryTasks)
-        {
-            var prog = GetTaskProgress(task.Id);
-            if (task.IsMandatory && !prog.IsCompleted) return false;
-            if (task.IsPhotoRequired && task.NumberOfPhotos > 0)
-            {
-                var count = GetPhotoCount(task.Id);
-                if (count < task.NumberOfPhotos) return false;
-            }
-        }
-        return true;
+        return categoryTasks.All(t => GetTaskProgress(t.Id).IsCompleted);
     }
 
     private async Task CompleteCategory(Category currentCat)
@@ -813,43 +863,69 @@
         Snackbar.Add("Progress saved.", Severity.Info);
     }
 
-    private ChecklistItem? _activePhotoTask;
-
     private async Task CapturePhoto(ChecklistItem task)
     {
-        _activePhotoTask = task;
-        await JSRuntime.InvokeVoidAsync("document.getElementById('cameraInput').click");
+        var parameters = new DialogParameters { };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+
+        var dialog = await DialogService.ShowAsync<PDTActivityTracker.Components.Pages.Dialogs.CameraCaptureDialog>("Take Photo", parameters, options);
+        var result = await dialog.Result;
+
+        if (result is { Canceled: false, Data: (byte[] imageData, string mimeType) })
+        {
+            var photo = new TaskPhoto
+            {
+                StoreId = StoreId,
+                ChecklistItemId = task.Id,
+                CategoryId = task.CategoryId,
+                UploadedById = UserState.UserId,
+                UploadedAt = DateTime.Now,
+                CaptureTimestamp = DateTime.Now,
+                ImageData = imageData,
+                ImageMimeType = mimeType,
+                Latitude = _store?.GPSLatitude,
+                Longitude = _store?.GPSLongitude,
+                Description = $"GPS: {_store?.GPSLatitude}, {_store?.GPSLongitude} | Time: {DateTime.Now:HH:mm:ss}"
+            };
+
+            using var db = await DbFactory.CreateDbContextAsync();
+            db.TaskPhotos.Add(photo);
+            await db.SaveChangesAsync();
+
+            _loadedPhotos.Add(photo);
+            CheckAndSyncTaskCompletion(task);
+            await CheckAndAutoProgress();
+
+            Snackbar.Add($"Photo captured and saved ({imageData.Length / 1024}KB)", Severity.Success);
+            StateHasChanged();
+        }
     }
 
-    private async Task OnPhotoCaptured(ChangeEventArgs e)
+    private async Task RemovePhoto(TaskPhoto photo)
     {
-        if (_activePhotoTask == null) return;
-
-        Snackbar.Add($"Synthesizing GPS and timestamp for {_activePhotoTask.TaskName}...", Severity.Info);
-
-        double lat = _store?.GPSLatitude ?? 0;
-        double lng = _store?.GPSLongitude ?? 0;
-
-        var photoData = new byte[100];
-        var photo = new TaskPhoto
+        try
         {
-            StoreId = StoreId,
-            ChecklistItemId = _activePhotoTask.Id,
-            CategoryId = _activePhotoTask.CategoryId,
-            UploadedById = UserState.UserId,
-            UploadedAt = DateTime.Now,
-            ImageData = photoData,
-            ImageMimeType = "image/jpeg",
-            Description = $"GPS: {lat}, {lng} | Time: {DateTime.Now:HH:mm:ss}"
-        };
+            using var db = await DbFactory.CreateDbContextAsync();
+            var existing = await db.TaskPhotos.FindAsync(photo.Id);
+            if (existing != null)
+            {
+                db.TaskPhotos.Remove(existing);
+                await db.SaveChangesAsync();
+            }
+            _loadedPhotos.Remove(photo);
 
-        using var db = await DbFactory.CreateDbContextAsync();
-        db.TaskPhotos.Add(photo);
-        await db.SaveChangesAsync();
+            var task = _checklistItems.FirstOrDefault(t => t.Id == photo.ChecklistItemId);
+            if (task != null)
+            {
+                CheckAndSyncTaskCompletion(task);
+            }
 
-        _loadedPhotos.Add(photo);
-        _activePhotoTask = null;
-        StateHasChanged();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error removing photo: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task OpenIssueDialog()
@@ -888,6 +964,20 @@
     private int GetPhotoCount(int taskId) => _loadedPhotos.Count(p => p.ChecklistItemId == taskId);
 
     private List<TaskPhoto> GetStoredPhotos(int taskId) => _loadedPhotos.Where(p => p.ChecklistItemId == taskId).ToList();
+
+    private async Task OnManpowerChanged(ChecklistItem task, TaskProgress prog)
+    {
+        await ValidateManpower(task, prog);
+        CheckAndSyncTaskCompletion(task);
+        await CheckAndAutoProgress();
+    }
+
+    private async Task OnRemarksChanged(ChecklistItem task)
+    {
+        await SaveCurrentProgress();
+        CheckAndSyncTaskCompletion(task);
+        await CheckAndAutoProgress();
+    }
 
     private async Task ValidateManpower(ChecklistItem task, TaskProgress prog)
     {

@@ -1,0 +1,285 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Services
+@inject IJSRuntime JSRuntime
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@implements IAsyncDisposable
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    .glass-dialog.light .mud-icon-root {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog.light .save-photobtn .mud-button-icon-start {
+        color: #0072cf !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    /* CAMERA CONTAINER */
+    .camera-container {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        aspect-ratio: 4/3;
+        background: #000;
+        border-radius: 16px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+
+    .video-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .camera-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.5);
+    }
+
+    .capture-btn {
+        background: rgba(var(--mud-palette-primary-rgb), 0.1) !important;
+        border: 2px solid var(--mud-palette-primary) !important;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 600px) {
+        .camera-container {
+            max-width: 100%;
+            border-radius: 12px;
+        }
+
+        .glass-dialog .mud-dialog-actions {
+            flex-direction: column;
+            gap: 8px;
+        }
+
+            .glass-dialog .mud-dialog-actions .mud-button {
+                width: 100%;
+            }
+
+            .glass-dialog .mud-dialog-actions .mud-spacer {
+                display: none;
+            }
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <div class="d-flex align-center gap-3">
+            <MudIcon Icon="@Icons.Material.Filled.PhotoCamera" Color="Color.Primary" />
+            <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Capture Photo</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <div class="camera-container">
+            @if (!_isCaptured)
+            {
+                <video id="cameraVideo" autoplay playsinline class="video-preview"></video>
+            }
+            else
+            {
+                <img src="@_capturedImageBase64" class="video-preview" alt="Captured" />
+            }
+            <canvas id="cameraCanvas" style="display:none;"></canvas>
+
+            @if (_isLoading)
+            {
+                <div class="camera-overlay">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </div>
+            }
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudSpacer />
+        @if (!_isCaptured)
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Camera"
+                           Color="Color.Primary"
+                           Size="Size.Large"
+                           OnClick="Capture"
+                           Disabled="@_isLoading"
+                           Class="capture-btn" />
+        }
+        else
+        {
+            <MudButton
+                       OnClick="Retake"
+                       Style="@GetCancelButtonStyle()"
+                       Class="rounded-lg">
+                RETAKE
+            </MudButton>
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       OnClick="Confirm"
+                       Style="@GetButtonStyle()"
+                       Class="@($"rounded-lg px-6 {(GetThemeClass() == "light" ? "save-photobtn" : "")}")">
+                SAVE PHOTO
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private bool _isLoading = true;
+    private bool _isCaptured = false;
+    private string? _capturedImageBase64;
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged() => StateHasChanged();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await StartCamera();
+        }
+    }
+
+    private async Task StartCamera()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        // Wait a bit for the element to be ready in the DOM
+        await Task.Delay(500);
+
+        bool success = await JSRuntime.InvokeAsync<bool>("cameraInterop.startVideo", "cameraVideo");
+        if (!success)
+        {
+            MudDialog.Cancel();
+        }
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task Capture()
+    {
+        _capturedImageBase64 = await JSRuntime.InvokeAsync<string>("cameraInterop.capturePhoto", "cameraVideo", "cameraCanvas");
+        if (!string.IsNullOrEmpty(_capturedImageBase64))
+        {
+            await JSRuntime.InvokeVoidAsync("cameraInterop.stopVideo", "cameraVideo");
+            _isCaptured = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task Retake()
+    {
+        _isCaptured = false;
+        _capturedImageBase64 = null;
+        StateHasChanged();
+        await StartCamera();
+    }
+
+    private void Confirm()
+    {
+        if (!string.IsNullOrEmpty(_capturedImageBase64))
+        {
+            // Remove the data area if present
+            var base64Data = _capturedImageBase64;
+            if (base64Data.Contains(","))
+            {
+                base64Data = base64Data.Split(",")[1];
+            }
+
+            var bytes = Convert.FromBase64String(base64Data);
+            MudDialog.Close(DialogResult.Ok((bytes, "image/jpeg")));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            ThemeService.OnThemeChanged -= OnThemeChanged;
+            await JSRuntime.InvokeVoidAsync("cameraInterop.stopVideo", "cameraVideo");
+        }
+        catch { }
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        if (ThemeService == null)
+            return "#0f172a";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetRetakeButtonStyle()
+    {
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #ffffff !important; border-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    }
+}

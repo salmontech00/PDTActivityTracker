@@ -233,12 +233,30 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [UploadedAt] datetime2 NOT NULL,
                 [ImageData] varbinary(max) NULL,
                 [ImageMimeType] nvarchar(max) NULL,
+                [Latitude] float NULL,
+                [Longitude] float NULL,
+                [CaptureTimestamp] datetime2 NULL,
                 CONSTRAINT [PK_TaskPhotos] PRIMARY KEY ([Id]),
                 CONSTRAINT [FK_TaskPhotos_Users_UploadedById] FOREIGN KEY ([UploadedById]) REFERENCES [Users] ([Id]),
                 CONSTRAINT [FK_TaskPhotos_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]),
                 CONSTRAINT [FK_TaskPhotos_ChecklistItems_ChecklistItemId] FOREIGN KEY ([ChecklistItemId]) REFERENCES [ChecklistItems] ([Id]),
                 CONSTRAINT [FK_TaskPhotos_Categories_CategoryId] FOREIGN KEY ([CategoryId]) REFERENCES [Categories] ([Id])
             );
+        END
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Latitude' AND Object_ID = Object_ID(N'TaskPhotos'))
+            BEGIN
+                ALTER TABLE [TaskPhotos] ADD [Latitude] float NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Longitude' AND Object_ID = Object_ID(N'TaskPhotos'))
+            BEGIN
+                ALTER TABLE [TaskPhotos] ADD [Longitude] float NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'CaptureTimestamp' AND Object_ID = Object_ID(N'TaskPhotos'))
+            BEGIN
+                ALTER TABLE [TaskPhotos] ADD [CaptureTimestamp] datetime2 NULL;
+            END
         END
 
         -- Create Notifications Table
@@ -450,61 +468,6 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         }
     }
 
-    // Seed Checklist Items if empty
-    if (!await db.ChecklistItems.AnyAsync())
-    {
-        var categories = await db.Categories.ToListAsync();
-        var checkInCat = categories.First(c => c.Name == "Check In");
-        var openingCat = categories.First(c => c.Name == "Opening");
-        var assetCat = categories.First(c => c.Name == "Asset");
-        var hrCat = categories.First(c => c.Name == "Human Resource");
-        var invCat = categories.First(c => c.Name == "Inventory");
-        var mktCat = categories.First(c => c.Name == "Marketing");
-        var expCat = categories.First(c => c.Name == "Expenses & Repair");
-        var checkOutCat = categories.First(c => c.Name == "Check Out");
-
-        var items = new List<ChecklistItem>
-        {
-            // Check In
-            new ChecklistItem { TaskName = "Store Head Arrival Check In", CategoryId = checkInCat.Id, Section = "Arrival", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
-
-            // Opening
-            new ChecklistItem { TaskName = "Exterior Readiness (Sidewalks, Haz-mat)", CategoryId = openingCat.Id, Section = "Exterior", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
-            new ChecklistItem { TaskName = "Store Temperature (Target 27°C)", CategoryId = openingCat.Id, Section = "Interior", IsRemarksRequired = true, IsMandatory = true, SortOrder = 1 },
-            new ChecklistItem { TaskName = "Fresh Section Readiness & Display", CategoryId = openingCat.Id, Section = "Fresh", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 2 },
-
-            // Asset
-            new ChecklistItem { TaskName = "Push Carts & Baskets Availability/Cleanliness", CategoryId = assetCat.Id, Section = "Customer Service", IsMandatory = true, SortOrder = 0 },
-            new ChecklistItem { TaskName = "IT Equipment Verification (PDT, Printers, Scales)", CategoryId = assetCat.Id, Section = "Technology", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 1 },
-            new ChecklistItem { TaskName = "Emergency Lights & Fire Safety Check", CategoryId = assetCat.Id, Section = "Safety", IsMandatory = true, SortOrder = 2 },
-
-            // Human Resource
-            new ChecklistItem { TaskName = "Cashiers (Direct)", CategoryId = hrCat.Id, Section = "Manpower Count", TaskType = "Manpower", QuantityExpected = 5, IsMandatory = true, SortOrder = 0 },
-            new ChecklistItem { TaskName = "Baggers (Service Provider)", CategoryId = hrCat.Id, Section = "Manpower Count", TaskType = "Manpower", QuantityExpected = 8, IsMandatory = true, SortOrder = 1 },
-            new ChecklistItem { TaskName = "Daily PEP Talk / Huddle conducted", CategoryId = hrCat.Id, Section = "Engagement", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 2 },
-
-            // Inventory
-            new ChecklistItem { TaskName = "PDT Price Check & OOS Identification", CategoryId = invCat.Id, Section = "Scanning", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 0 },
-            new ChecklistItem { TaskName = "3 PM Store Readiness Photo (AVP Report)", CategoryId = invCat.Id, Section = "Reporting", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 1 },
-
-            // Marketing
-            new ChecklistItem { TaskName = "POSM Execution (Weekly Marketing Collaterals)", CategoryId = mktCat.Id, Section = "Promotions", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
-
-            // Expenses & Repair
-            new ChecklistItem { TaskName = "Maintain Weekly List of Pending Repair Tickets", CategoryId = expCat.Id, Section = "Maintenance", IsRemarksRequired = true, IsMandatory = true, SortOrder = 0 },
-
-            // Check Out
-            new ChecklistItem { TaskName = "End-of-Day (EOD) Report Generated", CategoryId = checkOutCat.Id, Section = "Documentation", IsPhotoRequired = true, NumberOfPhotos = 1, IsMandatory = true, SortOrder = 0 },
-            new ChecklistItem { TaskName = "Night Refilling Activities Documentation", CategoryId = checkOutCat.Id, Section = "Restocking", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 1 },
-            new ChecklistItem { TaskName = "Store 100% Ready for Business Next Day", CategoryId = checkOutCat.Id, Section = "Final Check", IsPhotoRequired = true, NumberOfPhotos = 5, IsMandatory = true, SortOrder = 2 }
-        };
-
-        foreach (var item in items)
-        {
-            db.ChecklistItems.Add(item);
-        }
-        await db.SaveChangesAsync();
-    }
     if (!await db.Users.AnyAsync())
     {
         var hashedPassword = HashPassword("admin123");

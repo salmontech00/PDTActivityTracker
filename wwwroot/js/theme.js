@@ -28,3 +28,45 @@ function applyTheme(theme) {
     const theme = localStorage.getItem('theme') || 'Lightest';
     applyTheme(theme);
 })();
+
+// Camera Helpers
+window.cameraInterop = {
+    startVideo: async function (videoElementId) {
+        const video = document.getElementById(videoElementId);
+        if (!video) return false;
+
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment' },
+                audio: false
+            });
+            video.srcObject = stream;
+            video.play();
+            return true;
+        } catch (err) {
+            console.error("Camera access error:", err);
+            return false;
+        }
+    },
+    stopVideo: function (videoElementId) {
+        const video = document.getElementById(videoElementId);
+        if (video && video.srcObject) {
+            const stream = video.srcObject;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+        }
+    },
+    capturePhoto: function (videoElementId, canvasElementId) {
+        const video = document.getElementById(videoElementId);
+        const canvas = document.getElementById(canvasElementId);
+        if (!video || !canvas) return null;
+
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        return canvas.toDataURL('image/jpeg', 0.8);
+    }
+};
