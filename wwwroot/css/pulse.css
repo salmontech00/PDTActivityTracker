@@ -26,3 +26,12 @@
         opacity: 0;
     }
 }
+
+@media (max-width: 375px) {
+    .glass-dialog {
+        margin-left: 16px !important;
+        margin-right: 16px !important;
+        min-width: unset !important;
+        width: auto !important;
+    }
+}

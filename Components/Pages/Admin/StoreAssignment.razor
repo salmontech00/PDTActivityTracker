@@ -221,52 +221,6 @@
         display: none;
     }
 
-    /* RESPONSIVE */
-    @@media (max-width: 960px) {
-        .filter-toggle-button {
-            display: inline-flex !important;
-        }
-
-        .filter-section .mud-grid {
-            display: none;
-        }
-
-        .filter-section.filters-visible .mud-grid {
-            display: flex;
-        }
-
-        .desktop-view {
-            display: none !important;
-        }
-
-        .mobile-view {
-            display: block;
-        }
-
-        .page-header-row {
-            flex-direction: column;
-            gap: 16px;
-            align-items: stretch;
-            text-align: center;
-            padding: 0;
-            margin-bottom: 20px;
-        }
-
-        .page-title {
-            display: none;
-        }
-    }
-
-    @@media (min-width: 961px) {
-        .desktop-view {
-            display: block;
-        }
-
-        .mobile-view {
-            display: none !important;
-        }
-    }
-
     /* MAP LEGEND */
     .map-legend-overlay {
         position: absolute;
@@ -319,30 +273,141 @@
         letter-spacing: 1px;
         white-space: nowrap;
     }
+
+    /* RESPONSIVE */
+    @@media (max-width: 960px) {
+        .filter-toggle-button {
+            display: inline-flex !important;
+        }
+
+        .filter-section .mud-grid {
+            display: none;
+        }
+
+        .filter-section.filters-visible .mud-grid {
+            display: flex;
+        }
+
+        .desktop-view {
+            display: none !important;
+        }
+
+        .mobile-view {
+            display: block;
+        }
+
+        .page-header-row {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+            text-align: center;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .page-title {
+            display: none;
+        }
+
+        .button-group {
+            flex-direction: row !important;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+            .button-group .modern-button {
+                flex: 1;
+                font-size: 0.70rem !important;
+            }
+
+        .glass-panel:has(#map) {
+            height: 555px !important;
+        }
+    }
+
+    @@media (min-width: 961px) {
+        .desktop-view {
+            display: block;
+        }
+
+        .mobile-view {
+            display: none !important;
+        }
+    }
+
+    @@media (max-width: 375px) {
+        .button-group .modern-button {
+            flex: 1;
+            font-size: 0.55rem !important;
+        }
+
+        .map-legend-overlay {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 2px;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: row;
+            gap: 0px;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .legend-text {
+            font-size: 0.55rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .glass-panel:has(#map) {
+            height: 350px !important;
+        }
+        .mud-main-content{
+            padding-bottom: 0px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+    }
+
+    
 </style>
 
 <div class="store-container">
     <div class="page-header-row">
         <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Stores Management</MudText>
 
-        <div class="d-flex gap-2">
-            <MudButton Variant="Variant.Outlined"
-                       Color="Color.Secondary"
-                       StartIcon="@Icons.Material.Filled.Flaky"
-                       OnClick="OpenBulkActionsDialog"
-                       Class="@($"modern-button {GetThemeClass()}")"
-                       Disabled="@(!_selectedStores.Any())"
-                       Style="@GetButtonStyle()">
-                Bulk Actions (@_selectedStores.Count)
-            </MudButton>
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.Store"
-                       OnClick="OpenAddStoreDialog"
-                       Class="@($"modern-button {GetThemeClass()}")"
-                       Style="@GetButtonStyle()">
-                ADD STORE
-            </MudButton>
+        <div class="button-group">
+            <div class="d-flex gap-2">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           StartIcon="@Icons.Material.Filled.Flaky"
+                           OnClick="OpenBulkActionsDialog"
+                           Class="@($"modern-button {GetThemeClass()}")"
+                           Disabled="@(!_selectedStores.Any())"
+                           Style="@GetButtonStyle()">
+                    Bulk Actions (@_selectedStores.Count)
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Store"
+                           OnClick="OpenAddStoreDialog"
+                           Class="@($"modern-button {GetThemeClass()}")"
+                           Style="@GetButtonStyle()">
+                    ADD STORE
+                </MudButton>
+            </div>
         </div>
     </div>
 

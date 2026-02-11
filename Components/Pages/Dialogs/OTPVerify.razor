@@ -12,11 +12,6 @@
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
-<style>
-    @@media (max-width: 375px) {
-    }
-</style>
-
 <MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">
