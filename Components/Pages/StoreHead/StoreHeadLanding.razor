@@ -335,6 +335,18 @@
         }
     }
 
+    @@media (max-width: 375px) {
+        .map-section {
+            height: 320px;
+            flex: none;
+            transition: height 0.3s ease;
+        }
+
+            .map-section.shrink-mobile {
+                height: 155px !important;
+            }
+    }
+
 </style>
 
 <div class="store-container">

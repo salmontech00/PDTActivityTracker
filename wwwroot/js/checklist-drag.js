@@ -168,6 +168,10 @@
     // Touch events for mobile
     // Touch events for mobile
     container.addEventListener("touchstart", (e) => {
+        // Prevent drag if touching a button or input
+        if (e.target.closest('button') || e.target.closest('.mud-button-root') || e.target.closest('input') || e.target.closest('a')) {
+            return;
+        }
         if (e.target.closest('.task-drop-item')) dragStart(e);
     }, { passive: false });
 

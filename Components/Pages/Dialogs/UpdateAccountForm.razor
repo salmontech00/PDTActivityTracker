@@ -73,6 +73,12 @@
     .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
         border-color: #0072cf !important;
     }
+
+    @@media (max-width: 375px) {
+        .glass-dialog {
+            padding: 0px !important;
+        }
+    }
 </style>
 
 <MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">

@@ -149,6 +149,52 @@
             right: 1rem;
         }
     }
+
+    @@media (max-width: 375px){
+        .mud-main-content{
+            padding-top: 24px !important;
+        }
+        .login-wrapper {
+            justify-content: center;
+            align-items: center;
+            padding: 0rem;
+            min-height: 75vh;
+        }
+
+        .css-logo {
+            align-items: center;
+            text-align: center;
+            padding: 0px;
+            margin: 0px;
+        }
+
+        .logo-main {
+            font-size: 3rem;
+        }
+
+        .logo-sub {
+            font-size: 0.50rem;
+            letter-spacing: 0.2em;
+            margin: 0px;
+        }
+
+        .login-card-container {
+            justify-content: center;
+            width: 100%;
+            margin-right: 0;
+            padding: 12px 12px 0 12px;
+        }
+
+        .mud-card {
+            margin: 0;
+            max-width: 100%;
+        }
+
+        .theme-toggle-fixed {
+            bottom: 12px;
+            right: 12px;
+        }
+    }
 </style>
 
 <div class="login-wrapper">
@@ -339,10 +385,10 @@
     {
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => "Switch to Blue Theme",
+            ThemeMode.Lightest => "Switch to Default",
             ThemeMode.Light => "Switch to Dark Mode",
-            ThemeMode.Dark => "Switch to Default",
-            _ => "Switch to Blue Theme"
+            ThemeMode.Dark => "Switch to Light Mode",
+            _ => "Switch to Default"
         };
     }
 

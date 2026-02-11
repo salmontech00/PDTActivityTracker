@@ -604,9 +604,9 @@
                         <div class="category-drop-zone" data-category-id="@category.Id">
                             @{
                                 var itemsInCategory = _filteredTasks
-                                    .Where(t => t.CategoryId == category.Id)
-                                    .OrderBy(t => t.SortOrder)
-                                    .ToList();
+                                .Where(t => t.CategoryId == category.Id)
+                                .OrderBy(t => t.SortOrder)
+                                .ToList();
                             }
                             @foreach (var context in itemsInCategory)
                             {
@@ -817,7 +817,7 @@
     private bool _showFilters = false;
     private bool _initialized = false;
     private bool _isPreviewMode = false;
-    
+
     // JS Interop
     @inject IJSRuntime JS
     private IJSObjectReference? _jsModule;
@@ -885,7 +885,7 @@
             _objRef = DotNetObjectReference.Create(this);
             _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/checklist-drag.js");
             await _jsModule.InvokeVoidAsync("initializeDragAndDrop", _objRef);
-            
+
             StateHasChanged();
         }
         await base.OnAfterRenderAsync(firstRender);
@@ -899,7 +899,7 @@
         // Apply new order to memory
         // We only worry about the tasks involved in the specific category update
         var affectedTasks = _tasks.Where(t => sortedIds.Contains(t.Id)).ToList();
-        
+
         foreach (var task in affectedTasks)
         {
             int newIndex = Array.IndexOf(sortedIds, task.Id);
@@ -908,7 +908,7 @@
                 task.SortOrder = newIndex;
             }
         }
-        
+
         // Refresh filter view to match
         ApplyFilters();
 
@@ -973,8 +973,8 @@
 
         // Always create a new list reference to trigger MudDropContainer refresh
         _filteredTasks = query.OrderBy(t => t.SortOrder).ToList();
-        
-        StateHasChanged(); 
+
+        StateHasChanged();
     }
 
     private void ClearFilters()
@@ -1042,7 +1042,7 @@
     private async Task DeleteTask(ChecklistItem task)
     {
         var parameters = new DialogParameters {
-            { "ContentText", $"Are you sure you want to delete '{task.TaskName}'?\n\nThis action cannot be undone." },
+            { "ContentText", "Are you sure you want to delete this task?\n\nThis action cannot be undone." },
             { "ButtonText", "Delete" },
             { "Color", Color.Error }
         };
@@ -1062,18 +1062,43 @@
             try
             {
                 using var db = await DbFactory.CreateDbContextAsync();
+
+                // Get the task and any related data manually
                 var taskToDelete = await db.ChecklistItems.FindAsync(task.Id);
 
                 if (taskToDelete != null)
                 {
+                    // 1. Delete associated TaskProgresses first to avoid FK constraint error
+                    var progresses = await db.TaskProgresses
+                        .Where(tp => tp.ChecklistItemId == task.Id)
+                        .ToListAsync();
+
+                    if (progresses.Any())
+                    {
+                        db.TaskProgresses.RemoveRange(progresses);
+                    }
+
+                    // 2. Delete associated TaskPhotos
+                    var photos = await db.TaskPhotos
+                        .Where(tp => tp.ChecklistItemId == task.Id)
+                        .ToListAsync();
+
+                    if (photos.Any())
+                    {
+                        db.TaskPhotos.RemoveRange(photos);
+                    }
+
+                    // 3. Now safe to delete the task itself
                     db.ChecklistItems.Remove(taskToDelete);
                     await db.SaveChangesAsync();
+
                     Snackbar.Add("Task deleted successfully!", Severity.Success);
-                    await LoadTasks();
+                    await LoadTasks(); // Refresh list
                 }
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error deleting task: {ex}");
                 Snackbar.Add($"Error deleting task: {ex.Message}", Severity.Error);
             }
         }
