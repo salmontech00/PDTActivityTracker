@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.SignalR;
 using Blazored.SessionStorage;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
@@ -23,6 +24,11 @@ builder.Services.AddScoped<PDTActivityTracker.Components.Services.ThemeService>(
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.Configure<HubOptions>(options =>
+{
+    options.MaximumReceiveMessageSize = 10 * 1024 * 1024; // 10MB
+});
 
 builder.Services.AddScoped<UserStateService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
