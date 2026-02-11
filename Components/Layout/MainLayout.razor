@@ -143,6 +143,26 @@
         }
     }
 
+    @@media (max-width: 375px) {
+        /* MINI LOGO STYLES */
+        .logo-main-small {
+            font-family: 'Inter', sans-serif;
+            font-weight: 800;
+            font-size: 1.57rem;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+
+        .logo-sub-small {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.6rem;
+            letter-spacing: 0.15em;
+            line-height: 1;
+            margin: 0px !important;
+        }
+    }
+
     /* GLASSMORPHISM STYLES */
     .admin-appbar-lightest {
         background-color: rgba(255, 255, 255, 0.15) !important;
@@ -232,6 +252,7 @@
     .mud-layout {
         background: transparent !important;
     }
+
 </style>
 
 @if (_isCheckingAuth)
