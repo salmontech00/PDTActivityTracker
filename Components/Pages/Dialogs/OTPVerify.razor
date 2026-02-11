@@ -12,7 +12,12 @@
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
-<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="rounded-xl pa-2" Style="@GetDialogStyle()">
+<style>
+    @@media (max-width: 375px) {
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">
             @if (_step == DialogStep.EnterCredentials)
@@ -35,7 +40,7 @@
         {
             <MudForm @ref="_credentialsForm">
                 <MudStack Spacing="4">
-                    <MudText Typo="Typo.body2" Style="@GetTextStyle()">
+                    <MudText Typo="Typo.body2" Class="body-text">
                         Enter your username and email to receive a 4-digit verification code.
                     </MudText>
 
@@ -45,9 +50,10 @@
                                   Required="true"
                                   RequiredError="Username is required"
                                   Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Person"
-                                  AdornmentColor="Color.Primary" />
+                                  AdornmentColor="@GetAdornmentColor()" />
 
                     <MudTextField T="string"
                                   Label="Email"
@@ -55,9 +61,10 @@
                                   Required="true"
                                   RequiredError="Email is required"
                                   Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Email"
-                                  AdornmentColor="Color.Primary"
+                                  AdornmentColor="@GetAdornmentColor()"
                                   Validation="@(new Func<string, string?>(ValidateEmail))" />
                 </MudStack>
             </MudForm>
@@ -66,18 +73,18 @@
         {
             <MudForm @ref="_otpForm">
                 <MudStack Spacing="3">
-                    <MudText Typo="Typo.body2" Style="@GetTextStyle()">
+                    <MudText Typo="Typo.body2" Class="body-text">
                         A 4-digit code has been sent to <strong>@_maskedEmail</strong>
                     </MudText>
-                    <MudText Typo="Typo.body2" Style="@GetTextStyle()" Class="fw-bold">
+                    <MudText Typo="Typo.body2" Class="body-text fw-bold">
                         Please enter the code below:
                     </MudText>
 
-                    <div class="d-flex justify-space-between gap-2 py-4 w-100">
+                    <div class="otp-container">
                         @for (int i = 0; i < 4; i++)
                         {
                             int index = i;
-                            <div style="flex: 1; max-width: 80px;">
+                            <div class="otp-input-wrapper">
                                 <MudTextField T="string"
                                               @bind-Value="_otpDigits[index]"
                                               MaxLength="1"
@@ -86,14 +93,14 @@
                                               Style="font-size: 24px; text-align: center;"
                                               OnKeyUp="@((KeyboardEventArgs e) => HandleKeyUp(e, index))"
                                               @ref="_otpInputs[index]"
-                                              AdornmentColor="Color.Primary" />
+                                              AdornmentColor="@GetAdornmentColor()" />
                             </div>
                         }
                     </div>
 
                     @if (_remainingSeconds > 0)
                     {
-                        <MudText Typo="Typo.body2" Align="Align.Center" Style="@GetTextStyle()">
+                        <MudText Typo="Typo.body2" Align="Align.Center" Class="body-text">
                             Code expires in: <strong>@FormatTime(_remainingSeconds)</strong>
                         </MudText>
                     }
@@ -104,7 +111,7 @@
                         </MudAlert>
                     }
 
-                    <MudText Typo="Typo.caption" Align="Align.Center" Style="@GetTextStyleSecondary()">
+                    <MudText Typo="Typo.caption" Align="Align.Center" Class="body-text-secondary">
                         Didn't receive the code?
                         <MudLink OnClick="ResendOtp" Color="Color.Primary" Disabled="@_isResending" Style="font-weight: 600;">
                             @if (_isResending)
@@ -131,11 +138,12 @@
                     <MudTextField T="string"
                                   Label="Password"
                                   Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
                                   InputType="@(_showPassword ? InputType.Text : InputType.Password)"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="@TogglePasswordVisibility"
-                                  AdornmentColor="Color.Primary"
+                                  AdornmentColor="@GetAdornmentColor()"
                                   @bind-Value="_password"
                                   Immediate="true"
                                   Required="true"
@@ -145,11 +153,12 @@
                     <MudTextField T="string"
                                   Label="Confirm Password"
                                   Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
                                   InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="@ToggleConfirmPasswordVisibility"
-                                  AdornmentColor="Color.Primary"
+                                  AdornmentColor="@GetAdornmentColor()"
                                   @bind-Value="_confirmPassword"
                                   Immediate="true"
                                   Required="true"
@@ -166,7 +175,7 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel" Disabled="@(_isSending || _isVerifying || _isUpdating)" Style="@($"color: {GetTitleColor()}; text-transform: none;")">Cancel</MudButton>
+        <MudButton OnClick="Cancel" Disabled="@(_isSending || _isVerifying || _isUpdating)" Style="@GetCancelButtonStyle()">Cancel</MudButton>
         @if (_step == DialogStep.EnterCredentials)
         {
             <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SendOtp" Disabled="@_isSending" Class="rounded-lg px-6" Style="@GetButtonStyle()">
@@ -273,6 +282,12 @@
         }
     }
 
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
     private string GetDialogStyle()
     {
         var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
@@ -300,23 +315,24 @@
         };
     }
 
-    private string GetTextStyle()
+    private Color GetAdornmentColor()
     {
-        if (ThemeService == null) return "color: #0f172a;";
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #475569;" : "color: #ffffff;";
-    }
-
-    private string GetTextStyleSecondary()
-    {
-        if (ThemeService == null) return "color: #94a3b8;";
-        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #64748b;" : "color: rgba(255,255,255,0.7);";
+        if (ThemeService == null) return Color.Primary;
+        return ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Primary;
     }
 
     private string GetButtonStyle()
     {
-        if (ThemeService == null) return "text-transform: none;";
-        var baseStyle = "text-transform: none;";
-        return ThemeService.CurrentTheme == ThemeMode.Light ? $"{baseStyle} color: #0072cf !important;" : baseStyle;
+        if (ThemeService == null) return "text-transform: none; font-weight: 600;";
+        var baseStyle = "text-transform: none; font-weight: 600;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetCancelButtonStyle()
+    {
+        return $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
     }
 
     private string? ValidateEmail(string? email)
