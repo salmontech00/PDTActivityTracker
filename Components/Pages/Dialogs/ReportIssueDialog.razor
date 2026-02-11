@@ -217,11 +217,12 @@
         var dialog = await DialogService.ShowAsync<PDTActivityTracker.Components.Pages.Dialogs.CameraCaptureDialog>("Take Evidence Photo", parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false, Data: (byte[] imageData, string mimeType) })
+        if (result is { Canceled: false, Data: not null })
         {
+            var (imageData, mimeType, lat, lng, timestamp) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp))result.Data;
             _imageData = imageData;
             _mimeType = mimeType;
-            Snackbar.Add("Evidence photo captured.", Severity.Info);
+            Snackbar.Add("Evidence photo captured with GPS data.", Severity.Info);
             StateHasChanged();
         }
     }

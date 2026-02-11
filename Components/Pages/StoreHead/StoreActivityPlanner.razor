@@ -879,8 +879,9 @@
         var dialog = await DialogService.ShowAsync<PDTActivityTracker.Components.Pages.Dialogs.CameraCaptureDialog>("Take Photo", parameters, options);
         var result = await dialog.Result;
 
-        if (result is { Canceled: false, Data: (byte[] imageData, string mimeType) })
+        if (result is { Canceled: false, Data: not null })
         {
+            var (imageData, mimeType, lat, lng, timestamp) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp))result.Data;
             var photo = new TaskPhoto
             {
                 StoreId = StoreId,
@@ -888,12 +889,12 @@
                 CategoryId = task.CategoryId,
                 UploadedById = UserState.UserId,
                 UploadedAt = DateTime.Now,
-                CaptureTimestamp = DateTime.Now,
+                CaptureTimestamp = timestamp ?? DateTime.Now,
                 ImageData = imageData,
                 ImageMimeType = mimeType,
-                Latitude = _store?.GPSLatitude,
-                Longitude = _store?.GPSLongitude,
-                Description = $"GPS: {_store?.GPSLatitude}, {_store?.GPSLongitude} | Time: {DateTime.Now:HH:mm:ss}"
+                Latitude = lat ?? _store?.GPSLatitude,
+                Longitude = lng ?? _store?.GPSLongitude,
+                Description = $"GPS: {lat ?? _store?.GPSLatitude:F6}, {lng ?? _store?.GPSLongitude:F6} | Time: {timestamp ?? DateTime.Now:yyyy-MM-dd HH:mm:ss}"
             };
 
             using var db = await DbFactory.CreateDbContextAsync();

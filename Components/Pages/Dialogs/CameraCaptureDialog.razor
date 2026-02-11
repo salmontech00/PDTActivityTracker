@@ -45,6 +45,13 @@
         object-fit: cover;
     }
 
+    .captured-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: #000;
+    }
+
     .camera-overlay {
         position: absolute;
         top: 0;
@@ -126,17 +133,35 @@
     </TitleContent>
     <DialogContent>
         <div class="camera-container">
-            @if (!_isCaptured)
+            @if (_locationError != null)
+            {
+                <div class="camera-overlay" style="background: rgba(0,0,0,0.8); flex-direction: column; padding: 20px; text-align: center;">
+                    <MudIcon Icon="@Icons.Material.Filled.LocationOff" Size="Size.Large" Color="Color.Error" Class="mb-4" />
+                    <MudText Typo="Typo.h6" Color="Color.Error" GutterBottom="true">Location Required</MudText>
+                    <MudText Typo="Typo.body2" Class="text-white mb-6">@_locationError</MudText>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="FetchLocation">RETRY</MudButton>
+                </div>
+            }
+            else if (_isFetchingLocation)
+            {
+                <div class="camera-overlay">
+                    <div class="d-flex flex-column align-center">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+                        <MudText Typo="Typo.body2" Class="text-white">Fetching GPS location...</MudText>
+                    </div>
+                </div>
+            }
+            else if (!_isCaptured)
             {
                 <video id="cameraVideo" autoplay playsinline class="video-preview"></video>
             }
             else
             {
-                <img src="@_capturedImageBase64" class="video-preview" alt="Captured" />
+                <img src="@_capturedImageBase64" class="captured-preview" alt="Captured" />
             }
             <canvas id="cameraCanvas" style="display:none;"></canvas>
 
-            @if (!_isCaptured && !_isLoading)
+            @if (!_isCaptured && !_isLoading && !_isFetchingLocation && _locationError == null)
             {
                 <div class="camera-controls">
                     @if (_hasFlash)
@@ -190,7 +215,7 @@
                            Color="Color.Primary"
                            Size="Size.Large"
                            OnClick="Capture"
-                           Disabled="@_isLoading"
+                           Disabled="@(_isLoading || _isFetchingLocation || _locationError != null)"
                            Class="capture-btn" />
         }
         else
@@ -215,11 +240,17 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
     private bool _isLoading = true;
+    private bool _isFetchingLocation = true;
+    private string? _locationError;
     private bool _isCaptured = false;
     private string? _capturedImageBase64;
     private string _facingMode = "environment";
     private bool _hasFlash = false;
     private bool _isFlashOn = false;
+
+    private double? _latitude;
+    private double? _longitude;
+    private DateTime? _captureTimestamp;
 
     protected override void OnInitialized()
     {
@@ -232,8 +263,37 @@
     {
         if (firstRender)
         {
+            await FetchLocation();
+        }
+    }
+
+    private async Task FetchLocation()
+    {
+        _isFetchingLocation = true;
+        _locationError = null;
+        StateHasChanged();
+
+        try
+        {
+            var location = await JSRuntime.InvokeAsync<LocationCoords>("cameraInterop.getCurrentLocation");
+            _latitude = location.Latitude;
+            _longitude = location.Longitude;
+            _isFetchingLocation = false;
             await StartCamera();
         }
+        catch (Exception ex)
+        {
+            _locationError = ex.Message;
+            _isFetchingLocation = false;
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public class LocationCoords
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
     }
 
     private async Task StartCamera()
@@ -282,7 +342,10 @@
     {
         try
         {
-            _capturedImageBase64 = await JSRuntime.InvokeAsync<string>("cameraInterop.capturePhoto", "cameraVideo", "cameraCanvas");
+            _captureTimestamp = DateTime.Now;
+            var watermarkText = $"GPS: {_latitude:F6}, {_longitude:F6} | Time: {_captureTimestamp:yyyy-MM-dd HH:mm:ss}";
+
+            _capturedImageBase64 = await JSRuntime.InvokeAsync<string>("cameraInterop.capturePhoto", "cameraVideo", "cameraCanvas", watermarkText);
             if (!string.IsNullOrEmpty(_capturedImageBase64))
             {
                 await JSRuntime.InvokeVoidAsync("cameraInterop.stopVideo", "cameraVideo");
@@ -321,7 +384,7 @@
             }
 
             var bytes = Convert.FromBase64String(base64Data);
-            MudDialog.Close(DialogResult.Ok((bytes, "image/jpeg")));
+            MudDialog.Close(DialogResult.Ok((bytes, "image/jpeg", _latitude, _longitude, _captureTimestamp)));
         }
     }
 
