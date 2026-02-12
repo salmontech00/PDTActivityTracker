@@ -399,6 +399,18 @@
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
+
+        .frequency-filter-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            padding: 0px 0px !important;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
     }
 
     /* COMPLETION BUTTON */
@@ -415,6 +427,26 @@
         justify-content: center;
         gap: 16px;
         flex-wrap: wrap;
+    }
+
+    .frequency-filter-row {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        padding: 8px 4px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    @@media (max-width: 480px) {
+        .frequency-filter-row {
+            justify-content: flex-start;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
     }
 </style>
 
@@ -461,6 +493,14 @@
         </MudChip>
     </div>
 
+    <!-- FREQUENCY FILTER -->
+    <div class="frequency-filter-row">
+        <MudChip T="string" Variant="@(_frequencyFilter == "All" ? Variant.Filled : Variant.Outlined)" Color="Color.Info" Size="Size.Small" OnClick="@(() => SetFrequencyFilter("All"))">ALL</MudChip>
+        <MudChip T="string" Variant="@(_frequencyFilter == "Daily" ? Variant.Filled : Variant.Outlined)" Color="Color.Secondary" Size="Size.Small" OnClick="@(() => SetFrequencyFilter("Daily"))">DAILY</MudChip>
+        <MudChip T="string" Variant="@(_frequencyFilter == "Weekly" ? Variant.Filled : Variant.Outlined)" Color="Color.Success" Size="Size.Small" OnClick="@(() => SetFrequencyFilter("Weekly"))">WEEKLY</MudChip>
+        <MudChip T="string" Variant="@(_frequencyFilter == "Monthly" ? Variant.Filled : Variant.Outlined)" Color="Color.Warning" Size="Size.Small" OnClick="@(() => SetFrequencyFilter("Monthly"))">MONTHLY</MudChip>
+    </div>
+
     @if (_initialized)
     {
         <!-- Preview Mode -->
@@ -471,7 +511,13 @@
                     var isLocked = category.SortOrder > _currentCategoryOrder || _categories.Any(c => c.SortOrder < category.SortOrder && !CanCompleteCategory(c.Id));
                     var isActive = category.Id == _currentCategoryId;
                     var isCompleted = category.SortOrder < _currentCategoryOrder && CanCompleteCategory(category.Id);
-                    var itemsInCategory = _checklistItems.Where(t => t.CategoryId == category.Id).OrderBy(t => t.SortOrder).ToList();
+                    var itemsInCategory = _checklistItems
+                    .Where(t => t.CategoryId == category.Id)
+                    .Where(t => _frequencyFilter == "All" || t.Frequency == _frequencyFilter)
+                    .OrderBy(t => t.SortOrder)
+                    .ToList();
+
+                    if (!itemsInCategory.Any() && _frequencyFilter != "All") continue;
 
                     <MudExpansionPanel Class="@($"modern-expansion-panel {(isActive ? "active" : "")} {(isLocked ? "locked" : "")}")"
                                        MaxHeight="600"
@@ -647,6 +693,8 @@
     private int _currentCategoryId;
     private int _currentCategoryOrder = 0;
 
+    private string _frequencyFilter = "All";
+
     private int _completedCount = 0;
     private int _totalTasksCount = 0;
 
@@ -690,7 +738,7 @@
 
         _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
         _checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
-        _totalTasksCount = _checklistItems.Count;
+        // Total count based on filter
 
         var today = DateTime.Today;
         _currentSession = await db.StoreDailyActivities
@@ -723,6 +771,9 @@
             .Where(p => p.StoreId == StoreId && p.UploadedAt >= today)
             .ToListAsync();
 
+        // Load Persistence for Weekly/Monthly if needed
+        await LoadPeriodProgress(db);
+
         foreach (var task in _checklistItems)
         {
             CheckAndSyncTaskCompletion(task);
@@ -730,6 +781,13 @@
 
         UpdateCompletedCount();
         _initialized = true;
+        StateHasChanged();
+    }
+
+    private void SetFrequencyFilter(string freq)
+    {
+        _frequencyFilter = freq;
+        UpdateCompletedCount();
         StateHasChanged();
     }
 
@@ -784,18 +842,115 @@
             isNowCompleted = false;
         }
 
+        if (prog.IsCompleted && prog.CompletedAt.HasValue && prog.CompletedAt.Value.Date < DateTime.Today && task.Frequency != "Daily")
+        {
+            // Already completed in this period, don't auto-revert based on today's lack of input
+            return;
+        }
+
         if (prog.IsCompleted != isNowCompleted)
         {
             prog.IsCompleted = isNowCompleted;
-            if (isNowCompleted) prog.CompletedAt = DateTime.Now;
-            else prog.CompletedAt = null;
+            if (isNowCompleted)
+            {
+                prog.CompletedAt = DateTime.Now;
+                _ = CreateManualActivityLog("TaskCompleted", $"Completed task: {task.TaskName}");
+            }
+            else
+            {
+                prog.CompletedAt = null;
+            }
             UpdateCompletedCount();
+        }
+    }
+
+    private async Task CreateManualActivityLog(string action, string details)
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var log = new ActivityLog
+            {
+                StoreId = StoreId,
+                UserId = UserState.UserId,
+                Action = action,
+                Details = details,
+                Timestamp = DateTime.Now
+            };
+            db.ActivityLogs.Add(log);
+            await db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error creating manual log: {ex.Message}");
         }
     }
 
     private void UpdateCompletedCount()
     {
-        _completedCount = _taskProgresses.Count(p => p.IsCompleted);
+        var filteredItems = _checklistItems
+            .Where(t => _frequencyFilter == "All" || t.Frequency == _frequencyFilter)
+            .ToList();
+
+        _totalTasksCount = filteredItems.Count;
+        _completedCount = filteredItems.Count(t => GetTaskProgress(t.Id).IsCompleted);
+    }
+
+    private async Task LoadPeriodProgress(PDTActivityTracker.Model.AppDbContext db)
+    {
+        var today = DateTime.Today;
+        var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
+        var startOfMonth = new DateTime(today.Year, today.Month, 1);
+
+        // Fetch Weekly tasks progress in current week
+        var weeklyTasks = _checklistItems.Where(t => t.Frequency == "Weekly").Select(t => t.Id).ToList();
+        if (weeklyTasks.Any())
+        {
+            var weeklyProgress = await db.TaskProgresses
+                .Include(tp => tp.StoreDailyActivity)
+                .Where(tp => weeklyTasks.Contains(tp.ChecklistItemId))
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= startOfWeek)
+                .Where(tp => tp.IsCompleted)
+                .OrderByDescending(tp => tp.CompletedAt)
+                .ToListAsync();
+
+            foreach (var prog in weeklyProgress)
+            {
+                var currentProg = GetTaskProgress(prog.ChecklistItemId);
+                if (!currentProg.IsCompleted)
+                {
+                    currentProg.IsCompleted = true;
+                    currentProg.CompletedAt = prog.CompletedAt;
+                    currentProg.Remarks = prog.Remarks;
+                    currentProg.ActualQuantity = prog.ActualQuantity;
+                }
+            }
+        }
+
+        // Fetch Monthly tasks progress in current month
+        var monthlyTasks = _checklistItems.Where(t => t.Frequency == "Monthly").Select(t => t.Id).ToList();
+        if (monthlyTasks.Any())
+        {
+            var monthlyProgress = await db.TaskProgresses
+                .Include(tp => tp.StoreDailyActivity)
+                .Where(tp => monthlyTasks.Contains(tp.ChecklistItemId))
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= startOfMonth)
+                .Where(tp => tp.IsCompleted)
+                .OrderByDescending(tp => tp.CompletedAt)
+                .ToListAsync();
+
+            foreach (var prog in monthlyProgress)
+            {
+                var currentProg = GetTaskProgress(prog.ChecklistItemId);
+                if (!currentProg.IsCompleted)
+                {
+                    currentProg.IsCompleted = true;
+                    currentProg.CompletedAt = prog.CompletedAt;
+                    currentProg.Remarks = prog.Remarks;
+                    currentProg.ActualQuantity = prog.ActualQuantity;
+                }
+            }
+        }
     }
 
     private string GetCategoryCompletionStatus(int categoryId)
@@ -868,6 +1023,7 @@
         }
 
         await db.SaveChangesAsync();
+        UserState.NotifyDashboardRefresh(); // Notify dashboard of changes
         Snackbar.Add("Progress saved.", Severity.Info);
     }
 
@@ -903,6 +1059,8 @@
 
             _loadedPhotos.Add(photo);
             CheckAndSyncTaskCompletion(task);
+            await CreateManualActivityLog("PhotoUploaded", $"Uploaded photo for task: {task.TaskName}");
+            await SaveCurrentProgress(); // Ensure progress status is saved
             await CheckAndAutoProgress();
 
             Snackbar.Add($"Photo captured and saved ({imageData.Length / 1024}KB)", Severity.Success);
@@ -927,6 +1085,7 @@
             if (task != null)
             {
                 CheckAndSyncTaskCompletion(task);
+                await SaveCurrentProgress(); // Ensure progress status is saved
             }
 
             StateHasChanged();
@@ -978,6 +1137,7 @@
     {
         await ValidateManpower(task, prog);
         CheckAndSyncTaskCompletion(task);
+        await SaveCurrentProgress(); // Ensure progress status is saved
         await CheckAndAutoProgress();
     }
 

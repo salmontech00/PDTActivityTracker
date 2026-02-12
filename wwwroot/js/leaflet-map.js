@@ -1,5 +1,6 @@
 ﻿var mapInstance = null;
 var markersLayer = null;
+var userLocationMarker = null;
 
 window.leafletMap = {
     initialize: function (elementId, stores, options) {
@@ -123,7 +124,7 @@ window.leafletMap = {
                         </div>
                         <div style="font-size: 0.9em; margin-bottom: 5px;"><strong>Code:</strong> ${store.storeCode}</div>
                          ${!isStoreHeadMode ? statusBadge : ''}
-                        ${(isStoreHeadMode && clickAction === 'dashboard') ? `<div style="font-size: 0.8em; color: #4caf50; margin-top: 5px;">Click to view dashboard</div>` : ''}
+                        ${(isStoreHeadMode && clickAction === 'dashboard') ? `<div style="font-size: 0.8em; color: #4caf50; margin-top: 5px;">Click to view progress</div>` : ''}
                     </div>
                 `;
 
@@ -169,11 +170,31 @@ window.leafletMap = {
         }
     },
 
+    setUserLocation: function (lat, lng) {
+        if (!mapInstance) return;
+
+        if (userLocationMarker) {
+            userLocationMarker.setLatLng([lat, lng]);
+        } else {
+            userLocationMarker = L.circleMarker([lat, lng], {
+                radius: 10,
+                fillColor: "#2196F3",
+                color: "#fff",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(mapInstance);
+
+            userLocationMarker.bindPopup("Your Current Location");
+        }
+    },
+
     destroy: function () {
         if (mapInstance) {
             mapInstance.remove();
             mapInstance = null;
             markersLayer = null;
+            userLocationMarker = null;
         }
     }
 };

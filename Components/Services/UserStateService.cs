@@ -12,6 +12,9 @@ namespace PDTActivityTracker.Components.Services
         public string? Role { get; private set; }
         public int UserId { get; private set; }
 
+        public event Action? DashboardRefreshRequested;
+        public void NotifyDashboardRefresh() => DashboardRefreshRequested?.Invoke();
+
         public async Task InitializeAsync()
         {
             try
