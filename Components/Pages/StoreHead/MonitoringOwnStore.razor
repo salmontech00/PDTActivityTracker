@@ -1,0 +1,815 @@
+﻿@page "/store-head/monitoring"
+@layout PDTActivityTracker.Components.Layout.MainLayout
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using PDTActivityTracker.Components.Pages.Dialogs
+@inject IDialogService DialogService
+@inject UserStateService UserState
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject IJSRuntime JSRuntime
+@implements IDisposable
+
+<PageTitle>Monitoring - Own Store</PageTitle>
+
+<style>
+    .monitoring-container {
+        padding: 1rem;
+    }
+
+    /* GLASS CONTAINER */
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 20px !important;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #0072cf !important;
+        }
+
+        .glass-panel.light {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+    /* PAGE HEADER */
+    .page-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 0;
+    }
+
+    .page-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+        .page-title.lightest {
+            color: #0f172a;
+        }
+
+        .page-title.light {
+            color: #ffffff;
+        }
+
+        .page-title.dark {
+            color: #ffffff;
+        }
+
+    /* STAT CARDS */
+    .stat-card {
+        padding: 20px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px !important;
+    }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #0072cf, #00c6ff);
+        }
+
+    .stat-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 8px;
+    }
+
+    /* PHOTO GALLERY */
+    .photo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px;
+        padding: 16px;
+    }
+
+    .photo-item {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .photo-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .photo-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 8px;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+        color: white;
+        font-size: 0.7rem;
+    }
+
+    /* SECTION TITLE */
+    .section-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* MODERN TABLE */
+    .mud-table {
+        background: transparent !important;
+    }
+
+    .mud-table-head {
+        background: rgba(0, 114, 207, 0.1);
+    }
+
+        .mud-table-head.lightest {
+            background: rgba(0, 114, 207, 0.05);
+        }
+
+    .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 12px 16px !important;
+    }
+
+    .lightest .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    .mud-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .lightest .mud-table-row:hover {
+        background-color: rgba(0, 114, 207, 0.05) !important;
+    }
+
+    .mud-table-pagination {
+        background-color: transparent !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: inherit !important;
+    }
+
+    .lightest .mud-table-pagination {
+        border-top: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    /* BUTTONS */
+    .modern-button {
+        text-transform: none !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+
+    /* CHIPS */
+    .role-chip {
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+    }
+
+    /* Action Icon Buttons white in darker themes */
+    .light .mud-icon-button.mud-info-text,
+    .dark .mud-icon-button.mud-info-text,
+    .light .mud-icon-button.mud-primary-text,
+    .dark .mud-icon-button.mud-primary-text {
+        color: #ffffff !important;
+    }
+
+    /* MOBILE CARDS */
+    .mobile-card {
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .mobile-card-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lightest .mobile-card-header {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .mobile-card-content {
+        padding: 16px;
+    }
+
+    .mobile-card-actions {
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+
+    .lightest .mobile-card-actions {
+        background: rgba(0, 114, 207, 0.03);
+    }
+
+    /* FILTER SECTION */
+    .filter-section {
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+        .filter-section .mud-input-root {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+
+    .lightest .filter-section .mud-input-root {
+        background: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .light .filter-section .mud-input-root {
+        background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .light .filter-section .mud-input-label,
+    .light .filter-section .mud-input-adornment-start,
+    .light .filter-section .mud-select-input,
+    .light .filter-section .mud-input-slot {
+        color: #ffffff !important;
+    }
+
+    .light .filter-section .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
+        border-color: #ffffff !important;
+    }
+
+    .filter-toggle-button {
+        display: none;
+    }
+
+    /* DATE RANGE PICKER STYLING */
+    .filter-section .mud-picker-container {
+        background: transparent !important;
+    }
+
+    .filter-section .mud-picker-paper {
+        background: transparent !important;
+    }
+
+    .filter-section .mud-picker-calendar-header-switch {
+        color: inherit !important;
+    }
+
+    .filter-section .mud-picker-calendar-day {
+        color: inherit !important;
+    }
+
+        .filter-section .mud-picker-calendar-day.mud-selected {
+            background-color: var(--mud-palette-primary) !important;
+        }
+
+    .filter-section .mud-picker-slide-transition {
+        background: transparent !important;
+    }
+
+    .filter-section .mud-picker .mud-picker-calendar-header {
+        color: inherit !important;
+    }
+
+    .lightest .filter-section .mud-picker-calendar-day {
+        color: #0f172a !important;
+    }
+
+    .light .filter-section .mud-picker-calendar-day,
+    .dark .filter-section .mud-picker-calendar-day {
+        color: #ffffff !important;
+    }
+
+    /* Hide the date range display text at top of toolbar */
+    .mud-picker-datepicker-toolbar {
+        display: none !important;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 960px) {
+        .filter-toggle-button {
+            display: inline-flex !important;
+        }
+
+        .filter-section .mud-grid {
+            display: none;
+        }
+
+        .filter-section.filters-visible .mud-grid {
+            display: flex;
+        }
+
+        .desktop-view {
+            display: none;
+        }
+
+        .page-title {
+            display: none;
+        }
+
+        .photo-grid {
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+        }
+    }
+
+    @@media (min-width: 961px) {
+        .desktop-view {
+            display: block;
+        }
+
+        .mobile-view {
+            display: none;
+        }
+    }
+
+    /* CENTERED CALENDAR FOR MOBILE */
+    @@media (max-width: 600px) {
+        .mud-picker-container {
+        }
+    }
+</style>
+
+<div class="monitoring-container">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Monitoring - Own Store</MudText>
+        <MudText Typo="Typo.h6" Class="@GetThemeClass()" Style="font-weight: 700;">@(_myStore?.StoreName ?? "Loading Store...")</MudText>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-center pa-12">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <!-- Stats Dashboard -->
+        <MudGrid Class="mb-6">
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <div class="stat-value text-success">@_avgCompletionRate%</div>
+                    <div class="stat-label">Avg. Completion</div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <div class="stat-value text-info">@_totalReports</div>
+                    <div class="stat-label">Total Reports</div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <div class="stat-value text-warning">@_pendingChecks</div>
+                    <div class="stat-label">Tasks Today</div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <div class="stat-value text-primary">@_totalPhotos</div>
+                    <div class="stat-label">Gallery Items</div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Main Content Tabs -->
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" Class="@($"glass-panel {GetThemeClass()}")" PanelClass="pa-4">
+
+            <!-- Performance & History Tab -->
+            <MudTabPanel Text="Performance & Reports" Icon="@Icons.Material.Filled.Timeline">
+
+                <!-- Filter Section -->
+                <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
+                    <MudButton Variant="Variant.Outlined"
+                               StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                               FullWidth="true"
+                               OnClick="@(() => _showFilters = !_showFilters)"
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
+                        @(_showFilters ? "Hide Filters" : "Show Filters")
+                    </MudButton>
+
+                    <MudItem xs="12" sm="3" md="3">
+                        <MudDateRangePicker @bind-DateRange="_dateRange"
+                                            @bind-DateRange:after="LoadReports"
+                                            Label="Date Range"
+                                            Variant="Variant.Outlined"
+                                            Dense="true"
+                                            Margin="Margin.Dense"
+                                            Class="rounded-lg"
+                                            PickerVariant="PickerVariant.Inline"
+                                            DisableToolbar="true" />
+                    </MudItem>
+
+                    <div class="text-center text-sm-start">
+                        <MudText Typo="Typo.body2" Style="opacity: 0.8;">
+                            Showing @(_dailyActivities.Count) of @(_totalReportsCount) reports
+                        </MudText>
+                    </div>
+                </MudPaper>
+
+                <div class="desktop-view">
+                    <MudTable Items="_dailyActivities" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Started By</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh>Completed At</MudTh>
+                            <MudTh>Progress</MudTh>
+                            <MudTh Style="text-align: center;">Action</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Date">@context.Date.ToString("MMM dd, yyyy")</MudTd>
+                            <MudTd DataLabel="Started By">@(context.StartedBy?.Fullname ?? "---")</MudTd>
+                            <MudTd DataLabel="Status">
+                                <MudChip T="string" Size="Size.Small" Color="@(context.IsCompleted? Color.Success: Color.Warning)" Variant="Variant.Text" Class="role-chip">
+                                    @(context.IsCompleted ? "Completed" : "In Progress")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Completed At">@(context.CompletedAt?.ToString("hh:mm tt") ?? "-")</MudTd>
+                            <MudTd DataLabel="Progress">
+                                <div class="d-flex align-center gap-2">
+                                    <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(context.Id)" Class="my-2" Style="width: 60px;" Rounded="true" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(context.Id))%</MudText>
+                                </div>
+                            </MudTd>
+                            <MudTd DataLabel="Action" Style="text-align: center;">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" Title="View Details" />
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                </div>
+
+                <div class="mobile-view">
+                    @foreach (var activity in _dailyActivities)
+                    {
+                        <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                            <div class="mobile-card-header">
+                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@activity.Date.ToString("MMM dd, yyyy")</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@(activity.IsCompleted? Color.Success: Color.Warning)" Variant="Variant.Text" Class="role-chip">
+                                    @(activity.IsCompleted ? "Completed" : "In Progress")
+                                </MudChip>
+                            </div>
+                            <div class="mobile-card-content">
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText>
+                                        <MudText Typo="Typo.body2">@(activity.StartedBy?.Fullname ?? "---")</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Completed At</MudText>
+                                        <MudText Typo="Typo.body2">@(activity.CompletedAt?.ToString("hh:mm tt") ?? "-")</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <div class="d-flex align-center justify-space-between mb-1">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Progress</MudText>
+                                            <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(activity.Id))%</MudText>
+                                        </div>
+                                        <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(activity.Id)" Rounded="true" Size="Size.Small" />
+                                    </MudItem>
+                                </MudGrid>
+                            </div>
+                            <div class="mobile-card-actions">
+                                <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Text" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(activity))" Class="modern-button">
+                                    Details
+                                </MudButton>
+                            </div>
+                        </MudPaper>
+                    }
+                </div>
+            </MudTabPanel>
+
+            <!-- Photo Gallery Tab -->
+            <MudTabPanel Text="Photo Gallery" Icon="@Icons.Material.Filled.PhotoLibrary">
+                <MudPaper Class="@($"glass-panel pa-4 mb-4 {GetThemeClass()}")" Elevation="0">
+                    <MudSelect T="int?" @bind-Value="_selectedCategoryId" Label="Filter by Category" Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg" AnchorOrigin="Origin.BottomCenter">
+                        <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
+                        @foreach (var cat in _categories)
+                        {
+                            <MudSelectItem Value="@((int?)cat.Id)">@cat.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudPaper>
+
+                @if (_filteredPhotos.Any())
+                {
+                    <div class="photo-grid">
+                        @foreach (var photo in _filteredPhotos)
+                        {
+                            <div class="photo-item" @onclick="@(() => OpenPhotoDialog(photo))">
+                                @if (photo.ImageData != null)
+                                {
+                                    <img src="@($"data:{photo.ImageMimeType};base64,{Convert.ToBase64String(photo.ImageData)}")" alt="Store Photo" />
+                                }
+                                <div class="photo-overlay">
+                                    <div class="font-weight-bold">@photo.Category?.Name</div>
+                                    <div style="opacity: 0.8;">@photo.UploadedAt.ToString("MMM dd, HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="pa-12 text-center" style="opacity: 0.5;">
+                        <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" Size="Size.Large" Class="mb-2" />
+                        <MudText>No photos found for this store.</MudText>
+                    </div>
+                }
+            </MudTabPanel>
+
+            <!-- Personal Performance Tab -->
+            <MudTabPanel Text="Personal Stats" Icon="@Icons.Material.Filled.Badge">
+                <MudGrid>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Class="@($"glass-panel pa-6 {GetThemeClass()}")" Elevation="0" Style="border-radius: 16px !important;">
+                            <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Performance Breakdown</MudText>
+                            <div class="d-flex flex-column gap-6">
+                                @foreach (var cat in _categoryPerformance)
+                                {
+                                    <div>
+                                        <div class="d-flex justify-space-between mb-2">
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@cat.CategoryName</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 800;">@cat.CompletionRate%</MudText>
+                                        </div>
+                                        <MudProgressLinear Color="@GetCategoryColor(cat.CompletionRate)" Value="@cat.CompletionRate" Rounded="true" Size="Size.Medium" />
+                                    </div>
+                                }
+                            </div>
+                        </MudPaper>
+                    </MudItem>
+                    <MudItem xs="12" md="6">
+                        <MudPaper Class="@($"glass-panel pa-6 {GetThemeClass()}")" Elevation="0" Style="border-radius: 16px !important;">
+                            <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Recent Achievements</MudText>
+                            <MudList T="string" Dense="true">
+                                <MudListItem Icon="@Icons.Material.Filled.Star" IconColor="Color.Warning">
+                                    <MudText Typo="Typo.body2">Highest completion rate this week!</MudText>
+                                </MudListItem>
+                                <MudListItem Icon="@Icons.Material.Filled.CheckCircle" IconColor="Color.Success">
+                                    <MudText Typo="Typo.body2">All opening tasks completed on time.</MudText>
+                                </MudListItem>
+                                <MudListItem Icon="@Icons.Material.Filled.Photo" IconColor="Color.Info">
+                                    <MudText Typo="Typo.body2">@_totalPhotos photos shared this month.</MudText>
+                                </MudListItem>
+                            </MudList>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+        </MudTabs>
+    }
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private bool _showFilters = false;
+    private Store? _myStore;
+    private List<StoreDailyActivity> _dailyActivities = new();
+    private List<TaskPhoto> _allPhotos = new();
+    private List<TaskPhoto> _filteredPhotos => _selectedCategoryId == null ? _allPhotos : _allPhotos.Where(p => p.CategoryId == _selectedCategoryId).ToList();
+    private List<Category> _categories = new();
+    private DateRange _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+    private int? _selectedCategoryId;
+    private int _totalReportsCount = 0;
+
+    // Stats
+    private int _avgCompletionRate = 0;
+    private int _totalReports = 0;
+    private int _pendingChecks = 0;
+    private int _totalPhotos = 0;
+    private List<CategoryPerformanceModel> _categoryPerformance = new();
+    private Dictionary<int, double> _activityProgressCache = new();
+
+    protected override void OnInitialized()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UserState.InitializeAsync();
+            await LoadData();
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        // Load Store
+        _myStore = await db.Stores.FirstOrDefaultAsync(s => s.StoreHeadId == UserState.UserId);
+        if (_myStore == null) return;
+
+        _categories = await db.Categories.OrderBy(c => c.SortOrder).ToListAsync();
+
+        await LoadReports();
+        await LoadPhotos();
+        await CalculateStats();
+    }
+
+    private async Task LoadReports()
+    {
+        if (_myStore == null) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        var query = db.StoreDailyActivities
+            .Include(a => a.StartedBy)
+            .Where(a => a.StoreId == _myStore.Id);
+
+        if (_dateRange.Start.HasValue) query = query.Where(a => a.Date >= _dateRange.Start.Value);
+        if (_dateRange.End.HasValue) query = query.Where(a => a.Date <= _dateRange.End.Value);
+
+        _totalReportsCount = await db.StoreDailyActivities.CountAsync(a => a.StoreId == _myStore.Id);
+        _dailyActivities = await query.OrderByDescending(a => a.Date).ToListAsync();
+        _totalReports = _dailyActivities.Count;
+
+        // Cache progress for the list
+        _activityProgressCache.Clear();
+        foreach (var activity in _dailyActivities)
+        {
+            _activityProgressCache[activity.Id] = await CalculateActivityProgress(activity.Id, db);
+        }
+    }
+
+    private async Task LoadPhotos()
+    {
+        if (_myStore == null) return;
+        using var db = await DbFactory.CreateDbContextAsync();
+        _allPhotos = await db.TaskPhotos
+            .Include(p => p.Category)
+            .Where(p => p.StoreId == _myStore.Id)
+            .OrderByDescending(p => p.UploadedAt)
+            .ToListAsync();
+        _totalPhotos = _allPhotos.Count;
+    }
+
+    private async Task CalculateStats()
+    {
+        if (_myStore == null) return;
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        // Avg Completion
+        if (_activityProgressCache.Any())
+        {
+            _avgCompletionRate = (int)_activityProgressCache.Values.Average();
+        }
+
+        // Today's tasks
+        var today = DateTime.Today;
+        var todayActivity = await db.StoreDailyActivities.FirstOrDefaultAsync(a => a.StoreId == _myStore.Id && a.Date.Date == today);
+        if (todayActivity != null)
+        {
+            _pendingChecks = await db.TaskProgresses.CountAsync(p => p.StoreDailyActivityId == todayActivity.Id && p.IsCompleted);
+        }
+
+        // Category Performance
+        _categoryPerformance.Clear();
+        var allTaskProgress = await db.TaskProgresses
+            .Include(p => p.ChecklistItem)
+            .Where(p => db.StoreDailyActivities.Any(a => a.Id == p.StoreDailyActivityId && a.StoreId == _myStore.Id))
+            .ToListAsync();
+
+        foreach (var cat in _categories)
+        {
+            var catTasks = allTaskProgress.Where(p => p.ChecklistItem?.CategoryId == cat.Id).ToList();
+            if (catTasks.Any())
+            {
+                var rate = (double)catTasks.Count(p => p.IsCompleted) / catTasks.Count * 100;
+                _categoryPerformance.Add(new CategoryPerformanceModel { CategoryName = cat.Name, CompletionRate = (int)rate });
+            }
+        }
+    }
+
+    private double GetCompletionProgress(int activityId)
+    {
+        return _activityProgressCache.TryGetValue(activityId, out var val) ? val : 0;
+    }
+
+    private async Task<double> CalculateActivityProgress(int activityId, PDTActivityTracker.Model.AppDbContext db)
+    {
+        var total = await db.TaskProgresses.CountAsync(p => p.StoreDailyActivityId == activityId);
+        if (total == 0) return 0;
+        var completed = await db.TaskProgresses.CountAsync(p => p.StoreDailyActivityId == activityId && p.IsCompleted);
+        return (double)completed / total * 100;
+    }
+
+    private async Task OpenActivityDetail(StoreDailyActivity activity)
+    {
+        var parameters = new DialogParameters { ["Activity"] = activity };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<ActivityDetailDialog>("Activity Details", parameters, options);
+    }
+
+    private async Task OpenPhotoDialog(TaskPhoto photo)
+    {
+        var parameters = new DialogParameters { ["Photo"] = photo };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<PhotoGalleryDialog>("Photo Detail", parameters, options);
+    }
+
+    private string GetTitleColor() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+    private string GetFilterButtonStyle()
+    {
+        var color = GetTitleColor();
+        return $"color: {color}; border-color: {color}40; text-transform: none; font-weight: 600;";
+    }
+    private string GetPaperBackground()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "background: rgba(255, 255, 255, 1) !important;",
+            ThemeMode.Light => "background: rgba(30, 58, 111, 1) !important;",
+            ThemeMode.Dark => "background: rgba(15, 23, 42, 1) !important;",
+            _ => "background: rgba(30, 58, 111, 1) !important;"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "border-radius: 12px;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
+            : "border-radius: 12px; font-weight: bold;";
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "lightest",
+            ThemeMode.Light => "light",
+            _ => "dark"
+        };
+    }
+
+    private Color GetCategoryColor(int rate) => rate switch
+    {
+        >= 90 => Color.Success,
+        >= 70 => Color.Info,
+        >= 40 => Color.Warning,
+        _ => Color.Error
+    };
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private class CategoryPerformanceModel
+    {
+        public string CategoryName { get; set; } = "";
+        public int CompletionRate { get; set; }
+    }
+}

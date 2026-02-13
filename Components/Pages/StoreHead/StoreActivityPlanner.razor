@@ -1,4 +1,4 @@
-﻿@page "/store-head/planner/{StoreId:int}"
+﻿@page "/store-head/planner"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -399,18 +399,6 @@
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
-
-        .frequency-filter-row {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 12px;
-            overflow-x: auto;
-            padding: 0px 0px !important;
-            flex-wrap: nowrap;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-        }
     }
 
     /* COMPLETION BUTTON */
@@ -433,7 +421,7 @@
         display: flex;
         justify-content: center;
         gap: 8px;
-        margin-bottom: 12px;
+        margin-bottom: 24px;
         overflow-x: auto;
         padding: 8px 4px;
         flex-wrap: nowrap;
@@ -680,7 +668,8 @@
 </div>
 
 @code {
-    [Parameter] public int StoreId { get; set; }
+    private int StoreId { get; set; }
+
 
     private bool _initialized = false;
     private Store? _store;
@@ -729,12 +718,21 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
 
+        StoreId = UserState.SelectedStoreId;
+
+        if (StoreId == 0)
+        {
+            NavigationManager.NavigateTo("/store-head/map");
+            return;
+        }
+
         _store = await db.Stores.FirstOrDefaultAsync(s => s.Id == StoreId);
         if (_store == null)
         {
             NavigationManager.NavigateTo("/store-head/map");
             return;
         }
+
 
         _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
         _checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();

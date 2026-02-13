@@ -1064,11 +1064,12 @@
         catch { }
     }
 
-    private void NavigateToPlanner()
+    private async Task NavigateToPlanner()
     {
         if (_myStore != null)
         {
-            NavigationManager.NavigateTo($"/store-head/planner/{_myStore.Id}");
+            await UserState.SetSelectedStoreId(_myStore.Id);
+            NavigationManager.NavigateTo("/store-head/planner");
         }
         else
         {
