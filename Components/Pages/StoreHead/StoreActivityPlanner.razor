@@ -459,7 +459,7 @@
             <MudButton Variant="Variant.Filled"
                        Color="Color.Info"
                        StartIcon="@Icons.Material.Filled.Map"
-                       Href="/store-head/dashboard"
+                       Href="/store-head/map"
                        Class="@($"modern-button {GetThemeClass()}")"
                        Style="@GetButtonStyle()">
                 BACK TO MAP
@@ -732,7 +732,7 @@
         _store = await db.Stores.FirstOrDefaultAsync(s => s.Id == StoreId);
         if (_store == null)
         {
-            NavigationManager.NavigateTo("/store-head/dashboard");
+            NavigationManager.NavigateTo("/store-head/map");
             return;
         }
 
@@ -1000,7 +1000,7 @@
             }
 
             Snackbar.Add("Daily operations completed successfully!", Severity.Success);
-            NavigationManager.NavigateTo("/store-head/dashboard");
+            NavigationManager.NavigateTo("/store-head/map");
         }
 
         StateHasChanged();

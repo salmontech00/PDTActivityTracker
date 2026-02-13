@@ -150,10 +150,11 @@
         }
     }
 
-    @@media (max-width: 375px){
-        .mud-main-content{
+    @@media (max-width: 375px) {
+        .mud-main-content {
             padding-top: 24px !important;
         }
+
         .login-wrapper {
             justify-content: center;
             align-items: center;
@@ -219,6 +220,8 @@
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Person"
                                   AdornmentColor="Color.Primary"
+                                  Immediate="true"
+                                  OnKeyDown="@HandleKeyDown"
                                   Style="@GetInputFieldStyle()" />
 
                     <MudTextField T="string"
@@ -232,6 +235,7 @@
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="TogglePasswordVisibility"
                                   AdornmentColor="Color.Primary"
+                                  Immediate="true"
                                   OnKeyDown="@HandleKeyDown"
                                   Style="@GetInputFieldStyle()" />
 
@@ -248,7 +252,7 @@
                 </MudForm>
             </MudCardContent>
 
-            <MudCardActions Class="d-flex flex-column px-4"> 
+            <MudCardActions Class="d-flex flex-column px-4">
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            Size="Size.Large"
@@ -413,7 +417,7 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter")
+        if (e.Key == "Enter" || e.Key == "NumpadEnter")
         {
             await LoginUser();
         }
@@ -545,7 +549,7 @@
 
                 if (user.Role == "Store Head")
                 {
-                    NavigationManager.NavigateTo("/store-head/dashboard", forceLoad: true);
+                    NavigationManager.NavigateTo("/store-head/map", forceLoad: true);
                 }
                 else
                 {
