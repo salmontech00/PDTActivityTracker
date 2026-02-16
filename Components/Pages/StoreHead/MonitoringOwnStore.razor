@@ -253,10 +253,16 @@
 
     /* RESPONSIVE */
     @@media (max-width: 960px) {
+        /* Hide the date range display text at top of toolbar */
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
         .mud-picker-paper {
             left: 50% !important;
             transform: translateX(-50%) !important;
             right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
         }
 
         .mud-popover {
@@ -297,6 +303,13 @@
 
         .mobile-view {
             display: none;
+        }
+    }
+
+    @@media (max-width: 375px) {
+        .mud-picker-paper{
+            max-height: calc(100vh - 80px) !important;
+            overflow-y: auto !important;
         }
     }
 </style>
@@ -350,7 +363,7 @@
             <MudTabPanel Text="Performance & Reports" Icon="@Icons.Material.Filled.Timeline">
 
                 <!-- Filter Section -->
-                <MudPaper Class="@($"glass-panel pa-4 mb-4 {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
+                <MudPaper Class="@($"glass-panel pb-2 pt-2 pr-3 pl-3 mb-4 {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
                     <MudButton Variant="Variant.Outlined"
                                StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
@@ -361,7 +374,7 @@
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12" sm="12" md="12">
                             <MudDateRangePicker Label="Date Range"
                                                 @bind-DateRange="_dateRange"
                                                 @bind-DateRange:after="ApplyReportFilters"
@@ -375,7 +388,7 @@
 
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;">
                                     Showing @(_dailyActivities.Count) of @(_totalReportsCount) reports
                                 </MudText>
