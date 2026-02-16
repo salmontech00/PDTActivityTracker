@@ -246,101 +246,23 @@
         background: rgba(0, 114, 207, 0.03);
     }
 
-    /* FILTER SECTION */
-    .filter-section {
-        padding: 16px;
-        margin-bottom: 24px;
-    }
-
-        .filter-section .mud-input-root {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-        }
-
-    .lightest .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.8) !important;
-    }
-
-    .light .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .light .filter-section .mud-input-label,
-    .light .filter-section .mud-input-adornment-start,
-    .light .filter-section .mud-select-input,
-    .light .filter-section .mud-input-slot {
-        color: #ffffff !important;
-    }
-
-    .light .filter-section .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
-        border-color: #ffffff !important;
-    }
-
+    /* Filter Toggle Button */
     .filter-toggle-button {
         display: none;
     }
 
-    /* DATE RANGE PICKER STYLING */
-    .filter-section .mud-picker-container {
-        background: transparent !important;
-    }
-
-    .filter-section .mud-picker-paper {
-        background: transparent !important;
-    }
-
-    .filter-section .mud-picker-calendar-header-switch {
-        color: inherit !important;
-    }
-
-    .filter-section .mud-picker-calendar-day {
-        color: inherit !important;
-    }
-
-        .filter-section .mud-picker-calendar-day.mud-selected {
-            background-color: var(--mud-palette-primary) !important;
-        }
-
-    .filter-section .mud-picker-slide-transition {
-        background: transparent !important;
-    }
-
-    .filter-section .mud-picker .mud-picker-calendar-header {
-        color: inherit !important;
-    }
-
-    .lightest .filter-section .mud-picker-calendar-day {
-        color: #0f172a !important;
-    }
-
-    .light .filter-section .mud-picker-calendar-day,
-    .dark .filter-section .mud-picker-calendar-day {
-        color: #ffffff !important;
-    }
-
-    /* Hide the date range display text at top of toolbar */
-    .mud-picker-datepicker-toolbar {
-        display: none !important;
-    }
-
     /* RESPONSIVE */
     @@media (max-width: 960px) {
-        .filter-toggle-button {
-            display: inline-flex !important;
+        .mud-picker-paper {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
         }
 
-        .filter-section .mud-grid {
-            display: none;
+        .mud-popover {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
         }
-
-        .filter-section.filters-visible .mud-grid {
-            display: flex;
-        }
-
         .desktop-view {
             display: none;
         }
@@ -353,6 +275,19 @@
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
             gap: 8px;
         }
+
+        .filter-toggle-button {
+            display: inline-flex !important;
+            width: 100%;
+        }
+
+        .glass-panel .mud-grid {
+            display: none;
+        }
+
+        .glass-panel.filters-visible .mud-grid {
+            display: flex !important;
+        }
     }
 
     @@media (min-width: 961px) {
@@ -362,12 +297,6 @@
 
         .mobile-view {
             display: none;
-        }
-    }
-
-    /* CENTERED CALENDAR FOR MOBILE */
-    @@media (max-width: 600px) {
-        .mud-picker-container {
         }
     }
 </style>
@@ -421,33 +350,48 @@
             <MudTabPanel Text="Performance & Reports" Icon="@Icons.Material.Filled.Timeline">
 
                 <!-- Filter Section -->
-                <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
+                <MudPaper Class="@($"glass-panel pa-4 mb-4 {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
                     <MudButton Variant="Variant.Outlined"
                                StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showFilters = !_showFilters)"
-                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
-                               Style="@GetFilterButtonStyle()">
+                               Class="filter-toggle-button"
+                               Style="margin-bottom: 16px;">
                         @(_showFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
-                    <MudItem xs="12" sm="3" md="3">
-                        <MudDateRangePicker @bind-DateRange="_dateRange"
-                                            @bind-DateRange:after="LoadReports"
-                                            Label="Date Range"
-                                            Variant="Variant.Outlined"
-                                            Dense="true"
-                                            Margin="Margin.Dense"
-                                            Class="rounded-lg"
-                                            PickerVariant="PickerVariant.Inline"
-                                            DisableToolbar="true" />
-                    </MudItem>
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudDateRangePicker Label="Date Range"
+                                                @bind-DateRange="_dateRange"
+                                                @bind-DateRange:after="ApplyReportFilters"
+                                                Variant="Variant.Outlined"
+                                                Dense="true"
+                                                Margin="Margin.Dense"
+                                                AnchorOrigin="Origin.BottomCenter"
+                                                TransformOrigin="Origin.TopCenter" />
+                        </MudItem>
+                    </MudGrid>
 
-                    <div class="text-center text-sm-start">
-                        <MudText Typo="Typo.body2" Style="opacity: 0.8;">
-                            Showing @(_dailyActivities.Count) of @(_totalReportsCount) reports
-                        </MudText>
-                    </div>
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                                <MudText Typo="Typo.body2" Style="opacity: 0.8;">
+                                    Showing @(_dailyActivities.Count) of @(_totalReportsCount) reports
+                                </MudText>
+                                @if (HasActiveReportFilters())
+                                {
+                                    <MudButton Variant="Variant.Text"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.Clear"
+                                               OnClick="ClearReportFilters">
+                                        Clear Filters
+                                    </MudButton>
+                                }
+                            </div>
+                        </MudItem>
+                    </MudGrid>
                 </MudPaper>
 
                 <div class="desktop-view">
@@ -608,15 +552,18 @@
 
 @code {
     private bool _isLoading = true;
-    private bool _showFilters = false;
     private Store? _myStore;
     private List<StoreDailyActivity> _dailyActivities = new();
+    private List<StoreDailyActivity> _allDailyActivities = new();
     private List<TaskPhoto> _allPhotos = new();
     private List<TaskPhoto> _filteredPhotos => _selectedCategoryId == null ? _allPhotos : _allPhotos.Where(p => p.CategoryId == _selectedCategoryId).ToList();
     private List<Category> _categories = new();
-    private DateRange _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
     private int? _selectedCategoryId;
     private int _totalReportsCount = 0;
+
+    // Filter states
+    private bool _showFilters = false;
+    private DateRange? _dateRange = null;
 
     // Stats
     private int _avgCompletionRate = 0;
@@ -668,12 +615,11 @@
             .Include(a => a.StartedBy)
             .Where(a => a.StoreId == _myStore.Id);
 
-        if (_dateRange.Start.HasValue) query = query.Where(a => a.Date >= _dateRange.Start.Value);
-        if (_dateRange.End.HasValue) query = query.Where(a => a.Date <= _dateRange.End.Value);
-
         _totalReportsCount = await db.StoreDailyActivities.CountAsync(a => a.StoreId == _myStore.Id);
-        _dailyActivities = await query.OrderByDescending(a => a.Date).ToListAsync();
-        _totalReports = _dailyActivities.Count;
+        _allDailyActivities = await query.OrderByDescending(a => a.Date).ToListAsync();
+        _totalReports = _allDailyActivities.Count;
+
+        ApplyReportFilters();
 
         // Cache progress for the list
         _activityProgressCache.Clear();
@@ -681,6 +627,34 @@
         {
             _activityProgressCache[activity.Id] = await CalculateActivityProgress(activity.Id, db);
         }
+    }
+
+    private void ApplyReportFilters()
+    {
+        _dailyActivities = _allDailyActivities;
+
+        if (_dateRange != null && _dateRange.Start.HasValue && _dateRange.End.HasValue)
+        {
+            var startDate = _dateRange.Start.Value.Date;
+            var endDate = _dateRange.End.Value.Date.AddDays(1).AddSeconds(-1);
+
+            _dailyActivities = _dailyActivities
+                .Where(a => a.Date >= startDate && a.Date <= endDate)
+                .ToList();
+        }
+
+        StateHasChanged();
+    }
+
+    private void ClearReportFilters()
+    {
+        _dateRange = null;
+        ApplyReportFilters();
+    }
+
+    private bool HasActiveReportFilters()
+    {
+        return _dateRange != null && _dateRange.Start.HasValue;
     }
 
     private async Task LoadPhotos()
@@ -757,31 +731,6 @@
         var parameters = new DialogParameters { ["Photo"] = photo };
         var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
         await DialogService.ShowAsync<PhotoGalleryDialog>("Photo Detail", parameters, options);
-    }
-
-    private string GetTitleColor() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
-    private string GetFilterButtonStyle()
-    {
-        var color = GetTitleColor();
-        return $"color: {color}; border-color: {color}40; text-transform: none; font-weight: 600;";
-    }
-    private string GetPaperBackground()
-    {
-        return ThemeService.CurrentTheme switch
-        {
-            ThemeMode.Lightest => "background: rgba(255, 255, 255, 1) !important;",
-            ThemeMode.Light => "background: rgba(30, 58, 111, 1) !important;",
-            ThemeMode.Dark => "background: rgba(15, 23, 42, 1) !important;",
-            _ => "background: rgba(30, 58, 111, 1) !important;"
-        };
-    }
-
-    private string GetButtonStyle()
-    {
-        if (ThemeService == null) return "border-radius: 12px;";
-        return ThemeService.CurrentTheme == ThemeMode.Light
-            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
-            : "border-radius: 12px; font-weight: bold;";
     }
 
     private string GetThemeClass()
