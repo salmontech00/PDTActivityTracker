@@ -1,4 +1,4 @@
-﻿@page "/store-head/dashboard"
+﻿@page "/store-head/map"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -314,14 +314,14 @@
         }
 
         .map-legend-overlay {
-            top: 10px;
-            right: 10px;
-            padding: 2px 8px;
-            gap: 8px;
+            top: 6px;
+            right: 6px;
+            padding: 2px 2px;
+            gap: 4px;
         }
 
         .legend-text {
-            font-size: 0.55rem;
+            font-size: 0.5rem;
         }
 
         .mobile-panel-content .panel-content {
@@ -341,6 +341,7 @@
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
+
         .map-section {
             height: 320px;
             flex: none;
@@ -350,6 +351,80 @@
             .map-section.shrink-mobile {
                 height: 155px !important;
             }
+
+        .map-legend-overlay {
+            top: 2px;
+            right: 2px;
+            padding: 2px 2px;
+            gap: 2px;
+        }
+
+        .legend-text {
+            font-size: 0.47rem;
+        }
+    }
+
+    /* STEPPER TIMELINE STYLES */
+    .stepper-dot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 24px;
+        position: relative;
+    }
+
+    .stepper-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        border: 4px solid white;
+        box-shadow: 0 0 0 4px rgba(226, 232, 240, 0.4);
+        z-index: 2;
+    }
+
+        .stepper-dot.completed {
+            background: #4caf50;
+            box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.4);
+        }
+
+        .stepper-dot.in-progress {
+            background: #0072cf;
+            box-shadow: 0 0 0 4px rgba(0, 114, 207, 0.4);
+        }
+
+    .stepper-line {
+        width: 2px;
+        flex-grow: 1;
+        background: #e2e8f0;
+        margin: 4px 0;
+        min-height: 40px;
+    }
+
+    .lightest .stepper-dot, .light .stepper-dot {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .dark .stepper-dot {
+        border-color: rgba(30, 41, 59, 0.8);
+    }
+
+    /* MAP LOADING OVERLAY */
+    .map-loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        border-radius: 12px;
+        transition: opacity 0.3s ease;
     }
 
 </style>
@@ -365,6 +440,14 @@
         <div class="@($"map-section {(_isPanelOpen && _selectedStoreId.HasValue ? "shrink-mobile" : "")}")">
             <div id="map" style="width: 100%; height: 100%;"></div>
 
+            @if (_isFindingLocation)
+            {
+                <div class="map-loading-overlay">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="mb-3" />
+                    <MudText Typo="Typo.h6" Style="color: white; font-weight: 700;">Finding location...</MudText>
+                </div>
+            }
+
             <!-- Map Legend Overlay -->
             <div class="@($"map-legend-overlay {GetThemeClass()}")">
                 <div class="legend-item">
@@ -373,6 +456,10 @@
                         <circle cx="12" cy="11" r="2.5" fill="#fff" />
                     </svg>
                     <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Store</MudText>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 14px; height: 14px; background: #2196F3; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);"></div>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Location</MudText>
                 </div>
                 <div class="legend-item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -384,11 +471,11 @@
             </div>
 
             <!-- Quick control -->
-            <MudTooltip Text="Center on My Store">
+            <MudTooltip Text="Center on My Location">
                 <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
                                Color="Color.Primary"
                                Variant="Variant.Filled"
-                               OnClick="() => CenterOnStore(_myStore)"
+                               OnClick="CenterOnUserLocation"
                                Style="position: absolute; bottom: 30px; right: 30px; z-index: 1000;" />
             </MudTooltip>
         </div>
@@ -427,8 +514,8 @@
                                 <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
                                 <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                             </div>
-                            <MudText Typo="Typo.h5" Style="font-weight: 700;">07:45 AM</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">On Time</MudText>
+                            <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
                         </div>
                     </MudPaper>
 
@@ -438,55 +525,92 @@
                                 <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
                                 <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
                             </div>
-                            <MudText Typo="Typo.h5" Style="font-weight: 700;">47%</MudText>
-                            <MudProgressLinear Color="Color.Info" Value="47" Class="mt-2" Rounded="true" />
+                            <MudText Typo="Typo.h5" Style="font-weight: 700;">@_completedTasks / @_totalTasksCount</MudText>
+                            <div class="d-flex align-center gap-2 mt-1">
+                                <MudProgressLinear Color="Color.Info" Value="_completionPercentage" Rounded="true" Style="flex-grow: 1;" />
+                                <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)_completionPercentage)%</MudText>
+                            </div>
                         </div>
                     </MudPaper>
                 </div>
 
-                <!-- TIMELINE SECTION -->
+                <!-- CATEGORY PROGRESS TIMELINE -->
                 <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0"
-                          Style="@(ThemeService.CurrentTheme == ThemeMode.Light ? "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.15);" : "background: rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.15);")">
+                          Style="@GetTimelineCardStyle()">
                     <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Activity Timeline</MudText>
 
-                    <MudTimeline TimelinePosition="TimelinePosition.Start">
-                        <MudTimelineItem Color="Color.Success" Size="Size.Small">
-                            <ItemOpposite>
-                                <MudText Typo="Typo.caption" Color="Color.Success">07:45</MudText>
-                            </ItemOpposite>
-                            <ItemContent>
-                                <MudText Typo="Typo.body2" Style="font-weight: 700;">Check In</MudText>
-                                <MudText Typo="Typo.caption">Completed</MudText>
-                            </ItemContent>
-                        </MudTimelineItem>
-                        <MudTimelineItem Color="Color.Info" Size="Size.Small">
-                            <ItemOpposite>
-                                <MudText Typo="Typo.caption" Color="Color.Info">Now</MudText>
-                            </ItemOpposite>
-                            <ItemContent>
-                                <MudText Typo="Typo.body2" Style="font-weight: 700;">Asset Check</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Info">In Progress (8/13)</MudText>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="mt-2 rounded-lg" FullWidth="true">Continue</MudButton>
-                            </ItemContent>
-                        </MudTimelineItem>
-                    </MudTimeline>
+                    @if (_categoryProgresses.Any())
+                    {
+                        <div class="category-timeline">
+                            @{
+                                bool stopShowing = false;
+                                var listToShow = _categoryProgresses.TakeWhile((cat, index) =>
+                                {
+                                    if (stopShowing) return false;
+                                    if (!cat.IsCompleted) stopShowing = true;
+                                    return true;
+                                }).ToList();
+                            }
+                            @foreach (var cat in listToShow)
+                            {
+                                <div class="timeline-stepper-item mb-6">
+                                    <div class="d-flex align-start gap-4">
+                                        <div class="stepper-dot-container">
+                                            <div class="@($"stepper-dot {(cat.IsCompleted ? "completed" : (cat.CompletedTasks > 0 ? "in-progress" : ""))}")"></div>
+                                            @if (cat != listToShow.Last())
+                                            {
+                                                <div class="stepper-line"></div>
+                                            }
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">
+                                                @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                            </MudText>
+
+                                            @if (!cat.IsCompleted)
+                                            {
+                                                <MudButton Variant="Variant.Outlined"
+                                                           Color="Color.Primary"
+                                                           Size="Size.Small"
+                                                           FullWidth="true"
+                                                           OnClick="NavigateToPlanner"
+                                                           Class="mt-3 rounded-lg"
+                                                           Style="text-transform: uppercase; font-weight: 700; border-width: 2px;">
+                                                    CONTINUE
+                                                </MudButton>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Initializing tracker...</MudText>
+                    }
                 </MudPaper>
 
                 <!-- NOTIFICATIONS -->
                 <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
                 <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
-                    <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Error" IconSize="Size.Small">
-                        <div class="d-flex flex-column">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Area Head commented on report</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">2 minutes ago</MudText>
-                        </div>
-                    </MudListItem>
-                    <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Warning" IconSize="Size.Small">
-                        <div class="d-flex flex-column">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Equipment cleaning due</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">3 hours ago</MudText>
-                        </div>
-                    </MudListItem>
+                    @if (_notifications?.Any() == true)
+                    {
+                        @foreach (var note in _notifications)
+                        {
+                            <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="@GetNotificationColor(note.Type)" IconSize="Size.Small">
+                                <div class="d-flex flex-column">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@note.Message</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@GetRelativeTime(note.CreatedAt)</MudText>
+                                </div>
+                            </MudListItem>
+                        }
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6; padding-left: 16px;">No new notifications.</MudText>
+                    }
                 </MudList>
             </div>
         </div>
@@ -532,8 +656,8 @@
                                     <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
                                     <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                                 </div>
-                                <MudText Typo="Typo.h5" Style="font-weight: 700;">07:45 AM</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">On Time</MudText>
+                                <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
                             </div>
                         </MudPaper>
 
@@ -543,55 +667,92 @@
                                     <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
                                     <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
                                 </div>
-                                <MudText Typo="Typo.h5" Style="font-weight: 700;">47%</MudText>
-                                <MudProgressLinear Color="Color.Info" Value="47" Class="mt-2" Rounded="true" />
+                                <MudText Typo="Typo.h5" Style="font-weight: 700;">@_completedTasks / @_totalTasksCount</MudText>
+                                <div class="d-flex align-center gap-2 mt-1">
+                                    <MudProgressLinear Color="Color.Info" Value="_completionPercentage" Rounded="true" Style="flex-grow: 1;" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)_completionPercentage)%</MudText>
+                                </div>
                             </div>
                         </MudPaper>
                     </div>
 
-                    <!-- TIMELINE SECTION -->
+                    <!-- CATEGORY PROGRESS TIMELINE -->
                     <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0"
-                              Style="@(ThemeService.CurrentTheme == ThemeMode.Light ? "background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.15);" : "background: rgba(0,0,0,0.15); border: 1px solid rgba(0,0,0,0.15);")">
+                              Style="@GetTimelineCardStyle()">
                         <MudText Typo="Typo.subtitle2" Style="font-weight: 700;" Class="mb-3">Activity Timeline</MudText>
 
-                        <MudTimeline TimelinePosition="TimelinePosition.Start">
-                            <MudTimelineItem Color="Color.Success" Size="Size.Small">
-                                <ItemOpposite>
-                                    <MudText Typo="Typo.caption" Color="Color.Success">07:45</MudText>
-                                </ItemOpposite>
-                                <ItemContent>
-                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">Check In</MudText>
-                                    <MudText Typo="Typo.caption">Completed</MudText>
-                                </ItemContent>
-                            </MudTimelineItem>
-                            <MudTimelineItem Color="Color.Info" Size="Size.Small">
-                                <ItemOpposite>
-                                    <MudText Typo="Typo.caption" Color="Color.Info">Now</MudText>
-                                </ItemOpposite>
-                                <ItemContent>
-                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">Asset Check</MudText>
-                                    <MudText Typo="Typo.caption" Color="Color.Info">In Progress (8/13)</MudText>
-                                    <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Small" Class="mt-2 rounded-lg" FullWidth="true">Continue</MudButton>
-                                </ItemContent>
-                            </MudTimelineItem>
-                        </MudTimeline>
+                        @if (_categoryProgresses.Any())
+                        {
+                            <div class="category-timeline">
+                                @{
+                                    bool stopShowingMobile = false;
+                                    var listToShowMobile = _categoryProgresses.TakeWhile((cat, index) =>
+                                    {
+                                        if (stopShowingMobile) return false;
+                                        if (!cat.IsCompleted) stopShowingMobile = true;
+                                        return true;
+                                    }).ToList();
+                                }
+                                @foreach (var cat in listToShowMobile)
+                                {
+                                    <div class="timeline-stepper-item mb-6">
+                                        <div class="d-flex align-start gap-4">
+                                            <div class="stepper-dot-container">
+                                                <div class="@($"stepper-dot {(cat.IsCompleted ? "completed" : (cat.CompletedTasks > 0 ? "in-progress" : ""))}")"></div>
+                                                @if (cat != listToShowMobile.Last())
+                                                {
+                                                    <div class="stepper-line"></div>
+                                                }
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
+                                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">
+                                                    @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                                </MudText>
+
+                                                @if (!cat.IsCompleted)
+                                                {
+                                                    <MudButton Variant="Variant.Outlined"
+                                                               Color="Color.Primary"
+                                                               Size="Size.Small"
+                                                               FullWidth="true"
+                                                               OnClick="NavigateToPlanner"
+                                                               Class="mt-3 rounded-lg"
+                                                               Style="text-transform: uppercase; font-weight: 700; border-width: 2px;">
+                                                        CONTINUE
+                                                    </MudButton>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Initializing tracker...</MudText>
+                        }
                     </MudPaper>
 
                     <!-- NOTIFICATIONS -->
                     <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
                     <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
-                        <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Error" IconSize="Size.Small">
-                            <div class="d-flex flex-column">
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;">Area Head commented on report</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">2 minutes ago</MudText>
-                            </div>
-                        </MudListItem>
-                        <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="Color.Warning" IconSize="Size.Small">
-                            <div class="d-flex flex-column">
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;">Equipment cleaning due</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">3 hours ago</MudText>
-                            </div>
-                        </MudListItem>
+                        @if (_notifications?.Any() == true)
+                        {
+                            @foreach (var note in _notifications)
+                            {
+                                <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="@GetNotificationColor(note.Type)" IconSize="Size.Small">
+                                    <div class="d-flex flex-column">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@note.Message</MudText>
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.8;">@GetRelativeTime(note.CreatedAt)</MudText>
+                                    </div>
+                                </MudListItem>
+                            }
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6; padding-left: 16px;">No new notifications.</MudText>
+                        }
                     </MudList>
                 </div>
             </div>
@@ -606,11 +767,39 @@
     private static StoreHeadLanding? _instance;
     private bool _mapInitialized = false;
 
+    // DASHBOARD DATA
+    private StoreDailyActivity? _selectedStoreActivity;
+    private List<CategoryProgress> _categoryProgresses = new();
+    private List<Notification> _notifications = new();
+    private double _completionPercentage = 0;
+    private int _completedTasks = 0;
+    private int _totalTasksCount = 0;
+    private DateTime? _derivedCheckInTime;
+    private bool _isFindingLocation = false;
+
+    private class CategoryProgress
+    {
+        public int CategoryId { get; set; }
+        public string Name { get; set; } = "";
+        public int CompletedTasks { get; set; }
+        public int TotalTasks { get; set; }
+        public bool IsCompleted => CompletedTasks >= TotalTasks && TotalTasks > 0;
+    }
+
     protected override void OnInitialized()
     {
         base.OnInitialized();
         ThemeService.OnThemeChanged += OnThemeChanged;
+        UserState.DashboardRefreshRequested += OnDashboardRefreshRequested;
         _instance = this;
+    }
+
+    private void OnDashboardRefreshRequested()
+    {
+        if (_selectedStoreId.HasValue)
+        {
+            InvokeAsync(() => LoadDashboardData(_selectedStoreId.Value));
+        }
     }
 
     private void OnThemeChanged() => StateHasChanged();
@@ -618,6 +807,7 @@
     public async ValueTask DisposeAsync()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
+        UserState.DashboardRefreshRequested -= OnDashboardRefreshRequested;
         _instance = null;
         try
         {
@@ -691,6 +881,37 @@
         }
     }
 
+    private async Task CenterOnUserLocation()
+    {
+        _isFindingLocation = true;
+        StateHasChanged();
+        try
+        {
+            var location = await JSRuntime.InvokeAsync<LocationCoords>("cameraInterop.getCurrentLocation");
+            // Show blue circle on map
+            await JSRuntime.InvokeVoidAsync("leafletMap.setUserLocation", location.Latitude, location.Longitude);
+            // Center the map
+            await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", location.Latitude, location.Longitude, 16);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not get current location: {ex.Message}", Severity.Warning);
+            // Fallback to centering on store
+            if (_myStore != null) await CenterOnStore(_myStore);
+        }
+        finally
+        {
+            _isFindingLocation = false;
+            StateHasChanged();
+        }
+    }
+
+    private class LocationCoords
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
     private async Task CenterOnStore(Store? store)
     {
         if (store?.GPSLatitude != null && store?.GPSLongitude != null)
@@ -714,9 +935,103 @@
             _instance._isPanelOpen = true;
             _instance.StateHasChanged();
 
+            // Trigger data load
+            _ = _instance.LoadDashboardData(storeId);
             // Trigger map resize after layout change
             _ = _instance.TriggerMapResize();
         }
+    }
+
+    private async Task LoadDashboardData(int storeId)
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        var today = DateTime.Today;
+        List<TaskProgress>? taskProgresses = null;
+
+        // 1. Fetch Today's Activity
+        _selectedStoreActivity = await db.StoreDailyActivities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Date >= today && s.Date < today.AddDays(1));
+
+        // 1.5 Derive Check-In Time from 'Check In' Category Tasks
+        _derivedCheckInTime = null;
+        if (_selectedStoreActivity != null)
+        {
+            var checkInCat = await db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
+            if (checkInCat != null)
+            {
+                var checkInTasks = await db.ChecklistItems
+                    .AsNoTracking()
+                    .Where(i => i.CategoryId == checkInCat.Id)
+                    .Select(i => i.Id)
+                    .ToListAsync();
+
+                if (checkInTasks.Any())
+                {
+                    var completedCheckInTasks = await db.TaskProgresses
+                        .AsNoTracking()
+                        .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id &&
+                                    checkInTasks.Contains(tp.ChecklistItemId) &&
+                                    tp.IsCompleted &&
+                                    tp.CompletedAt.HasValue)
+                        .OrderBy(tp => tp.CompletedAt)
+                        .ToListAsync();
+
+                    if (completedCheckInTasks.Count == checkInTasks.Count)
+                    {
+                        // Use the latest completion time as the 'Check In' time (category completed)
+                        _derivedCheckInTime = completedCheckInTasks.Last().CompletedAt;
+                    }
+                    else
+                    {
+                        // Category is not fully completed
+                        _derivedCheckInTime = null;
+                    }
+                }
+            }
+        }
+
+        // 2. Calculate Progress
+        if (_selectedStoreActivity != null)
+        {
+            taskProgresses = await db.TaskProgresses
+                .AsNoTracking()
+                .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
+                .ToListAsync();
+
+            _totalTasksCount = await db.ChecklistItems.CountAsync();
+            _completedTasks = taskProgresses.Count(p => p.IsCompleted);
+            _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
+        }
+        else
+        {
+            _completionPercentage = 0;
+            _completedTasks = 0;
+        }
+
+        // 3. Fetch Category Progress Timeline
+        var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
+        var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+
+        var currentProgresses = taskProgresses ?? new List<TaskProgress>();
+
+        _categoryProgresses = categories.Select(c => new CategoryProgress
+        {
+            CategoryId = c.Id,
+            Name = c.Name,
+            TotalTasks = checklistItems.Count(i => i.CategoryId == c.Id),
+            CompletedTasks = currentProgresses.Count(tp => checklistItems.Any(i => i.Id == tp.ChecklistItemId && i.CategoryId == c.Id) && tp.IsCompleted)
+        }).ToList();
+
+        // 4. Fetch User Notifications
+        _notifications = await db.Notifications
+            .AsNoTracking()
+            .Where(n => n.UserId == UserState.UserId && !n.IsRead)
+            .OrderByDescending(n => n.CreatedAt)
+            .Take(5)
+            .ToListAsync() ?? new List<Notification>();
+
+        StateHasChanged();
     }
 
     private Store? GetSelectedStore()
@@ -749,11 +1064,12 @@
         catch { }
     }
 
-    private void NavigateToPlanner()
+    private async Task NavigateToPlanner()
     {
         if (_myStore != null)
         {
-            NavigationManager.NavigateTo($"/store-head/planner/{_myStore.Id}");
+            await UserState.SetSelectedStoreId(_myStore.Id);
+            NavigationManager.NavigateTo("/store-head/planner");
         }
         else
         {
@@ -774,10 +1090,43 @@
     private string GetCardStyle(string type)
     {
         var isLight = ThemeService.CurrentTheme == ThemeMode.Light || ThemeService.CurrentTheme == ThemeMode.Lightest;
-        var bg = type == "success" ? (isLight ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.15)")
-                                   : (isLight ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.15)");
-        return $"background: {bg}; border: 1px solid {(type == "success" ? "rgba(255, 255, 255, 0.15)" : "rgba(255, 255, 255, 0.15)")};";
+        var color = "rgba(255, 255, 255, 0.15)";
+        return $"background: {color}; border: 1px solid {color};";
+    }
+
+    private string GetTimelineCardStyle()
+    {
+        var isLight = ThemeService.CurrentTheme == ThemeMode.Light || ThemeService.CurrentTheme == ThemeMode.Lightest;
+        return isLight
+            ? "background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.15);"
+            : "background: rgba(0, 0, 0, 0.15); border: 1px solid rgba(0, 0, 0, 0.15);";
     }
 
     private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "background-color: #ffffff !important; color: #0072cf !important;" : "";
+
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var timespan = DateTime.Now - dateTime;
+        if (timespan.TotalMinutes < 1) return "just now";
+        if (timespan.TotalMinutes < 60) return $"{(int)timespan.TotalMinutes}m ago";
+        if (timespan.TotalHours < 24) return $"{(int)timespan.TotalHours}h ago";
+        return dateTime.ToString("MMM dd");
+    }
+
+    private Color GetLogColor(string action) => action switch
+    {
+        "SessionStarted" => Color.Success,
+        "CategoryCompleted" => Color.Info,
+        "IssueReported" => Color.Error,
+        "PhotoUploaded" => Color.Primary,
+        "TaskCompleted" => Color.Success,
+        _ => Color.Default
+    };
+
+    private Color GetNotificationColor(string type) => type switch
+    {
+        "Urgent" or "Alert" => Color.Error,
+        "Warning" => Color.Warning,
+        _ => Color.Info
+    };
 }

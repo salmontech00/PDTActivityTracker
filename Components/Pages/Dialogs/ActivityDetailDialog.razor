@@ -1,0 +1,299 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    .detail-table {
+        background: transparent !important;
+    }
+
+        .detail-table .mud-table-head {
+            background: rgba(0, 114, 207, 0.1);
+        }
+
+    .lightest .detail-table .mud-table-head {
+        background: rgba(0, 114, 207, 0.05);
+    }
+
+    .detail-table .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 8px 12px !important;
+        font-size: 0.85rem;
+    }
+
+    .lightest .detail-table .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    .frequency-chip {
+        font-size: 0.7rem !important;
+        height: 20px !important;
+        border-radius: 8px !important;
+    }
+
+    /* DIALOG HEADER */
+    .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 16px;
+    }
+
+    .header-info {
+        flex-grow: 1;
+    }
+
+    .filter-wrapper {
+        min-width: 150px;
+    }
+
+    /* MOBILE DIALOG CARDS */
+    .mobile-detail-card {
+        margin-bottom: 12px;
+        border-radius: 12px !important;
+    }
+
+    .mobile-detail-header {
+        background: rgba(0, 114, 207, 0.05);
+        padding: 8px 12px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .lightest .mobile-detail-header {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 600px) {
+        .dialog-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .filter-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .desktop-view {
+            display: none;
+        }
+
+        .mobile-view {
+            display: block;
+        }
+    }
+
+    @@media (min-width: 601px) {
+        .desktop-view {
+            display: block;
+        }
+
+        .mobile-view {
+            display: none;
+        }
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <div class="dialog-header pr-4">
+            <div class="header-info">
+                <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Activity Details</MudText>
+                <MudText Typo="Typo.caption" Style="@($"color: {GetTitleColor()}; opacity: 0.7;")">
+                    @Activity?.Date.ToString("MMMM dd, yyyy") - @(Activity?.StartedBy?.Fullname ?? "---")
+                </MudText>
+            </div>
+            <div class="filter-wrapper">
+                <MudSelect T="string" @bind-Value="_frequencyFilter" Label="Frequency" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="rounded-lg" Style="max-width: 150px;">
+                    <MudSelectItem Value="@("All")">All</MudSelectItem>
+                    <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
+                    <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
+                    <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
+                </MudSelect>
+            </div>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        @if (_isLoading)
+        {
+            <div class="d-flex justify-center pa-12">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (_filteredTasks == null || !_filteredTasks.Any())
+        {
+            <div class="pa-12 text-center" style="opacity: 0.5;">
+                <MudIcon Icon="@Icons.Material.Filled.AssignmentLate" Size="Size.Large" Class="mb-2" />
+                <MudText>No tasks found for this selection.</MudText>
+            </div>
+        }
+        else
+        {
+            <div class="desktop-view">
+                <MudTable Items="_filteredTasks" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Class="detail-table" GroupBy="@_groupDefinition">
+                    <ColGroup>
+                        <col />
+                        <col />
+                        <col style="width: 100px;" />
+                        <col />
+                    </ColGroup>
+                    <HeaderContent>
+                        <MudTh>Task Details</MudTh>
+                        <MudTh>Freq.</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh>Remarks</MudTh>
+                    </HeaderContent>
+                    <GroupHeaderTemplate>
+                        <MudTh Class="mud-table-cell-custom-group" colspan="4" Style="background: rgba(0, 114, 207, 0.05); font-weight: 700;">
+                            @((context.Key ?? "Uncategorized").ToString())
+                        </MudTh>
+                    </GroupHeaderTemplate>
+                    <RowTemplate>
+                        <MudTd DataLabel="Task Details">
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.ChecklistItem?.TaskName</MudText>
+                            @if (!string.IsNullOrEmpty(context.ChecklistItem?.Description))
+                            {
+                                <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2;">@context.ChecklistItem.Description</MudText>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Freq.">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@GetFrequencyColor(context.ChecklistItem?.Frequency)" Class="frequency-chip">
+                                @context.ChecklistItem?.Frequency
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudIcon Icon="@(context.IsCompleted? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"
+                                     Color="@(context.IsCompleted ? Color.Success : Color.Default)" Size="Size.Small" />
+                        </MudTd>
+                        <MudTd DataLabel="Remarks">
+                            <MudText Typo="Typo.caption">@(string.IsNullOrEmpty(context.Remarks) ? "---" : context.Remarks)</MudText>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </div>
+
+            <div class="mobile-view">
+                @foreach (var group in _filteredTasks.GroupBy(t => _groupDefinition?.Selector?.Invoke(t) ?? "Other"))
+                {
+                    <div class="mobile-detail-header rounded-lg mb-2">@group.Key</div>
+                    @foreach (var task in group)
+                    {
+                        <MudPaper Class="@($"glass-panel mobile-detail-card pa-3 mb-3 {GetThemeClass()}")" Elevation="0">
+                            <div class="d-flex justify-space-between align-start mb-2">
+                                <div style="flex-grow: 1;">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700; line-height: 1.2;">@task.ChecklistItem?.TaskName</MudText>
+                                    @if (!string.IsNullOrEmpty(task.ChecklistItem?.Description))
+                                    {
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 2px;">@task.ChecklistItem.Description</MudText>
+                                    }
+                                </div>
+                                <MudIcon Icon="@(task.IsCompleted? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"
+                                         Color="@(task.IsCompleted ? Color.Success : Color.Default)" Size="Size.Small" Class="ml-2" />
+                            </div>
+                            <div class="d-flex align-center justify-space-between pt-2" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@GetFrequencyColor(task.ChecklistItem?.Frequency)" Class="frequency-chip">
+                                    @task.ChecklistItem?.Frequency
+                                </MudChip>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
+                            </div>
+                        </MudPaper>
+                    }
+                }
+            </div>
+        }
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Style="@GetCancelButtonStyle()">Close</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [Parameter] public StoreDailyActivity? Activity { get; set; }
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private List<TaskProgress> _allTasks = new();
+    private List<TaskProgress> _filteredTasks => _frequencyFilter == "All" ? _allTasks : _allTasks.Where(t => t.ChecklistItem?.Frequency == _frequencyFilter).ToList();
+    private string _frequencyFilter = "All";
+    private bool _isLoading = true;
+
+    private TableGroupDefinition<TaskProgress> _groupDefinition = new()
+    {
+        GroupName = "Group",
+        Indentation = false,
+        Expandable = true,
+        IsInitiallyExpanded = true,
+        Selector = (e) =>
+        {
+            var catName = e?.ChecklistItem?.Category?.Name ?? "General";
+            var section = e?.ChecklistItem?.Section;
+            return string.IsNullOrEmpty(section) ? catName : $"{catName} - {section}";
+        }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Activity != null)
+        {
+            await LoadDetails();
+        }
+        _isLoading = false;
+    }
+
+    private async Task LoadDetails()
+    {
+        if (Activity == null) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        _allTasks = await db.TaskProgresses
+            .Include(p => p.ChecklistItem)
+                .ThenInclude(c => c!.Category)
+            .Where(p => p.StoreDailyActivityId == Activity.Id)
+            .OrderBy(p => p.ChecklistItem != null && p.ChecklistItem.Category != null ? p.ChecklistItem.Category.SortOrder : 0)
+            .ThenBy(p => p.ChecklistItem != null ? p.ChecklistItem.SortOrder : 0)
+            .ToListAsync();
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+    private string GetCancelButtonStyle() => $"color: {GetTitleColor()}; text-transform: none; font-weight: 600;";
+    private string GetThemeClass() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" : ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+
+    private Color GetFrequencyColor(string? freq) => freq switch
+    {
+        "Daily" => Color.Info,
+        "Weekly" => Color.Warning,
+        "Monthly" => Color.Secondary,
+        _ => Color.Default
+    };
+
+    private void Close() => MudDialog.Close();
+}

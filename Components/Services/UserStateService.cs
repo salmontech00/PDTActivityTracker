@@ -11,6 +11,11 @@ namespace PDTActivityTracker.Components.Services
         public string? Fullname { get; private set; }
         public string? Role { get; private set; }
         public int UserId { get; private set; }
+        public int SelectedStoreId { get; private set; }
+
+
+        public event Action? DashboardRefreshRequested;
+        public void NotifyDashboardRefresh() => DashboardRefreshRequested?.Invoke();
 
         public async Task InitializeAsync()
         {
@@ -30,7 +35,11 @@ namespace PDTActivityTracker.Components.Services
 
                     var userId = await _sessionStorage.GetItemAsync<int>("userId");
                     UserId = userId;
+
+                    var selectedStoreId = await _sessionStorage.GetItemAsync<int>("selectedStoreId");
+                    SelectedStoreId = selectedStoreId;
                 }
+
             }
             catch (InvalidOperationException)
             {
@@ -58,7 +67,9 @@ namespace PDTActivityTracker.Components.Services
                 await _sessionStorage.RemoveItemAsync("fullname");
                 await _sessionStorage.RemoveItemAsync("role");
                 await _sessionStorage.RemoveItemAsync("userId");
+                await _sessionStorage.RemoveItemAsync("selectedStoreId");
             }
+
             catch { }
         }
 
@@ -84,6 +95,12 @@ namespace PDTActivityTracker.Components.Services
         {
             UserId = userId;
             try { await _sessionStorage.SetItemAsync("userId", userId); } catch { }
+        }
+
+        public async Task SetSelectedStoreId(int storeId)
+        {
+            SelectedStoreId = storeId;
+            try { await _sessionStorage.SetItemAsync("selectedStoreId", storeId); } catch { }
         }
     }
 }

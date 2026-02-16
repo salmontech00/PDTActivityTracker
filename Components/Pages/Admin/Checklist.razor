@@ -106,7 +106,7 @@
     .light .page-title, .dark .page-title,
     .light .category-block .mud-typography, .dark .category-block .mud-typography,
     .light .category-icon,
-    .light .task-description, .dark .task-description,
+    .light .preview-task-card .mud-typography, .dark .preview-task-card .mud-typography,
     .light .desktop-only .mud-typography, .dark .desktop-only .mud-typography {
         color: #ffffff !important;
     }
@@ -308,10 +308,25 @@
             display: none !important;
         }
 
+        .modern-expansion-panel.active {
+            border-color: #0072cf !important;
+            box-shadow: 0 10px 30px rgba(0, 114, 207, 0.15) !important;
+        }
+
+        .modern-expansion-panel.locked {
+            opacity: 0.6;
+            filter: grayscale(0.5);
+            pointer-events: none;
+        }
+
     .lightest .modern-expansion-panel {
         background: rgba(255, 255, 255, 0.45) !important;
         border: 1px solid rgba(0, 114, 207, 0.2) !important;
     }
+
+        .lightest .modern-expansion-panel.active {
+            border-color: #0072cf !important;
+        }
 
     .preview-task-card {
         background: rgba(255, 255, 255, 0.08) !important;
@@ -375,7 +390,104 @@
         max-width: 600px;
     }
 
+    .manpower-input-container {
+        margin-top: 8px;
+        padding-left: 32px;
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .manpower-input {
+        max-width: 150px;
+    }
+
+    /* PHOTO GRID */
+    .photo-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+        padding-left: 32px;
+    }
+
+    .photo-thumb-wrapper {
+        position: relative;
+        width: 56px;
+        height: 56px;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.15);
+        background: rgba(0,0,0,0.1);
+    }
+
+        .photo-thumb-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .photo-remove-btn {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.65);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        line-height: 1;
+        padding: 0;
+        transition: background 0.2s;
+    }
+
+        .photo-remove-btn:hover {
+            background: rgba(220, 38, 38, 0.9);
+        }
+
+    .lightest .photo-thumb-wrapper {
+        border: 1px solid rgba(0, 114, 207, 0.2);
+        background: rgba(0,0,0,0.05);
+    }
+
+    .info-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .frequency-filter-row {
+        display: flex;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+        padding: 8px 4px;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* RESPONSIVE */
     @@media (max-width: 600px) {
+        .sub-title {
+            font-size: 0.75rem !important;
+            margin: 0px !important;
+        }
+
+        .info-row {
+            flex-direction: column;
+            gap: 0px !important;
+            padding: 0px !important;
+        }
+
         .preview-task-header {
             flex-wrap: wrap;
         }
@@ -402,14 +514,18 @@
             width: 100% !important;
         }
 
-        .preview-remarks-container {
+        .preview-remarks-container,
+        .manpower-input-container {
             padding-left: 0;
             margin-top: 12px;
             width: 100%;
         }
+
+        .photo-grid {
+            padding-left: 0;
+        }
     }
 
-    /* RESPONSIVE */
     @@media (max-width: 960px) {
         .filter-toggle-button {
             display: inline-flex !important;
@@ -514,6 +630,26 @@
                     font-size: 0.50rem !important;
                     flex: 1 1 calc(50% - 4px);
                 }
+
+        .frequency-filter-row {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            padding: 0px 0px !important;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .frequency-filter-row {
+            justify-content: flex-start;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
     }
 </style>
 
@@ -564,7 +700,7 @@
             </MudButton>
 
             <MudGrid Spacing="3">
-                <MudItem xs="12" sm="8" md="10">
+                <MudItem xs="12" sm="8" md="8">
                     <MudTextField T="string"
                                   @bind-Value="_searchTerm"
                                   @bind-Value:after="ApplyFilters"
@@ -591,6 +727,20 @@
                         {
                             <MudSelectItem Value="@cat.Id.ToString()">@cat.Name</MudSelectItem>
                         }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="4" md="2">
+                    <MudSelect T="string"
+                               @bind-Value="_frequencyFilter"
+                               @bind-Value:after="ApplyFilters"
+                               Label="Frequency"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="rounded-lg">
+                        <MudSelectItem Value="@("All")">All Frequencies</MudSelectItem>
+                        <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
+                        <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
+                        <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
                     </MudSelect>
                 </MudItem>
             </MudGrid>
@@ -729,102 +879,160 @@
     {
         <!-- Preview Mode -->
         <div class="preview-mode">
-            <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-6" Style="@GetTitleStyle()">Planner Preview</MudText>
+            <MudText Typo="Typo.h5" Align="Align.Center" Class="mb-0 mt-0 pt-0 pb-0" Style="@GetTitleStyle()">Planner Preview</MudText>
+
+            <!-- INFO ROW (Display only) -->
+            <div class="info-row mb-2">
+                <MudText Typo="Typo.subtitle1" Class="@($"sub-title {GetThemeClass()}")" Style="opacity: 0.7; text-align: center;">
+                    Store Name • @(DateTime.Now.ToString("MMMM dd, yyyy"))
+                </MudText>
+                <MudChip T="string" Color="Color.Secondary" Variant="Variant.Filled" Size="Size.Small" Class="">
+                    0/@(_tasks.Count) TASKS
+                </MudChip>
+            </div>
+
+            <!-- FREQUENCY FILTER (Display only) -->
+            <div class="frequency-filter-row">
+                <MudChip T="string" Variant="Variant.Filled" Color="Color.Info" Size="Size.Small">ALL</MudChip>
+                <MudChip T="string" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small">DAILY</MudChip>
+                <MudChip T="string" Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small">WEEKLY</MudChip>
+                <MudChip T="string" Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Small">MONTHLY</MudChip>
+            </div>
 
             <MudExpansionPanels MultiExpansion="true" Class="modern-expansion-panels">
                 @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                 {
-                    var itemsInCategory = _tasks.Where(t => t.CategoryId == category.Id).ToList();
-                    @if (!itemsInCategory.Any()) continue;
+                    var itemsInCategory = _tasks.Where(t => t.CategoryId == category.Id).OrderBy(t => t.SortOrder).ToList();
+                    var isEmpty = !itemsInCategory.Any();
+                    var isLocked = isEmpty;
 
-                    <MudExpansionPanel Class="modern-expansion-panel" MaxHeight="340">
+                    <MudExpansionPanel Class="@($"modern-expansion-panel {(isLocked ? "locked" : "active")}")"
+                                       MaxHeight="600"
+                                       IsInitiallyExpanded="@(!isLocked)">
                         <TitleContent>
                             <div class="d-flex align-center py-2">
-                                <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" />
-                                <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
+                                <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" Color="@(isLocked? Color.Default: Color.Primary)" />
+                                <div class="flex-grow-1">
+                                    <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
+                                    @if (isEmpty)
+                                    {
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">(No Tasks - Disabled)</MudText>
+                                    }
+                                    else
+                                    {
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">0/@itemsInCategory.Count Completed</MudText>
+                                    }
+                                </div>
                                 <MudSpacer />
+                                @if (isLocked)
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Style="opacity: 0.5;" Class="mr-2" />
+                                }
                                 <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {category.ColorClass}")">
                                     @itemsInCategory.Count() Tasks
                                 </MudChip>
                             </div>
                         </TitleContent>
                         <ChildContent>
-                            @{
-                                var lastSection = "";
-                                var orderedTasks = itemsInCategory.OrderBy(t => t.SortOrder).ToList();
-                            }
-                            @for (int i = 0; i < orderedTasks.Count; i++)
+                            @if (!isEmpty)
                             {
-                                var task = orderedTasks[i];
-                                var taskNumber = i + 1;
-
-                                if (task.Section != lastSection && !string.IsNullOrEmpty(task.Section))
+                                var lastSection = "";
+                                @for (int i = 0; i < itemsInCategory.Count; i++)
                                 {
-                                    <div class="mt-4 mb-2 px-2">
-                                        <MudText Typo="Typo.subtitle2" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 0.7rem; opacity: 0.6;">
-                                            @task.Section
-                                        </MudText>
-                                        <MudDivider Class="mt-1" Style="opacity: 0.1;" />
-                                    </div>
-                                    lastSection = task.Section;
-                                }
-                                else if (string.IsNullOrEmpty(task.Section))
-                                {
-                                    lastSection = "";
-                                }
+                                    var task = itemsInCategory[i];
+                                    var taskNumber = i + 1;
 
-                                <div class="preview-task-card">
-                                    <div class="preview-task-header">
-                                        <div class="preview-header-content-group">
-                                            <div class="preview-task-name-container">
-                                                <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
-                                                <MudCheckBox T="bool" Color="Color.Primary" Dense="true" Class="pa-0" />
+                                    if (task.Section != lastSection && !string.IsNullOrEmpty(task.Section))
+                                    {
+                                        <div class="mt-4 mb-2 px-2">
+                                            <MudText Typo="Typo.subtitle2" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 0.7rem; opacity: 0.6;">
+                                                @task.Section
+                                            </MudText>
+                                            <MudDivider Class="mt-1" Style="opacity: 0.1;" />
+                                        </div>
+                                        lastSection = task.Section;
+                                    }
+                                    else if (string.IsNullOrEmpty(task.Section))
+                                    {
+                                        lastSection = "";
+                                    }
 
-                                                <div class="d-flex align-center flex-wrap gap-2">
-                                                    @if (task.IsMandatory)
-                                                    {
-                                                        <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
-                                                    }
-                                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
-                                                    <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                        @task.TaskName
-                                                    </MudText>
+                                    <div class="preview-task-card">
+                                        <div class="preview-task-header">
+                                            <div class="preview-header-content-group">
+                                                <div class="preview-task-name-container">
+                                                    <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
+                                                    <MudCheckBox T="bool" Color="Color.Primary" Dense="true" Class="pa-0" Disabled="true" />
+
+                                                    <div class="d-flex align-center flex-wrap gap-2">
+                                                        @if (task.IsMandatory)
+                                                        {
+                                                            <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
+                                                        }
+                                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
+                                                        <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
+                                                            @task.TaskName
+                                                        </MudText>
+                                                    </div>
                                                 </div>
+
+                                                @if (!string.IsNullOrEmpty(task.Description))
+                                                {
+                                                    <div class="preview-description-row">
+                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                    </div>
+                                                }
                                             </div>
 
-                                            @if (!string.IsNullOrEmpty(task.Description))
+                                            @if (task.IsPhotoRequired)
                                             {
-                                                <div class="preview-description-row">
-                                                    <MudText Typo="Typo.body1" Style="opacity: 1;">@task.Description</MudText>
-                                                </div>
+                                                <MudButton Variant="Variant.Filled"
+                                                           StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           Class="preview-upload-btn"
+                                                           Style="border-radius: 8px; font-weight: bold;"
+                                                           Disabled="true">
+                                                    CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                </MudButton>
                                             }
                                         </div>
 
-                                        @if (task.IsPhotoRequired)
+                                        @if (task.TaskType == "Manpower")
                                         {
-                                            <MudButton Variant="Variant.Filled"
-                                                       StartIcon="@Icons.Material.Filled.PhotoCamera"
-                                                       Size="Size.Small"
-                                                       Color="Color.Primary"
-                                                       Class="preview-upload-btn"
-                                                       Style="border-radius: 8px; font-weight: bold;">
-                                                CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
-                                            </MudButton>
+                                            <div class="manpower-input-container">
+                                                <div class="d-flex align-center gap-4">
+                                                    <MudText Typo="Typo.body2">Expected: <b>@task.QuantityExpected</b></MudText>
+                                                    <MudNumericField T="int?"
+                                                                     Label="Actual"
+                                                                     Variant="Variant.Outlined"
+                                                                     Margin="Margin.Dense"
+                                                                     Class="manpower-input"
+                                                                     Disabled="true" />
+                                                </div>
+                                            </div>
+                                        }
+
+                                        @if (task.IsRemarksRequired)
+                                        {
+                                            <div class="preview-remarks-container">
+                                                <MudTextField T="string"
+                                                              Label="Remarks"
+                                                              Variant="Variant.Outlined"
+                                                              Margin="Margin.Dense"
+                                                              Dense="true"
+                                                              Placeholder="Enter remarks here..."
+                                                              Class="rounded-lg"
+                                                              Disabled="true" />
+                                            </div>
                                         }
                                     </div>
-
-                                    @if (task.IsRemarksRequired)
-                                    {
-                                        <div class="preview-remarks-container">
-                                            <MudTextField T="string"
-                                                          Label="Remarks"
-                                                          Variant="Variant.Outlined"
-                                                          Margin="Margin.Dense"
-                                                          Dense="true"
-                                                          Placeholder="Enter remarks here..."
-                                                          Class="rounded-lg" />
-                                        </div>
-                                    }
+                                }
+                            }
+                            else
+                            {
+                                <div class="pa-4 text-center">
+                                    <MudText Typo="Typo.body2" Style="opacity: 0.5;">This category will be hidden if it contains no tasks for the selected frequency.</MudText>
                                 </div>
                             }
                         </ChildContent>
@@ -854,6 +1062,7 @@
     // Filter variables
     private string _searchTerm = string.Empty;
     private string _categoryFilter = "All";
+    private string _frequencyFilter = "All";
 
     protected override async Task OnInitializedAsync()
     {
@@ -994,9 +1203,14 @@
             );
         }
 
-        if (int.TryParse(_categoryFilter, out int categoryId))
+        if (_categoryFilter != "All")
         {
-            query = query.Where(t => t.CategoryId == categoryId);
+            query = query.Where(t => t.CategoryId.ToString() == _categoryFilter);
+        }
+
+        if (_frequencyFilter != "All")
+        {
+            query = query.Where(t => t.Frequency == _frequencyFilter);
         }
 
         // Always create a new list reference to trigger MudDropContainer refresh

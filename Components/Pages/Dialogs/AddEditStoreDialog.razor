@@ -5,6 +5,8 @@
 @inject ISnackbar Snackbar
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject IJSRuntime JSRuntime
+
 @implements IDisposable
 
 <style>
@@ -100,12 +102,27 @@
                 <MudItem xs="12" sm="6">
                     <MudTextField @bind-Value="Store.ContactEmail" Label="Email Address" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
+                <MudItem xs="12" sm="12" Class="d-flex align-center">
+                    <MudTooltip Text="Get Current Location">
+                        <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
+                                       OnClick="FetchGPSLocation"
+                                       Disabled="_isFetchingLocation"
+                                       Size="Size.Small"
+                                       Style="@GetCancelButtonStyle()" />
+                                       Fetch Location
+                    </MudTooltip>
+                    @if (_isFetchingLocation)
+                    {
+                        <MudProgressCircular Style="@GetCancelButtonStyle()" Size="Size.Small" Indeterminate="true" Class="ml-2" />
+                    }
+                </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="Store.GPSLatitude" Label="GPS Latitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="Store.GPSLongitude" Label="GPS Longitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />
                 </MudItem>
+
             </MudGrid>
         </MudForm>
     </DialogContent>
@@ -123,6 +140,36 @@
     private bool success;
     private MudForm form = default!;
     private bool _isEdit;
+    private bool _isFetchingLocation;
+
+    private async Task FetchGPSLocation()
+    {
+        _isFetchingLocation = true;
+        StateHasChanged();
+        try
+        {
+            var location = await JSRuntime.InvokeAsync<LocationCoords>("cameraInterop.getCurrentLocation");
+            Store.GPSLatitude = location.Latitude;
+            Store.GPSLongitude = location.Longitude;
+            Snackbar.Add("Location captured successfully!", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Could not get location: {ex.Message}", Severity.Warning);
+        }
+        finally
+        {
+            _isFetchingLocation = false;
+            StateHasChanged();
+        }
+    }
+
+    private class LocationCoords
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
 
     protected override void OnInitialized()
     {
