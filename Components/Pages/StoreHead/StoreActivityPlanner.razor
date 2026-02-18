@@ -774,7 +774,7 @@
 
         foreach (var task in _checklistItems)
         {
-            CheckAndSyncTaskCompletion(task);
+            await CheckAndSyncTaskCompletion(task);
         }
 
         UpdateCompletedCount();
@@ -817,7 +817,7 @@
         }
     }
 
-    private void CheckAndSyncTaskCompletion(ChecklistItem task)
+    private async Task CheckAndSyncTaskCompletion(ChecklistItem task)
     {
         var prog = GetTaskProgress(task.Id);
         bool isNowCompleted = true;
@@ -852,17 +852,51 @@
             if (isNowCompleted)
             {
                 prog.CompletedAt = DateTime.Now;
-                _ = CreateManualActivityLog("TaskCompleted", $"Completed task: {task.TaskName}");
+                var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+                await CreateManualActivityLog("TaskCompleted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
             }
             else
             {
                 prog.CompletedAt = null;
+                var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+                await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // If the entire session was completed, revert it
+                if (_currentSession != null && _currentSession.IsCompleted)
+                {
+                    await RevertSessionCompletion();
+                }
             }
             UpdateCompletedCount();
         }
     }
 
-    private async Task CreateManualActivityLog(string action, string details)
+    private async Task RevertSessionCompletion()
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var session = await db.StoreDailyActivities.FindAsync(_currentSession!.Id);
+            if (session != null && session.IsCompleted)
+            {
+                session.IsCompleted = false;
+                session.CompletedAt = null;
+                await db.SaveChangesAsync();
+
+                _currentSession.IsCompleted = false;
+                _currentSession.CompletedAt = null;
+
+                await CreateManualActivityLog("SessionReverted", "Daily session reverted to in-progress due to task change.");
+                Snackbar.Add("Daily session status reverted to In-Progress.", Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reverting session completion: {ex.Message}");
+        }
+    }
+
+    private async Task CreateManualActivityLog(string action, string details, string? entityType = null, int? entityId = null)
     {
         try
         {
@@ -873,7 +907,9 @@
                 UserId = UserState.UserId,
                 Action = action,
                 Details = details,
-                Timestamp = DateTime.Now
+                Timestamp = DateTime.Now,
+                EntityType = entityType,
+                EntityId = entityId
             };
             db.ActivityLogs.Add(log);
             await db.SaveChangesAsync();
@@ -1056,8 +1092,9 @@
             await db.SaveChangesAsync();
 
             _loadedPhotos.Add(photo);
-            CheckAndSyncTaskCompletion(task);
-            await CreateManualActivityLog("PhotoUploaded", $"Uploaded photo for task: {task.TaskName}");
+            await CheckAndSyncTaskCompletion(task);
+            var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+            await CreateManualActivityLog("PhotoUploaded", taskIdentifier, "TaskPhoto", photo.Id);
             await SaveCurrentProgress(); // Ensure progress status is saved
             await CheckAndAutoProgress();
 
@@ -1082,7 +1119,9 @@
             var task = _checklistItems.FirstOrDefault(t => t.Id == photo.ChecklistItemId);
             if (task != null)
             {
-                CheckAndSyncTaskCompletion(task);
+                var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+                await CreateManualActivityLog("PhotoRemoved", taskIdentifier, "TaskPhoto", photo.Id);
+                await CheckAndSyncTaskCompletion(task);
                 await SaveCurrentProgress(); // Ensure progress status is saved
             }
 
@@ -1134,7 +1173,7 @@
     private async Task OnManpowerChanged(ChecklistItem task, TaskProgress prog)
     {
         await ValidateManpower(task, prog);
-        CheckAndSyncTaskCompletion(task);
+        await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress(); // Ensure progress status is saved
         await CheckAndAutoProgress();
     }
@@ -1142,7 +1181,7 @@
     private async Task OnRemarksChanged(ChecklistItem task)
     {
         await SaveCurrentProgress();
-        CheckAndSyncTaskCompletion(task);
+        await CheckAndSyncTaskCompletion(task);
         await CheckAndAutoProgress();
     }
 
