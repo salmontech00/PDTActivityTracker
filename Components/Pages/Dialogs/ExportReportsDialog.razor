@@ -1,0 +1,207 @@
+﻿@using MudBlazor
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@inject ISnackbar Snackbar
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+
+<style>
+    /* SHARED GLASS DIALOG STYLES */
+    .glass-dialog .mud-button {
+        border: none !important;
+        text-transform: none !important;
+        font-weight: 600;
+    }
+
+    /* --- LIGHT MODE (BLUE GLASS) --- */
+    .glass-dialog.light .mud-input-root,
+    .glass-dialog.light .mud-input-slot,
+    .glass-dialog.light .mud-input-label,
+    .glass-dialog.light .mud-icon-root,
+    .glass-dialog.light .mud-input-adornment {
+        color: #ffffff !important;
+    }
+
+    .glass-dialog.light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.8) !important;
+    }
+
+    .glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #ffffff !important;
+        border-width: 2px !important;
+    }
+
+    .glass-dialog.light .mud-input-slot::placeholder {
+        color: rgba(255, 255, 255, 0.7) !important;
+    }
+
+    /* --- LIGHTEST MODE --- */
+    .glass-dialog.lightest .mud-input-root,
+    .glass-dialog.lightest .mud-input-slot,
+    .glass-dialog.lightest .mud-input-label {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .mud-icon-root {
+        color: #0072cf !important;
+    }
+
+    .glass-dialog.lightest .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 1) !important;
+    }
+
+    .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+    .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
+        border-color: #0072cf !important;
+    }
+</style>
+
+<MudDialog Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">Export Reports</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudPaper Class="@($"glass-panel pa-6 {GetThemeClass()}")" Elevation="0" Style="background: transparent !important;">
+            <MudSelect T="string" @bind-Value="_reportType" Label="Report Type" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4">
+                <MudSelectItem Value="@("All")">All Reports</MudSelectItem>
+                <MudSelectItem Value="@("ByStore")">By Store</MudSelectItem>
+                <MudSelectItem Value="@("ByUser")">By User</MudSelectItem>
+            </MudSelect>
+
+            @if (_reportType == "ByStore")
+            {
+                <MudAutocomplete T="Store"
+                                 Label="Filter Store"
+                                 Value="@(_stores.FirstOrDefault(s => s.Id == _selectedStoreId))"
+                                 ValueChanged="@(s => _selectedStoreId = s?.Id)"
+                                 SearchFunc="@SearchStores"
+                                 ToStringFunc="@(s => s == null ? "Select Store" : $"{s.StoreCode} - {s.StoreName}")"
+                                 ResetValueOnEmptyText="true"
+                                 CoerceText="true"
+                                 CoerceValue="false"
+                                 Clearable="true"
+                                 Placeholder="Enter store code or name..."
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Class="mb-4" />
+            }
+
+            @if (_reportType == "ByUser")
+            {
+                <MudAutocomplete T="User"
+                                 Label="Filter User"
+                                 Value="@(_users.FirstOrDefault(u => u.Id == _selectedUserId))"
+                                 ValueChanged="@(u => _selectedUserId = u?.Id)"
+                                 SearchFunc="@SearchUsers"
+                                 ToStringFunc="@(u => u == null ? "Select User" : u.Fullname)"
+                                 ResetValueOnEmptyText="true"
+                                 CoerceText="true"
+                                 CoerceValue="false"
+                                 Clearable="true"
+                                 Placeholder="Enter user name..."
+                                 Variant="Variant.Outlined"
+                                 Margin="Margin.Dense"
+                                 Class="mb-4" />
+            }
+
+            <MudDateRangePicker Label="Date Range"
+                                @bind-DateRange="_dateRange"
+                                Variant="Variant.Outlined"
+                                Margin="Margin.Dense"
+                                Class="mb-4" />
+
+            <MudSelect T="string" @bind-Value="_exportFormat" Label="Format" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-6">
+                <MudSelectItem Value="@("Excel")">Excel</MudSelectItem>
+                <MudSelectItem Value="@("PDF")">PDF</MudSelectItem>
+            </MudSelect>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="ExportData"
+                       Class="rounded-lg"
+                       Style="@GetButtonStyle()">
+                EXPORT DATA
+            </MudButton>
+        </MudPaper>
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private string _reportType = "All";
+    private string _exportFormat = "Excel";
+    private int? _selectedStoreId;
+    private int? _selectedUserId;
+    private DateRange _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+
+    private List<Store> _stores = new();
+    private List<User> _users = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _stores = await db.Stores.AsNoTracking().OrderBy(s => s.StoreName).ToListAsync();
+        _users = await db.Users.AsNoTracking().OrderBy(u => u.Fullname).ToListAsync();
+    }
+
+    private Task<IEnumerable<Store>> SearchStores(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value)) return Task.FromResult<IEnumerable<Store>>(_stores);
+        return Task.FromResult<IEnumerable<Store>>(_stores.Where(s => s.StoreCode.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+                                 s.StoreName.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private Task<IEnumerable<User>> SearchUsers(string value, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(value)) return Task.FromResult<IEnumerable<User>>(_users);
+        return Task.FromResult<IEnumerable<User>>(_users.Where(u => u.Fullname.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private void ExportData()
+    {
+        Snackbar.Add($"Exporting {_reportType} as {_exportFormat}... (Feature under development)", Severity.Info);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(10px); min-width: 350px; max-width: 500px;";
+
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.4);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetTitleColor()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#ffffff",
+            _ => "#0f172a"
+        };
+    }
+
+    private string GetButtonStyle()
+    {
+        var baseStyle = "text-transform: none; font-weight: 700; height: 48px;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
+            : baseStyle;
+    }
+
+    private string GetThemeClass() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+                                      ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+}

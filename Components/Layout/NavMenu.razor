@@ -51,6 +51,18 @@
     html.theme-dark .nav-section-header-v2 {
         color: #94a3b8;
     }
+
+    @@media (max-width: 960px) {
+        .nav-section-header-v2 {
+            display: none !important;
+        }
+    }
+
+    @@media (max-width: 960px) {
+        .nav-section-header-v2 {
+            display: none !important;
+        }
+    }
 </style>
 
 <MudNavMenu>
@@ -74,7 +86,7 @@
             Store Maps
         </MudNavLink>
         <MudNavLink Href="/store-head/monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Analytics">
-            Monitoring - Own Store
+            Monitoring
         </MudNavLink>
     }
 </MudNavMenu>
