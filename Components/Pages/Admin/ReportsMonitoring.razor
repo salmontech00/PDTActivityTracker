@@ -443,6 +443,42 @@
         font-size: 0.75rem;
         opacity: 0.6;
     }
+
+    /* Activity Log Header Responsive */
+    .activity-log-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    @@media (max-width: 600px) {
+        .activity-log-header .mud-typography-h6 {
+            font-size: 1.1rem !important;
+        }
+
+        .clear-log-btn-text {
+            display: none;
+        }
+
+        .clear-log-btn {
+            min-width: unset !important;
+            padding: 8px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.75rem !important;
+        }
+
+        .clear-filters-button {
+            height: 28px !important;
+            font-size: 0.7rem !important;
+        }
+
+            .clear-filters-button .mud-button-label {
+                line-height: 1 !important;
+            }
+    }
 </style>
 
 <div class="reports-container">
@@ -561,8 +597,8 @@
 
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <MudText Typo="Typo.body2" Style="opacity: 0.8;">
+                            <div class="d-flex justify-space-between align-center px-1">
+                                <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_activityLogsFiltered.Count) of @(_activityLogs.Count) reports
                                 </MudText>
                                 @if (HasActiveReportFilters())
@@ -571,7 +607,8 @@
                                                Color="Color.Secondary"
                                                Size="Size.Small"
                                                StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearReportFilters">
+                                               OnClick="ClearReportFilters"
+                                               Class="clear-filters-button">
                                         Clear Filters
                                     </MudButton>
                                 }
@@ -609,6 +646,7 @@
                             </MudTd>
                             <MudTd DataLabel="Action" Style="text-align: center;">
                                 <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" Title="View Details" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteActivity(context))" Title="Delete Record" />
                             </MudTd>
                         </RowTemplate>
                         <PagerContent>
@@ -654,6 +692,9 @@
                                 <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Text" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(activity))" Class="modern-button">
                                     Details
                                 </MudButton>
+                                <MudButton StartIcon="@Icons.Material.Filled.Delete" Variant="Variant.Text" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteActivity(activity))" Class="modern-button">
+                                    Delete
+                                </MudButton>
                             </div>
                         </MudPaper>
                     }
@@ -673,7 +714,10 @@
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6" md="3">
+                        <MudItem xs="12" sm="6" md="4">
+                            <MudTextField T="string" @bind-Value="_photoSearchTerm" @bind-Value:after="FilterPhotos" Label="Search" Placeholder="Task or user..." Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6" md="4">
                             <MudAutocomplete T="Store"
                                              Label="Store"
                                              Value="@(_stores.FirstOrDefault(s => s.Id == _photoStoreFilter))"
@@ -689,7 +733,7 @@
                                              Margin="Margin.Dense"
                                              Class="rounded-lg" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="3">
+                        <MudItem xs="12" sm="6" md="2">
                             <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="FilterPhotos" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg">
                                 <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
                                 @foreach (var cat in _categories)
@@ -698,7 +742,7 @@
                                 }
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="3">
+                        <MudItem xs="12" sm="6" md="2">
                             <MudDateRangePicker Label="Date Range"
                                                 @bind-DateRange="_photoDateRange"
                                                 @bind-DateRange:after="FilterPhotos"
@@ -706,15 +750,12 @@
                                                 Dense="true"
                                                 Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="3">
-                            <MudTextField T="string" @bind-Value="_photoSearchTerm" @bind-Value:after="FilterPhotos" Label="Search" Placeholder="Task or user..." Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
-                        </MudItem>
                     </MudGrid>
 
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <MudText Typo="Typo.body2" Style="opacity: 0.8;">
+                            <div class="d-flex justify-space-between align-center px-1">
+                                <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_filteredPhotos.Count) of @(_allPhotos.Count) photos
                                 </MudText>
                                 @if (HasPhotoFilters())
@@ -723,7 +764,8 @@
                                                Color="Color.Secondary"
                                                Size="Size.Small"
                                                StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearPhotoFilters">
+                                               OnClick="ClearPhotoFilters"
+                                               Class="clear-filters-button">
                                         Clear Filters
                                     </MudButton>
                                 }
@@ -826,8 +868,16 @@
                 <MudGrid>
                     <MudItem xs="12">
                         <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0" Style="max-height: 500px; overflow-y: auto;">
-                            <div class="pa-4 border-b">
+                            <div class="pa-4 border-b activity-log-header">
                                 <MudText Typo="Typo.h6" Style="font-weight: 700;">System Activity Log</MudText>
+                                <MudButton Variant="Variant.Text"
+                                           Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.DeleteSweep"
+                                           OnClick="ClearActivityLogs"
+                                           Size="Size.Small"
+                                           Class="modern-button clear-log-btn">
+                                    <span class="clear-log-btn-text">CLEAR LOG</span>
+                                </MudButton>
                             </div>
                         @if (_recentActivities.Any())
                             {
@@ -883,7 +933,7 @@
     private int _activeStoresWithDataCount = 0;
 
     // Report Filters
-    private string _reportType = "All";
+
     private int? _selectedStoreId;
     private DateRange? _dateRange;
     private string _exportFormat = "Excel";
@@ -1153,6 +1203,99 @@
         var parameters = new DialogParameters { ["Activity"] = activity };
         var options = new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true, CloseButton = true };
         await DialogService.ShowAsync<ActivityDetailDialog>("Activity Details", parameters, options);
+    }
+
+    private async Task DeleteActivity(StoreDailyActivity activity)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = $"Are you sure you want to delete this report from {activity.Store?.StoreName} on {activity.Date.ToShortDateString()}? This will also delete all related task progress and photos.",
+            ["ButtonText"] = "Delete",
+            ["Color"] = Color.Error
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Deletion", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                using var db = await DbFactory.CreateDbContextAsync();
+
+                // 1. Find all related TaskProgress records
+                var progressRecords = await db.TaskProgresses.Where(p => p.StoreDailyActivityId == activity.Id).ToListAsync();
+
+                // 2. Find all related TaskPhotos (matched by store and date)
+                var startOfDay = activity.Date.Date;
+                var endOfDay = startOfDay.AddDays(1).AddSeconds(-1);
+                var relatedPhotos = await db.TaskPhotos.Where(p => p.StoreId == activity.StoreId && p.UploadedAt >= startOfDay && p.UploadedAt <= endOfDay).ToListAsync();
+
+                // 3. Delete records
+                if (progressRecords.Any()) db.TaskProgresses.RemoveRange(progressRecords);
+                if (relatedPhotos.Any()) db.TaskPhotos.RemoveRange(relatedPhotos);
+
+                var existingActivity = await db.StoreDailyActivities.FindAsync(activity.Id);
+                if (existingActivity != null) db.StoreDailyActivities.Remove(existingActivity);
+
+                await db.SaveChangesAsync();
+
+                Snackbar.Add("Report and related data deleted successfully", Severity.Success);
+                await LoadData(); // Refresh all data and stats
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error deleting record: {ex.Message}", Severity.Error);
+            }
+        }
+    }
+
+    private async Task ClearActivityLogs()
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = _selectedStoreId.HasValue
+                ? $"Are you sure you want to clear the activity log for {_stores.FirstOrDefault(s => s.Id == _selectedStoreId)?.StoreName}? This action cannot be undone."
+                : "Are you sure you want to clear all system activity logs? This action cannot be undone.",
+            ["ButtonText"] = "Clear All",
+            ["Color"] = Color.Error
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Confirm Clear Logs", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            try
+            {
+                using var db = await DbFactory.CreateDbContextAsync();
+
+                var query = db.ActivityLogs.AsQueryable();
+                if (_selectedStoreId.HasValue)
+                {
+                    query = query.Where(a => a.StoreId == _selectedStoreId.Value);
+                }
+
+                var logsToDelete = await query.ToListAsync();
+                if (logsToDelete.Any())
+                {
+                    db.ActivityLogs.RemoveRange(logsToDelete);
+                    await db.SaveChangesAsync();
+                    Snackbar.Add("Activity logs cleared successfully", Severity.Success);
+                    await LoadData();
+                }
+                else
+                {
+                    Snackbar.Add("No logs found to clear", Severity.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error clearing logs: {ex.Message}", Severity.Error);
+            }
+        }
     }
 
     private async Task OpenPhotoDialog(TaskPhoto photo)
