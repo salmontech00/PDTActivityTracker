@@ -1,0 +1,955 @@
+﻿@page "/area-head/map"
+@layout PDTActivityTracker.Components.Layout.MainLayout
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject UserStateService UserState
+@inject IJSRuntime JSRuntime
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@implements IAsyncDisposable
+
+<PageTitle>Store Maps - Area Head</PageTitle>
+
+<style>
+    .store-container {
+        padding: 1rem;
+    }
+
+    /* GLASS CONTAINER */
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        border-width: 1px;
+        border-style: solid;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 2px solid #0072cf !important;
+        }
+
+        .glass-panel.light {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+    /* PAGE HEADER */
+    .page-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 0;
+    }
+
+    .page-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+        .page-title.lightest {
+            color: #0f172a;
+        }
+
+        .page-title.light {
+            color: #ffffff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .page-title.dark {
+            color: #ffffff;
+        }
+
+    /* DASHBOARD WRAPPER */
+    .dashboard-wrapper {
+        position: relative;
+        height: 560px;
+        width: 100%;
+        display: flex;
+        padding: 16px;
+        gap: 16px;
+    }
+
+    /* MAP SECTION */
+    .map-section {
+        flex: 1;
+        position: relative;
+        height: 100%;
+        transition: width 0.3s ease;
+        z-index: 1;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .lightest .map-section, .light .map-section {
+        border: 1px solid rgba(0, 114, 207, 0.2);
+    }
+
+    /* DASHBOARD PANEL (DESKTOP) */
+    .dashboard-panel {
+        width: 0;
+        height: 100%;
+        backdrop-filter: blur(20px);
+        overflow-y: auto;
+        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2;
+        position: relative;
+        border-radius: 12px;
+    }
+
+        .dashboard-panel.open {
+            width: 40%;
+        }
+
+        .dashboard-panel.lightest {
+            background: rgba(255, 255, 255, 0);
+            border: 1px solid rgba(0, 114, 207, 0.1) !important;
+            color: #0f172a;
+        }
+
+        .dashboard-panel.light {
+            background: rgba(255, 255, 255, 0) !important;
+            border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+        }
+
+        .dashboard-panel.dark {
+            background: rgba(15, 23, 42, 0);
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: white;
+        }
+
+    .panel-content {
+        padding: 24px;
+        opacity: 0;
+        transition: opacity 0.2s ease 0.1s;
+        min-width: 400px;
+    }
+
+    .dashboard-panel.open .panel-content {
+        opacity: 1;
+    }
+
+    .lightest .panel-content {
+        color: #0f172a !important;
+    }
+
+        .lightest .panel-content .mud-typography {
+            color: #0f172a !important;
+        }
+
+    .light .panel-content .mud-icon-root, .light .panel-content .mud-typography {
+        color: white !important;
+    }
+
+    .lightest .panel-content .mud-icon-root, .light .panel-content .mud-icon-root {
+        color: #0072cf;
+    }
+
+    /* Ensure status cards show text correctly */
+    .lightest .status-card .mud-typography {
+        color: inherit !important;
+    }
+
+    .light .status-card .mud-typography {
+        color: white !important;
+    }
+
+    /* MAP LEGEND */
+    .map-legend-overlay {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        padding: 4px 12px;
+        border-radius: 12px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        align-items: center;
+        pointer-events: auto;
+    }
+
+        .map-legend-overlay.lightest {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 114, 207, 0.2);
+        }
+
+        .map-legend-overlay.light {
+            background: rgba(0, 114, 207, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .map-legend-overlay.dark {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .legend-text {
+        font-size: 0.65rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        white-space: nowrap;
+    }
+
+    /* STATUS CARDS */
+    .status-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .status-card {
+        padding: 16px;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 140px;
+        transition: transform 0.2s ease;
+    }
+
+        .status-card:hover {
+            transform: translateY(-2px);
+        }
+
+    /* VISIBILITY UTILS */
+    .mobile-panel-card {
+        display: none; /* Hidden on desktop */
+    }
+
+    /* MOBILE PANEL CARD */
+    .mobile-panel-card {
+        margin-top: 16px;
+        overflow: hidden;
+    }
+
+    .mobile-panel-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lightest .mobile-panel-header {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .mobile-panel-content {
+        padding: 16px;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 960px) {
+        .store-container {
+            padding-top: 0px !important;
+        }
+
+        .mobile-panel-card {
+            display: block; /* Visible on mobile */
+        }
+
+        .dashboard-wrapper {
+            height: auto;
+            min-height: auto;
+            flex-direction: column;
+            padding: 8px;
+            gap: 0;
+        }
+
+        .map-section {
+            height: 540px;
+            flex: none;
+            transition: height 0.3s ease;
+        }
+
+            .map-section.shrink-mobile {
+                height: 200px !important;
+            }
+
+        .dashboard-panel {
+            display: none !important;
+        }
+
+        .status-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .page-header-row {
+            flex-direction: column;
+            align-items: stretch;
+            text-align: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 0;
+        }
+
+        .page-title {
+            display: none;
+            font-size: 1.5rem;
+        }
+
+        .map-legend-overlay {
+            top: 6px;
+            right: 6px;
+            padding: 2px 2px;
+            gap: 4px;
+        }
+
+        .legend-text {
+            font-size: 0.5rem;
+        }
+
+        .mobile-panel-content .panel-content {
+            padding: 0;
+            opacity: 1;
+            min-width: 0;
+        }
+
+        .status-card {
+            min-height: 120px;
+        }
+    }
+
+    /* STEPPER TIMELINE STYLES */
+    .stepper-dot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 24px;
+        position: relative;
+    }
+
+    .stepper-dot {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        border: 4px solid white;
+        box-shadow: 0 0 0 4px rgba(226, 232, 240, 0.4);
+        z-index: 2;
+    }
+
+        .stepper-dot.completed {
+            background: #4caf50;
+            box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.4);
+        }
+
+        .stepper-dot.in-progress {
+            background: #0072cf;
+            box-shadow: 0 0 0 4px rgba(0, 114, 207, 0.4);
+        }
+
+    .stepper-line {
+        width: 2px;
+        flex-grow: 1;
+        background: #e2e8f0;
+        margin: 4px 0;
+        min-height: 40px;
+    }
+
+    .lightest .stepper-dot, .light .stepper-dot {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .dark .stepper-dot {
+        border-color: rgba(30, 41, 59, 0.8);
+    }
+
+    /* MAP LOADING OVERLAY */
+    .map-loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        border-radius: 12px;
+        transition: opacity 0.3s ease;
+    }
+
+</style>
+
+<div class="store-container">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Maps - My Assigned Stores</MudText>
+    </div>
+
+    <!-- UNIFIED DASHBOARD LAYOUT -->
+    <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
+        <!-- MAP SECTION -->
+        <div class="@($"map-section {(_isPanelOpen && _selectedStoreId.HasValue ? "shrink-mobile" : "")}")">
+            <div id="map" style="width: 100%; height: 100%;"></div>
+
+            @if (_isFindingLocation)
+            {
+                <div class="map-loading-overlay">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" Class="mb-3" />
+                    <MudText Typo="Typo.h6" Style="color: white; font-weight: 700;">Finding location...</MudText>
+                </div>
+            }
+
+            <!-- Map Legend Overlay -->
+            <div class="@($"map-legend-overlay {GetThemeClass()}")">
+                <div class="legend-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
+                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                    </svg>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Assigned Stores</MudText>
+                </div>
+                <div class="legend-item">
+                    <div style="width: 14px; height: 14px; background: #2196F3; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);"></div>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Location</MudText>
+                </div>
+                <div class="legend-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#9e9e9e" stroke="#fff" stroke-width="1.5" />
+                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                    </svg>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Other Stores</MudText>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT DASHBOARD PANEL (Desktop) -->
+        <div class="@($"dashboard-panel {GetThemeClass()} {(_isPanelOpen ? "open" : "")}")">
+            <div class="panel-content">
+                <!-- HEADER -->
+                <div class="d-flex justify-space-between align-start mb-6">
+                    <div @onclick="() => CenterOnStore(GetSelectedStore())" style="cursor: pointer;">
+                        <div class="d-flex align-center gap-2">
+                            <MudText Typo="Typo.h5" Style="font-weight: 800;">@(GetSelectedStore()?.StoreName ?? "Store")</MudText>
+                            <MudChip T="string" Color="GetStoreStatusColor()" Size="Size.Small" Variant="Variant.Filled">
+                                @GetStoreStatusText()
+                            </MudChip>
+                        </div>
+                        <MudText Typo="Typo.body2" Style="opacity: 0.8;">@(GetSelectedStore()?.StoreCode ?? "---") • @(GetSelectedStore()?.Location ?? "---")</MudText>
+                    </div>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="ClosePanel" Color="Color.Default" />
+                </div>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           StartIcon="@Icons.Material.Filled.Preview"
+                           OnClick="NavigateToWeeklyReport"
+                           Class="rounded-xl mb-6"
+                           Style="@GetButtonStyle()">
+                    VIEW REPORT
+                </MudButton>
+
+                <!-- STATUS CARDS -->
+                <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">TODAY'S PROGRESS</MudText>
+                <div class="status-grid">
+                    <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("success")">
+                        <div>
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
+                                <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                        </div>
+                    </MudPaper>
+
+                    <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("info")">
+                        <div>
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
+                                <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Style="font-weight: 700;">@_completedTasks / @_totalTasksCount</MudText>
+                            <div class="d-flex align-center gap-2 mt-1">
+                                <MudProgressLinear Color="Color.Info" Value="_completionPercentage" Rounded="true" Style="flex-grow: 1;" />
+                                <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)_completionPercentage)%</MudText>
+                            </div>
+                        </div>
+                    </MudPaper>
+                </div>
+
+                <!-- CATEGORY PROGRESS TIMELINE -->
+                <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0"
+                          Style="@GetTimelineCardStyle()">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Live Activity Tracker</MudText>
+
+                    @if (_categoryProgresses.Any())
+                    {
+                        <div class="category-timeline">
+                            @{
+                                bool stopShowing = false;
+                                var listToShow = _categoryProgresses.TakeWhile((cat, index) =>
+                                {
+                                    if (stopShowing) return false;
+                                    if (!cat.IsCompleted) stopShowing = true;
+                                    return true;
+                                }).ToList();
+                            }
+                            @foreach (var cat in listToShow)
+                            {
+                                <div class="timeline-stepper-item mb-6">
+                                    <div class="d-flex align-start gap-4">
+                                        <div class="stepper-dot-container">
+                                            <div class="@($"stepper-dot {(cat.IsCompleted ? "completed" : (cat.CompletedTasks > 0 ? "in-progress" : ""))}")"></div>
+                                            @if (cat != listToShow.Last())
+                                            {
+                                                <div class="stepper-line"></div>
+                                            }
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">
+                                                @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                            </MudText>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Select a store to view timeline...</MudText>
+                    }
+                </MudPaper>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Panel Card (same as Store Head) -->
+    @if (_isPanelOpen && _selectedStoreId.HasValue && GetSelectedStore() != null)
+    {
+        <MudPaper Class="@($"glass-panel mobile-panel-card {GetThemeClass()}")" Elevation="0">
+            <div class="mobile-panel-header">
+                <div @onclick="() => CenterOnStore(GetSelectedStore())" style="cursor: pointer;">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@(GetSelectedStore()?.StoreName ?? "Store")</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@(GetSelectedStore()?.StoreCode ?? "---") • @(GetSelectedStore()?.Location ?? "---")</MudText>
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Close"
+                               Size="Size.Small"
+                               OnClick="ClosePanel"
+                               Color="Color.Default" />
+            </div>
+
+            <div class="mobile-panel-content">
+                <div class="panel-content">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Preview"
+                               OnClick="NavigateToWeeklyReport"
+                               Class="rounded-xl mb-4"
+                               Style="@GetButtonStyle()">
+                        VIEW WEEKLY REPORT
+                    </MudButton>
+
+                    <!-- STATUS CARDS -->
+                    <div class="status-grid">
+                        <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("success")">
+                            <div>
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" Color="Color.Success" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
+                                </div>
+                                <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                            </div>
+                        </MudPaper>
+
+                        <MudPaper Class="@($"status-card glass-panel {GetThemeClass()}")" Elevation="0" Style="@GetCardStyle("info")">
+                            <div>
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.TaskAlt" Size="Size.Small" Color="Color.Info" Class="mud-icon-root" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700; color: #03a9f4;">TASKS</MudText>
+                                </div>
+                                <MudText Typo="Typo.h5" Style="font-weight: 700;">@_completedTasks / @_totalTasksCount</MudText>
+                                <div class="d-flex align-center gap-2 mt-1">
+                                    <MudProgressLinear Color="Color.Info" Value="_completionPercentage" Rounded="true" Style="flex-grow: 1;" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)_completionPercentage)%</MudText>
+                                </div>
+                            </div>
+                        </MudPaper>
+                    </div>
+
+                    <!-- TIMELINE -->
+                    <MudPaper Class="@($"pa-4 mb-4 glass-panel {GetThemeClass()}")" Elevation="0"
+                              Style="@GetTimelineCardStyle()">
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 700;" Class="mb-3">Category Progress</MudText>
+                        @if (_categoryProgresses.Any())
+                        {
+                            <div class="category-timeline">
+                                @{
+                                    bool stopShowingMobile = false;
+                                    var listToShowMobile = _categoryProgresses.TakeWhile((cat, index) =>
+                                    {
+                                        if (stopShowingMobile) return false;
+                                        if (!cat.IsCompleted) stopShowingMobile = true;
+                                        return true;
+                                    }).ToList();
+                                }
+                                @foreach (var cat in listToShowMobile)
+                                {
+                                    <div class="timeline-stepper-item mb-6">
+                                        <div class="d-flex align-start gap-4">
+                                            <div class="stepper-dot-container">
+                                                <div class="@($"stepper-dot {(cat.IsCompleted ? "completed" : (cat.CompletedTasks > 0 ? "in-progress" : ""))}")"></div>
+                                                @if (cat != listToShowMobile.Last())
+                                                {
+                                                    <div class="stepper-line"></div>
+                                                }
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
+                                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">
+                                                    @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                                </MudText>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </MudPaper>
+                </div>
+            </div>
+        </MudPaper>
+    }
+</div>
+
+@code {
+    private bool _isPanelOpen = false;
+    private List<Store> _stores = new();
+    private static AreaHeadMap? _instance;
+    private bool _mapInitialized = false;
+
+    // DASHBOARD DATA
+    private StoreDailyActivity? _selectedStoreActivity;
+    private List<CategoryProgress> _categoryProgresses = new();
+    private double _completionPercentage = 0;
+    private int _completedTasks = 0;
+    private int _totalTasksCount = 0;
+    private DateTime? _derivedCheckInTime;
+    private bool _isFindingLocation = false;
+
+    private class CategoryProgress
+    {
+        public int CategoryId { get; set; }
+        public string Name { get; set; } = "";
+        public int CompletedTasks { get; set; }
+        public int TotalTasks { get; set; }
+        public bool IsCompleted => CompletedTasks >= TotalTasks && TotalTasks > 0;
+    }
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ThemeService.OnThemeChanged += OnThemeChanged;
+        UserState.DashboardRefreshRequested += HandleDashboardChanged;
+        _instance = this;
+    }
+
+    private void OnThemeChanged() => StateHasChanged();
+
+    private void HandleDashboardChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            if (_selectedStoreId.HasValue)
+            {
+                await LoadDashboardData(_selectedStoreId.Value);
+            }
+            await LoadData(); // Refresh all stores for pins
+            await InitializeMap();
+            StateHasChanged();
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+        UserState.DashboardRefreshRequested -= HandleDashboardChanged;
+        _instance = null;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
+            _mapInitialized = false;
+        }
+        catch { }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await UserState.InitializeAsync();
+            await LoadData();
+            await Task.Delay(100);
+            await InitializeMap();
+            StateHasChanged();
+        }
+        else if (!_mapInitialized && _stores.Any())
+        {
+            await Task.Delay(100);
+            await InitializeMap();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _stores = await db.Stores.AsNoTracking().ToListAsync();
+    }
+
+    private async Task InitializeMap()
+    {
+        if (!_stores.Any()) return;
+
+        var mapData = _stores.Select(s => new
+        {
+            id = s.Id,
+            gpsLatitude = s.GPSLatitude,
+            gpsLongitude = s.GPSLongitude,
+            storeName = s.StoreName,
+            storeCode = s.StoreCode,
+            isMyStore = s.AreaHeadId == UserState.UserId // Area Head assigned stores
+        }).ToList();
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
+            await Task.Delay(50);
+            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8, callbackName = "AreaHeadMap_OnStorePinClicked" });
+            _mapInitialized = true;
+            await Task.Delay(200);
+            await JSRuntime.InvokeVoidAsync("eval", "if(window.leafletMap && mapInstance) { mapInstance.invalidateSize(); }");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Map initialization error: {ex.Message}");
+            _mapInitialized = false;
+        }
+    }
+
+    private async Task CenterOnStore(Store? store)
+    {
+        if (store?.GPSLatitude != null && store?.GPSLongitude != null)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", store.GPSLatitude.Value, store.GPSLongitude.Value, 16);
+            }
+            catch { }
+        }
+    }
+
+    private int? _selectedStoreId;
+
+    [JSInvokable("AreaHeadMap_OnStorePinClicked")]
+    public static async Task OnStorePinClicked(int storeId)
+    {
+        if (_instance != null)
+        {
+            _instance._selectedStoreId = storeId;
+            _instance._isPanelOpen = true;
+            await _instance.InvokeAsync(async () =>
+            {
+                await _instance.LoadDashboardData(storeId);
+                await _instance.TriggerMapResize();
+                _instance.StateHasChanged();
+            });
+        }
+    }
+
+    private async Task LoadDashboardData(int storeId)
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        var today = DateTime.Today;
+        List<TaskProgress>? taskProgresses = null;
+
+        // Determine which frequencies apply today
+        bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
+        bool isFirstOfMonth = today.Day == 1;
+
+        _selectedStoreActivity = await db.StoreDailyActivities
+            .AsNoTracking()
+            .OrderBy(a => a.Id)
+            .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Date >= today && s.Date < today.AddDays(1));
+
+        _derivedCheckInTime = null;
+        if (_selectedStoreActivity != null)
+        {
+            var checkInCat = await db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
+            if (checkInCat != null)
+            {
+                var checkInTaskIds = await db.ChecklistItems
+                    .AsNoTracking()
+                    .Where(i => i.CategoryId == checkInCat.Id &&
+                                (i.Frequency == "Daily" ||
+                                 (i.Frequency == "Weekly" && isMonday) ||
+                                 (i.Frequency == "Monthly" && isFirstOfMonth)))
+                    .Select(i => i.Id)
+                    .ToListAsync();
+
+                if (checkInTaskIds.Any())
+                {
+                    var completedCheckInTasks = await db.TaskProgresses
+                        .AsNoTracking()
+                        .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id &&
+                                    checkInTaskIds.Contains(tp.ChecklistItemId) &&
+                                    tp.IsCompleted &&
+                                    tp.CompletedAt.HasValue)
+                        .OrderBy(tp => tp.CompletedAt)
+                        .ToListAsync();
+
+                    if (completedCheckInTasks.Count == checkInTaskIds.Count)
+                    {
+                        _derivedCheckInTime = completedCheckInTasks.Last().CompletedAt;
+                    }
+                    else
+                    {
+                        _derivedCheckInTime = null;
+                    }
+                }
+            }
+
+            taskProgresses = await db.TaskProgresses
+                .AsNoTracking()
+                .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
+                .ToListAsync();
+
+            _completedTasks = taskProgresses.Count(p => p.IsCompleted);
+            _totalTasksCount = await db.ChecklistItems
+                .Where(i => i.Frequency == "Daily" ||
+                            (i.Frequency == "Weekly" && isMonday) ||
+                            (i.Frequency == "Monthly" && isFirstOfMonth))
+                .CountAsync();
+            _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
+        }
+        else
+        {
+            _completionPercentage = 0;
+            _completedTasks = 0;
+            _totalTasksCount = await db.ChecklistItems
+                .Where(i => i.Frequency == "Daily" ||
+                            (i.Frequency == "Weekly" && isMonday) ||
+                            (i.Frequency == "Monthly" && isFirstOfMonth))
+                .CountAsync();
+        }
+
+        var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
+        var checklistItems = await db.ChecklistItems
+            .AsNoTracking()
+            .Where(i => i.Frequency == "Daily" ||
+                        (i.Frequency == "Weekly" && isMonday) ||
+                        (i.Frequency == "Monthly" && isFirstOfMonth))
+            .ToListAsync();
+        var currentProgresses = taskProgresses ?? new List<TaskProgress>();
+
+        _categoryProgresses = categories
+            .Select(c => new CategoryProgress
+            {
+                CategoryId = c.Id,
+                Name = c.Name,
+                TotalTasks = checklistItems.Count(i => i.CategoryId == c.Id),
+                CompletedTasks = currentProgresses.Count(tp =>
+                    checklistItems.Any(i => i.Id == tp.ChecklistItemId && i.CategoryId == c.Id) && tp.IsCompleted)
+            })
+            .Where(c => c.TotalTasks > 0) // Only show categories that have tasks today
+            .ToList();
+
+        StateHasChanged();
+    }
+
+    private Store? GetSelectedStore()
+    {
+        if (!_selectedStoreId.HasValue) return null;
+        return _stores.FirstOrDefault(s => s.Id == _selectedStoreId.Value);
+    }
+
+    private void ClosePanel()
+    {
+        _isPanelOpen = false;
+        _selectedStoreId = null;
+        _ = TriggerMapResize();
+    }
+
+    private async Task TriggerMapResize()
+    {
+        await Task.Delay(350);
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "if(window.leafletMap && mapInstance) { mapInstance.invalidateSize(); }");
+            var selectedStore = GetSelectedStore();
+            if (selectedStore != null) await CenterOnStore(selectedStore);
+        }
+        catch { }
+    }
+
+    private async Task NavigateToWeeklyReport()
+    {
+        if (_selectedStoreId.HasValue)
+        {
+            await UserState.SetSelectedStoreId(_selectedStoreId.Value);
+            NavigationManager.NavigateTo($"/area-head/weekly-report/{_selectedStoreId.Value}");
+        }
+    }
+
+    private string GetThemeClass() => ThemeService.CurrentTheme switch
+    {
+        ThemeMode.Lightest => "lightest",
+        ThemeMode.Light => "light",
+        ThemeMode.Dark => "dark",
+        _ => "lightest"
+    };
+
+    private Color GetStoreStatusColor()
+    {
+        if (_selectedStoreActivity == null) return Color.Default;
+        if (_completionPercentage >= 100) return Color.Success;
+        return Color.Info;
+    }
+
+    private string GetStoreStatusText()
+    {
+        if (_selectedStoreActivity == null) return "Inactive";
+        if (_completionPercentage >= 100) return "Completed";
+        return "In Progress";
+    }
+
+    private string GetLegendTextColor() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff";
+    private string GetCardStyle(string type) => "background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.15);";
+    private string GetTimelineCardStyle() => "background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.15);";
+    private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "background-color: #ffffff !important; color: #0072cf !important;" : "";
+
+    private class LocationCoords { public double Latitude { get; set; } public double Longitude { get; set; } }
+}

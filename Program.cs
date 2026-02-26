@@ -31,7 +31,9 @@ builder.Services.Configure<HubOptions>(options =>
 });
 
 builder.Services.AddScoped<UserStateService>();
+builder.Services.AddSingleton<DashboardRefreshService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<ExportService>();
 
 builder.Services.Configure<LdapSettings>(builder.Configuration.GetSection("LdapSettings"));
 builder.Services.AddScoped<LdapService>();
@@ -263,6 +265,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             BEGIN
                 ALTER TABLE [TaskPhotos] ADD [CaptureTimestamp] datetime2 NULL;
             END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'StoreDailyActivityId' AND Object_ID = Object_ID(N'TaskPhotos'))
+            BEGIN
+                ALTER TABLE [TaskPhotos] ADD [StoreDailyActivityId] int NULL;
+                -- Optional: Add constraint if it doesn't exist
+                IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_TaskPhotos_StoreDailyActivities_StoreDailyActivityId')
+                BEGIN
+                    ALTER TABLE [TaskPhotos] ADD CONSTRAINT [FK_TaskPhotos_StoreDailyActivities_StoreDailyActivityId] 
+                    FOREIGN KEY ([StoreDailyActivityId]) REFERENCES [StoreDailyActivities] ([Id]);
+                END
+            END
         END
 
         -- Create Notifications Table
@@ -327,6 +339,17 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 CONSTRAINT [FK_StoreDailyActivities_Categories_CurrentCategoryId] FOREIGN KEY ([CurrentCategoryId]) REFERENCES [Categories] ([Id]),
                 CONSTRAINT [FK_StoreDailyActivities_Users_StartedById] FOREIGN KEY ([StartedById]) REFERENCES [Users] ([Id])
             );
+        END
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadRemark' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [AreaHeadRemark] nvarchar(max) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadReviewedAt' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [AreaHeadReviewedAt] datetime2 NULL;
+            END
         END
 
         -- Create TaskProgresses Table

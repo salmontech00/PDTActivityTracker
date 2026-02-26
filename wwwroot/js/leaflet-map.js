@@ -133,8 +133,9 @@ window.leafletMap = {
                 // Click Event
                 marker.on('click', function (e) {
                     if (clickAction === 'dashboard') {
-                        // Store Head: Open Dashboard (Centering is handled by Blazor via JSInvokable)
-                        DotNet.invokeMethodAsync('PDTActivityTracker', 'OnStorePinClicked', store.id);
+                        // Use dynamic callback name if provided
+                        var callback = (options && options.callbackName) ? options.callbackName : 'OnStorePinClicked';
+                        DotNet.invokeMethodAsync('PDTActivityTracker', callback, store.id);
                     }
                     // Admin: Default popup behavior (handled by Leaflet auto-open)
                 });

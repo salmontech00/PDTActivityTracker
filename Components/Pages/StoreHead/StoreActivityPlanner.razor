@@ -1075,6 +1075,7 @@
             var photo = new TaskPhoto
             {
                 StoreId = StoreId,
+                StoreDailyActivityId = _currentSession!.Id,
                 ChecklistItemId = task.Id,
                 CategoryId = task.CategoryId,
                 UploadedById = UserState.UserId,
@@ -1180,8 +1181,8 @@
 
     private async Task OnRemarksChanged(ChecklistItem task)
     {
-        await SaveCurrentProgress();
         await CheckAndSyncTaskCompletion(task);
+        await SaveCurrentProgress();
         await CheckAndAutoProgress();
     }
 

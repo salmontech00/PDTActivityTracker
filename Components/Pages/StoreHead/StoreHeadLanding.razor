@@ -5,6 +5,7 @@
 @using PDTActivityTracker.Components.Services
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject UserStateService UserState
+@inject DashboardRefreshService DashboardRefresh
 @inject IJSRuntime JSRuntime
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @inject NavigationManager NavigationManager
@@ -791,15 +792,30 @@
         base.OnInitialized();
         ThemeService.OnThemeChanged += OnThemeChanged;
         UserState.DashboardRefreshRequested += OnDashboardRefreshRequested;
+        DashboardRefresh.OnRefreshRequested += OnGlobalRefreshRequested;
         _instance = this;
+    }
+
+    private void OnGlobalRefreshRequested(int? storeId)
+    {
+        if (storeId == null || storeId == _selectedStoreId || storeId == _myStore?.Id)
+        {
+            OnDashboardRefreshRequested();
+        }
     }
 
     private void OnDashboardRefreshRequested()
     {
-        if (_selectedStoreId.HasValue)
+        InvokeAsync(async () =>
         {
-            InvokeAsync(() => LoadDashboardData(_selectedStoreId.Value));
-        }
+            if (_selectedStoreId.HasValue)
+            {
+                await LoadDashboardData(_selectedStoreId.Value);
+            }
+            await LoadData(); // Refresh store list/status
+            await InitializeMap();
+            StateHasChanged();
+        });
     }
 
     private void OnThemeChanged() => StateHasChanged();
@@ -808,6 +824,7 @@
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= OnDashboardRefreshRequested;
+        DashboardRefresh.OnRefreshRequested -= OnGlobalRefreshRequested;
         _instance = null;
         try
         {
@@ -867,7 +884,7 @@
             await Task.Delay(50);
 
             // Re-enable intelligent centering on reload with zoom control
-            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8 });
+            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8, callbackName = "StoreHeadLanding_OnStorePinClicked" });
             _mapInitialized = true;
 
             // Force map resize after initialization
@@ -926,7 +943,7 @@
 
     private int? _selectedStoreId;
 
-    [JSInvokable("OnStorePinClicked")]
+    [JSInvokable("StoreHeadLanding_OnStorePinClicked")]
     public static void OnStorePinClicked(int storeId)
     {
         if (_instance != null)
@@ -951,6 +968,7 @@
         // 1. Fetch Today's Activity
         _selectedStoreActivity = await db.StoreDailyActivities
             .AsNoTracking()
+            .OrderBy(a => a.Id)
             .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Date >= today && s.Date < today.AddDays(1));
 
         // 1.5 Derive Check-In Time from 'Check In' Category Tasks

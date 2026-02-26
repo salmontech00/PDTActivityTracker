@@ -18,6 +18,15 @@
     }
 };
 
+window.downloadFile = function (fileName, contentType, base64Data) {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = `data:${contentType};base64,${base64Data}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 function applyTheme(theme) {
     document.documentElement.classList.remove('theme-lightest', 'theme-light', 'theme-dark');
     document.documentElement.classList.add(`theme-${theme.toLowerCase()}`);
