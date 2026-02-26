@@ -138,39 +138,106 @@
         border-bottom-color: rgba(255, 255, 255, 0.05);
     }
 
+    /* MOBILE STAT CARDS GRID */
+    .mobile-stats-grid {
+        display: none;
+    }
+
     /* RESPONSIVE */
-    @@media (max-width: 600px) {
+    @@media (max-width: 960px) {
+        /* Mobile tab fixes */
+        .monitoring-tabs .mud-tabs-toolbar {
+            overflow: visible !important;
+        }
+
+        .monitoring-tabs .mud-tabs-toolbar-content {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+            .monitoring-tabs .mud-tabs-toolbar-content::-webkit-scrollbar {
+                display: none;
+            }
+
+        .monitoring-tabs .mud-tab {
+            flex: 0 0 auto !important;
+            min-width: unset !important;
+            max-width: none !important;
+            font-size: 0.60rem !important;
+            padding: 4px 8px !important;
+            white-space: nowrap !important;
+        }
+        /* Hide MudBlazor scroll arrows, use native touch scroll */
+        .monitoring-tabs .mud-tabs-scroll-button {
+            display: none !important;
+        }
+
+        .desktop-view {
+            display: none;
+        }
+
+        .page-title {
+            display: none;
+        }
+
         .page-header-row {
-            flex-direction: column;
-            gap: 12px;
-            align-items: stretch;
-            text-align: center;
+            justify-content: center;
+            margin-top: 0px;
+            margin-bottom: 6px;
         }
 
         .button-group {
             flex-direction: column;
             gap: 8px;
         }
+        /* --- Compact Mobile Stat Cards --- */
+        .desktop-stats {
+            display: none !important;
+        }
+
+        .mobile-stats-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+            .mobile-stats-grid .stat-card {
+                padding: 10px 8px;
+                border-radius: 12px !important;
+            }
+
+                .mobile-stats-grid .stat-card::before {
+                    height: 3px;
+                }
+
+            .mobile-stats-grid .stat-value {
+                font-size: 1.4rem;
+                line-height: 1.1;
+            }
+
+            .mobile-stats-grid .stat-label {
+                font-size: 0.6rem;
+                letter-spacing: 0.5px;
+                margin-top: 4px;
+            }
     }
 </style>
 
 <div class="reports-container">
-    <div class="page-header-row">
+    <div class="page-header-row mb-4">
         <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Area Monitoring</MudText>
         <div class="button-group">
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       StartIcon="@Icons.Material.Filled.FileDownload"
-                       OnClick="OpenExportDialog"
-                       Class="rounded-lg px-6"
-                       Style="@GetButtonStyle()">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Description" OnClick="OpenExportDialog" Class="modern-button">
                 EXPORT DATA
             </MudButton>
         </div>
     </div>
 
-    <!-- MAIN STATS -->
-    <MudGrid Class="mb-6 mt-2">
+    <!-- MAIN STATS (Desktop) -->
+    <MudGrid Class="mb-6 mt-2 desktop-stats">
         <MudItem xs="6" sm="3">
             <MudPaper Class="@($"stat-card glass-panel {GetThemeClass()}")" Elevation="0">
                 <MudText Typo="Typo.h3" Color="Color.Primary" Class="stat-value">@_assignedStores.Count</MudText>
@@ -197,7 +264,27 @@
         </MudItem>
     </MudGrid>
 
-    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="mt-6" Color="Color.Primary">
+    <!-- MAIN STATS (Mobile) -->
+    <div class="mobile-stats-grid">
+        <MudPaper Class="@($"stat-card glass-panel {GetThemeClass()}")" Elevation="0">
+            <MudText Color="Color.Primary" Class="stat-value">@_assignedStores.Count</MudText>
+            <MudText Class="stat-label">Stores</MudText>
+        </MudPaper>
+        <MudPaper Class="@($"stat-card glass-panel {GetThemeClass()}")" Elevation="0">
+            <MudText Color="Color.Success" Class="stat-value">@_completedToday</MudText>
+            <MudText Class="stat-label">Done Today</MudText>
+        </MudPaper>
+        <MudPaper Class="@($"stat-card glass-panel {GetThemeClass()}")" Elevation="0">
+            <MudText Color="Color.Info" Class="stat-value">@_activeHeads</MudText>
+            <MudText Class="stat-label">Active Team</MudText>
+        </MudPaper>
+        <MudPaper Class="@($"stat-card glass-panel {GetThemeClass()}")" Elevation="0">
+            <MudText Color="Color.Secondary" Class="stat-value">@((int)_avgProgress)%</MudText>
+            <MudText Class="stat-label">Avg. Progress</MudText>
+        </MudPaper>
+    </div>
+
+    <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" PanelClass="mt-6" Color="Color.Primary" Class="monitoring-tabs">
         <MudTabPanel Text="Performance & Reports" Icon="@Icons.Material.Outlined.Assessment">
             <MudGrid>
                 @foreach (var store in _assignedStores)

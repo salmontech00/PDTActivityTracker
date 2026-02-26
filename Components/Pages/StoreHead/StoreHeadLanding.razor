@@ -859,7 +859,7 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
         var userId = UserState.UserId;
-        _stores = await db.Stores.AsNoTracking().ToListAsync();
+        _stores = await db.Stores.Include(s => s.AreaHead).AsNoTracking().ToListAsync();
         _myStore = _stores.FirstOrDefault(s => s.StoreHeadId == userId);
     }
 
@@ -874,7 +874,8 @@
             gpsLongitude = s.GPSLongitude,
             storeName = s.StoreName,
             storeCode = s.StoreCode,
-            isMyStore = s.StoreHeadId == UserState.UserId
+            isMyStore = s.StoreHeadId == UserState.UserId,
+            areaHeadName = s.AreaHead?.Fullname ?? "Unassigned"
         }).ToList();
 
         try

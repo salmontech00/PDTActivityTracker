@@ -335,6 +335,35 @@
         }
     }
 
+    @@media (max-width: 375px) {
+        .mud-main-content {
+            padding-bottom: 0px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+        }
+
+        .map-section {
+            height: 320px;
+            flex: none;
+            transition: height 0.3s ease;
+        }
+
+            .map-section.shrink-mobile {
+                height: 155px !important;
+            }
+
+        .map-legend-overlay {
+            top: 2px;
+            right: 2px;
+            padding: 2px 2px;
+            gap: 2px;
+        }
+
+        .legend-text {
+            font-size: 0.47rem;
+        }
+    }
+
     /* STEPPER TIMELINE STYLES */
     .stepper-dot-container {
         display: flex;
@@ -427,10 +456,6 @@
                         <circle cx="12" cy="11" r="2.5" fill="#fff" />
                     </svg>
                     <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Assigned Stores</MudText>
-                </div>
-                <div class="legend-item">
-                    <div style="width: 14px; height: 14px; background: #2196F3; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);"></div>
-                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">My Location</MudText>
                 </div>
                 <div class="legend-item">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -570,7 +595,7 @@
                                OnClick="NavigateToWeeklyReport"
                                Class="rounded-xl mb-4"
                                Style="@GetButtonStyle()">
-                        VIEW WEEKLY REPORT
+                        VIEW REPORT
                     </MudButton>
 
                     <!-- STATUS CARDS -->
@@ -727,7 +752,7 @@
     private async Task LoadData()
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        _stores = await db.Stores.AsNoTracking().ToListAsync();
+        _stores = await db.Stores.Include(s => s.StoreHead).AsNoTracking().ToListAsync();
     }
 
     private async Task InitializeMap()
@@ -741,7 +766,8 @@
             gpsLongitude = s.GPSLongitude,
             storeName = s.StoreName,
             storeCode = s.StoreCode,
-            isMyStore = s.AreaHeadId == UserState.UserId // Area Head assigned stores
+            isMyStore = s.AreaHeadId == UserState.UserId, // Area Head assigned stores
+            storeHeadName = s.StoreHead?.Fullname ?? "Unassigned"
         }).ToList();
 
         try

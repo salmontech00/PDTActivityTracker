@@ -123,6 +123,8 @@ window.leafletMap = {
                              ${isStoreHeadMode ? statusBadge : ''}
                         </div>
                         <div style="font-size: 0.9em; margin-bottom: 5px;"><strong>Code:</strong> ${store.storeCode}</div>
+                        ${isStoreHeadMode && store.storeHeadName ? `<div style="font-size: 0.9em; margin-bottom: 5px;"><strong>Store Head:</strong> ${store.storeHeadName}</div>` : ''}
+                        ${isStoreHeadMode && store.areaHeadName ? `<div style="font-size: 0.9em; margin-bottom: 5px;"><strong>Area Head:</strong> ${store.areaHeadName}</div>` : ''}
                          ${!isStoreHeadMode ? statusBadge : ''}
                         ${(isStoreHeadMode && clickAction === 'dashboard') ? `<div style="font-size: 0.8em; color: #4caf50; margin-top: 5px;">Click to view progress</div>` : ''}
                     </div>

@@ -170,17 +170,51 @@
         }
 
     /* RESPONSIVE */
-    @@media (max-width: 600px) {
+    @@media (max-width: 960px) {
         .page-header-row {
             flex-direction: column;
             gap: 16px;
             align-items: stretch;
             text-align: center;
+            padding: 0;
+            margin-bottom: 0px !important;
+        }
+
+        .page-title {
+            display: block !important;
+            font-size: 1.5rem !important;
+            margin-bottom: 0px !important;
+            padding-top: 0px !important;
+            order: 2;
         }
 
         .button-group {
-            flex-direction: column;
+            flex-wrap: wrap;
+            width: 100%;
             gap: 8px;
+            order: 1;
+        }
+
+            .button-group .modern-button {
+                font-size: 0.60rem !important;
+                padding: 6px 0px !important;
+            }
+                /* First button (Back) takes full width */
+                .button-group .modern-button:first-child {
+                    flex: 0 0 100%;
+                }
+                /* Second button (Issue) and third button (Save) split the second row */
+                .button-group .modern-button:nth-child(2),
+                .button-group .modern-button:nth-child(3) {
+                    flex: 1 1 calc(50% - 4px);
+                }
+    }
+
+    @@media (max-width: 375px) {
+        .mud-main-content {
+            padding-bottom: 0px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
         }
     }
 </style>
