@@ -192,12 +192,48 @@ window.leafletMap = {
         }
     },
 
+    personnelMarkers: {},
+
+    setPersonnelLocation: function (userId, lat, lng, name) {
+        if (!mapInstance) return;
+
+        if (this.personnelMarkers[userId]) {
+            this.personnelMarkers[userId].setLatLng([lat, lng]);
+            this.personnelMarkers[userId].getPopup().setContent(`
+                <div style="font-family: sans-serif;">
+                    <strong style="color: #2196F3;">Live Tracking: ${name}</strong><br/>
+                    <small style="color: #666;">GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                </div>
+            `);
+        } else {
+            var marker = L.circleMarker([lat, lng], {
+                radius: 10,
+                fillColor: "#2196F3",
+                color: "#fff",
+                weight: 3,
+                opacity: 1,
+                fillOpacity: 1,
+                className: 'personnel-marker-pulse'
+            }).addTo(mapInstance);
+
+            marker.bindPopup(`
+                <div style="font-family: sans-serif;">
+                    <strong style="color: #2196F3;">Live Tracking: ${name}</strong><br/>
+                    <small style="color: #666;">GPS: ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+                </div>
+            `);
+
+            this.personnelMarkers[userId] = marker;
+        }
+    },
+
     destroy: function () {
         if (mapInstance) {
             mapInstance.remove();
             mapInstance = null;
             markersLayer = null;
             userLocationMarker = null;
+            this.personnelMarkers = {};
         }
     }
 };

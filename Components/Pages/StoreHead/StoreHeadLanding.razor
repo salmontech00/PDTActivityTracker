@@ -777,6 +777,7 @@
     private int _totalTasksCount = 0;
     private DateTime? _derivedCheckInTime;
     private bool _isFindingLocation = false;
+    private CancellationTokenSource? _locationCts;
 
     private class CategoryProgress
     {
@@ -804,6 +805,51 @@
         }
     }
 
+    private Task StartLocationTracking()
+    {
+        if (_locationCts != null) return Task.CompletedTask;
+        _locationCts = new CancellationTokenSource();
+        var token = _locationCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    var location = await JSRuntime.InvokeAsync<LocationCoords>("cameraInterop.getCurrentLocation");
+                    if (location != null)
+                    {
+                        // Update UI blue dot locally
+                        await InvokeAsync(async () =>
+                        {
+                            try { await JSRuntime.InvokeVoidAsync("leafletMap.setUserLocation", location.Latitude, location.Longitude); } catch { }
+                        });
+
+                        // Broadcast to Area Heads via Service
+                        DashboardRefresh.NotifyLocationUpdate(UserState.UserId, location.Latitude, location.Longitude, UserState.Fullname ?? "Store Head");
+
+                        // Update Database for persistence
+                        using var db = await DbFactory.CreateDbContextAsync();
+                        var user = await db.Users.FindAsync(UserState.UserId);
+                        if (user != null)
+                        {
+                            user.CurrentLatitude = location.Latitude;
+                            user.CurrentLongitude = location.Longitude;
+                            user.LastLocationUpdate = DateTime.Now;
+                            await db.SaveChangesAsync();
+                        }
+                    }
+                }
+                catch { }
+
+                await Task.Delay(30000, token); // Update every 30 seconds
+            }
+        }, token);
+
+        return Task.CompletedTask;
+    }
+
     private void OnDashboardRefreshRequested()
     {
         InvokeAsync(async () =>
@@ -822,6 +868,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        _locationCts?.Cancel();
+        _locationCts?.Dispose();
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= OnDashboardRefreshRequested;
         DashboardRefresh.OnRefreshRequested -= OnGlobalRefreshRequested;
@@ -843,6 +891,9 @@
             // Small delay to ensure DOM is ready
             await Task.Delay(100);
             await InitializeMap();
+
+            // Start Live Location Tracking
+            await StartLocationTracking();
 
             // Initial data is loaded, map will be initialized below
             StateHasChanged();

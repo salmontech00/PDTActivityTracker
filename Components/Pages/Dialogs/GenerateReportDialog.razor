@@ -260,6 +260,9 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
+    [Parameter]
+    public int? PreselectedStoreId { get; set; }
+
     private bool _isGenerating = false;
     private bool _isDownloading = false;
     private bool _reportGenerated = false;
@@ -288,6 +291,11 @@
     {
         await LoadFilterData();
         _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+
+        if (PreselectedStoreId.HasValue)
+        {
+            _storeFilter = PreselectedStoreId.Value;
+        }
     }
 
     private async Task LoadFilterData()

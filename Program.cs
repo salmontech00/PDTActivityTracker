@@ -112,6 +112,21 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             EXEC('UPDATE [Users] SET [Status] = ''Active''');
         END
 
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'CurrentLatitude' AND Object_ID = Object_ID(N'Users'))
+        BEGIN
+            ALTER TABLE [Users] ADD [CurrentLatitude] float NULL;
+        END
+
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'CurrentLongitude' AND Object_ID = Object_ID(N'Users'))
+        BEGIN
+            ALTER TABLE [Users] ADD [CurrentLongitude] float NULL;
+        END
+
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'LastLocationUpdate' AND Object_ID = Object_ID(N'Users'))
+        BEGIN
+            ALTER TABLE [Users] ADD [LastLocationUpdate] datetime2 NULL;
+        END
+
         IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'Area' AND Object_ID = Object_ID(N'Users'))
         BEGIN
             ALTER TABLE [Users] DROP COLUMN [Area];

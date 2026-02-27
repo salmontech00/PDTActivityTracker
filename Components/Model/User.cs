@@ -25,6 +25,10 @@ namespace PDTActivityTracker.Components.Model
         public string? Designation { get; set; }
         public string? Status { get; set; } = "Active";
 
+        public double? CurrentLatitude { get; set; }
+        public double? CurrentLongitude { get; set; }
+        public DateTime? LastLocationUpdate { get; set; }
+
         public byte[]? ImageData { get; set; }
         public string? ImageMimeType { get; set; }
     }

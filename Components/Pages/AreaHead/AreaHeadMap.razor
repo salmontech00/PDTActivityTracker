@@ -5,6 +5,7 @@
 @using PDTActivityTracker.Components.Services
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject UserStateService UserState
+@inject DashboardRefreshService DashboardRefresh
 @inject IJSRuntime JSRuntime
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @inject NavigationManager NavigationManager
@@ -464,6 +465,10 @@
                     </svg>
                     <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Other Stores</MudText>
                 </div>
+                <div class="legend-item">
+                    <div style="width: 14px; height: 14px; background: #2196F3; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,0.1);"></div>
+                    <MudText Class="legend-text" Style="@($"color: {GetLegendTextColor()}")">Store Heads</MudText>
+                </div>
             </div>
         </div>
 
@@ -595,7 +600,7 @@
                                OnClick="NavigateToWeeklyReport"
                                Class="rounded-xl mb-4"
                                Style="@GetButtonStyle()">
-                        VIEW REPORT
+                        VIEW WEEKLY REPORT
                     </MudButton>
 
                     <!-- STATUS CARDS -->
@@ -700,7 +705,24 @@
         base.OnInitialized();
         ThemeService.OnThemeChanged += OnThemeChanged;
         UserState.DashboardRefreshRequested += HandleDashboardChanged;
+        DashboardRefresh.OnLocationUpdated += HandleLocationUpdate;
         _instance = this;
+    }
+
+    private void HandleLocationUpdate(int userId, double lat, double lng, string name)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            // Verify if this store head is assigned to one of our stores
+            if (_stores.Any(s => s.StoreHeadId == userId && s.AreaHeadId == UserState.UserId))
+            {
+                try
+                {
+                    await JSRuntime.InvokeVoidAsync("leafletMap.setPersonnelLocation", userId, lat, lng, name);
+                }
+                catch { }
+            }
+        });
     }
 
     private void OnThemeChanged() => StateHasChanged();
@@ -723,6 +745,7 @@
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= HandleDashboardChanged;
+        DashboardRefresh.OnLocationUpdated -= HandleLocationUpdate;
         _instance = null;
         try
         {
