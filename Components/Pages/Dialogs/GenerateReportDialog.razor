@@ -8,6 +8,8 @@
 @inject IDbContextFactory<AppDbContext> DbFactory
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @inject IJSRuntime JSRuntime
+@inject ExportService ExportService
+@inject UserStateService UserState
 
 <style>
     /* SHARED GLASS DIALOG STYLES */
@@ -258,6 +260,9 @@
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
 
+    [Parameter]
+    public int? PreselectedStoreId { get; set; }
+
     private bool _isGenerating = false;
     private bool _isDownloading = false;
     private bool _reportGenerated = false;
@@ -286,12 +291,24 @@
     {
         await LoadFilterData();
         _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+
+        if (PreselectedStoreId.HasValue)
+        {
+            _storeFilter = PreselectedStoreId.Value;
+        }
     }
 
     private async Task LoadFilterData()
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        _stores = await db.Stores.AsNoTracking().OrderBy(s => s.StoreName).ToListAsync();
+
+        var storeQuery = db.Stores.AsNoTracking();
+        if (UserState.Role == "Area Head")
+        {
+            storeQuery = storeQuery.Where(s => s.AreaHeadId == UserState.UserId);
+        }
+
+        _stores = await storeQuery.OrderBy(s => s.StoreName).ToListAsync();
         _users = await db.Users.AsNoTracking().OrderBy(u => u.Fullname).ToListAsync();
         _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
     }
@@ -330,6 +347,12 @@
                 query = query.Where(a => a.UserId == _userFilter.Value);
             }
 
+            if (UserState.Role == "Area Head")
+            {
+                var assignedStoreIds = _stores.Select(s => s.Id).ToList();
+                query = query.Where(a => assignedStoreIds.Contains(a.StoreId ?? 0));
+            }
+
             _reportData = await query.OrderByDescending(a => a.Timestamp).ToListAsync();
 
             // Calculate summary
@@ -365,13 +388,9 @@
             {
                 await ExportToExcel();
             }
-            else if (_exportFormat == "CSV")
+            else if (_exportFormat == "PDF")
             {
-                await ExportToCsv();
-            }
-            else
-            {
-                Snackbar.Add("PDF export coming soon!", Severity.Info);
+                await ExportToPdf();
             }
         }
         catch (Exception ex)
@@ -426,6 +445,25 @@
 
         await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", base64);
         Snackbar.Add("Excel file downloaded successfully!", Severity.Success);
+    }
+
+    private async Task ExportToPdf()
+    {
+        // For GenerateReportDialog, the data is from ActivityLogs, which is what ExportService expects
+        var fileBytes = await ExportService.ExportReportsToPdfAsync(_reportData.Select(a => new StoreDailyActivity
+        {
+            Date = a.Timestamp,
+            Store = a.Store,
+            StartedBy = a.User,
+            IsCompleted = a.Action == "TaskCompleted", // Rough mapping for this log-based report
+            CompletedAt = a.Timestamp
+        }).ToList());
+
+        var base64 = Convert.ToBase64String(fileBytes);
+        var fileName = $"{_reportType}_Report_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/pdf", base64);
+        Snackbar.Add("PDF file downloaded successfully!", Severity.Success);
     }
 
     private async Task ExportToCsv()

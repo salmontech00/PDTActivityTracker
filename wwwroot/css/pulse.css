@@ -27,6 +27,22 @@
     }
 }
 
+.personnel-marker-pulse {
+    animation: personnel-ripple 2s infinite;
+}
+
+@keyframes personnel-ripple {
+    0% {
+        stroke-width: 3;
+        stroke-opacity: 1;
+    }
+
+    100% {
+        stroke-width: 20;
+        stroke-opacity: 0;
+    }
+}
+
 @media (max-width: 375px) {
     .glass-dialog {
         margin-left: 12px !important;

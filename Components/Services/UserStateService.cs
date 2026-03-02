@@ -2,9 +2,10 @@
 
 namespace PDTActivityTracker.Components.Services
 {
-    public class UserStateService(ISessionStorageService sessionStorage)
+    public class UserStateService(ISessionStorageService sessionStorage, DashboardRefreshService dashboardRefreshService)
     {
         private readonly ISessionStorageService _sessionStorage = sessionStorage;
+        private readonly DashboardRefreshService _dashboardRefreshService = dashboardRefreshService;
 
         public bool IsAuthenticated { get; private set; } = false;
         public string? Username { get; private set; }
@@ -15,7 +16,11 @@ namespace PDTActivityTracker.Components.Services
 
 
         public event Action? DashboardRefreshRequested;
-        public void NotifyDashboardRefresh() => DashboardRefreshRequested?.Invoke();
+        public void NotifyDashboardRefresh()
+        {
+            DashboardRefreshRequested?.Invoke();
+            _dashboardRefreshService.NotifyRefresh(SelectedStoreId);
+        }
 
         public async Task InitializeAsync()
         {

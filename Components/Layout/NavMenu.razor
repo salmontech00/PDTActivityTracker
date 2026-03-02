@@ -89,6 +89,16 @@
             Monitoring
         </MudNavLink>
     }
+
+    @if (UserState.Role == "Area Head")
+    {
+        <MudNavLink Href="/area-head/map" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Map">
+            Store Maps
+        </MudNavLink>
+        <MudNavLink Href="/area-head/monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Assessment">
+            Monitoring
+        </MudNavLink>
+    }
 </MudNavMenu>
 
 @code {

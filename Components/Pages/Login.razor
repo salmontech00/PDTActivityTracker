@@ -551,6 +551,10 @@
                 {
                     NavigationManager.NavigateTo("/store-head/map", forceLoad: true);
                 }
+                else if (user.Role == "Area Head")
+                {
+                    NavigationManager.NavigateTo("/area-head/map", forceLoad: true);
+                }
                 else
                 {
                     NavigationManager.NavigateTo("/", forceLoad: true);

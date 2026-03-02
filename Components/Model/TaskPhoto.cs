@@ -24,6 +24,10 @@ namespace PDTActivityTracker.Components.Model
         [ForeignKey("CategoryId")]
         public Category? Category { get; set; }
 
+        public int? StoreDailyActivityId { get; set; }
+        [ForeignKey("StoreDailyActivityId")]
+        public StoreDailyActivity? StoreDailyActivity { get; set; }
+
         public string? Description { get; set; }
 
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
