@@ -1,0 +1,246 @@
+﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@using Microsoft.EntityFrameworkCore
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+
+<style>
+    .glass-dialog {
+        backdrop-filter: blur(20px);
+        border-radius: 24px !important;
+    }
+
+    .evidence-img {
+        width: 100%;
+        max-height: 400px;
+        object-fit: contain;
+        border-radius: 16px;
+        background: rgba(0,0,0,0.1);
+    }
+
+    .detail-label {
+        font-size: 0.75rem;
+        opacity: 0.6;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .detail-value {
+        font-weight: 600;
+    }
+</style>
+
+<MudDialog Class="@($"rounded-xl pa-4 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <TitleContent>
+        <div class="d-flex align-center gap-3">
+            <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="@GetPriorityColor(_issue.Priority)" />
+            <div>
+                <MudText Typo="Typo.h6" Style="font-weight: 800;">@_issue.Title</MudText>
+                <MudText Typo="Typo.caption" Style="opacity: 0.7;">Reported on @_issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt")</MudText>
+            </div>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <!-- Basic Info -->
+            <MudItem xs="12" sm="6">
+                <div class="d-flex flex-column">
+                    <span class="detail-label">Status</span>
+                    <MudChip T="string" Color="@GetStatusColor(_issue.Status)" Size="Size.Small" Variant="Variant.Filled">@_issue.Status</MudChip>
+                </div>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <div class="d-flex flex-column">
+                    <span class="detail-label">Priority</span>
+                    <MudChip T="string" Color="@GetPriorityColor(_issue.Priority)" Size="Size.Small" Variant="Variant.Outlined">@_issue.Priority</MudChip>
+                </div>
+            </MudItem>
+
+            <!-- Reporter Info -->
+            <MudItem xs="12">
+                <MudPaper Class="pa-3 rounded-lg" Elevation="0" Style="background: rgba(0,0,0,0.05);">
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Color="Color.Primary" Size="Size.Small">@(_issue.ReportedBy?.Fullname?[0].ToString() ?? "S")</MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@(_issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Reported from @(_issue.Store?.StoreName ?? "Store")</MudText>
+                        </div>
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            <!-- Description -->
+            <MudItem xs="12">
+                <span class="detail-label">Problem Description</span>
+                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; line-height: 1.6;">@_issue.Description</MudText>
+            </MudItem>
+
+            <!-- Evidence Photo -->
+            @if (_issue.ImageData != null)
+            {
+                <MudItem xs="12">
+                    <span class="detail-label">Evidence Photo</span>
+                    <div class="mt-2">
+                        <img src="@GetImageSource()" class="evidence-img" alt="Issue Evidence" />
+                    </div>
+                </MudItem>
+            }
+
+            <!-- Area Head Feedback Section -->
+            <MudItem xs="12">
+                <MudDivider Class="my-2" Style="opacity: 0.1;" />
+                <span class="detail-label">Area Head Resolution & Feedback</span>
+
+                @* Show reviewer info for everyone when the issue has already been reviewed *@
+                @if (_issue.ReviewedById.HasValue)
+                {
+                    <MudPaper Class="pa-3 rounded-lg mt-2 mb-3" Elevation="0" Style="background: rgba(34, 197, 94, 0.07); border-left: 4px solid #22c55e;">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@Icons.Material.Filled.VerifiedUser" Size="Size.Small" Color="Color.Success" />
+                            <div>
+                                <MudText Typo="Typo.body2" Style="font-weight: 700;">
+                                    Reviewed by @(_issue.ReviewedBy?.Fullname ?? "Area Head")
+                                </MudText>
+                                @if (_issue.ResolvedAt.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.65;">
+                                        on @_issue.ResolvedAt.Value.ToString("MMM dd, yyyy • hh:mm tt")
+                                    </MudText>
+                                }
+                            </div>
+                        </div>
+                    </MudPaper>
+                }
+
+                @if (IsAreaHead)
+                {
+                    <MudTextField T="string"
+                                  @bind-Value="_issue.AreaHeadRemark"
+                                  Label="Resolution Remark"
+                                  Placeholder="Enter resolution details or feedback..."
+                                  Lines="3"
+                                  Variant="Variant.Outlined"
+                                  Class="mt-2" />
+
+                    <div class="d-flex align-center gap-4 mt-4">
+                        <MudSelect T="string" @bind-Value="_issue.Status" Label="Update Status" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="max-width: 200px;">
+                            <MudSelectItem Value="@("Open")">Open</MudSelectItem>
+                            <MudSelectItem Value="@("Resolved")">Resolved</MudSelectItem>
+                        </MudSelect>
+
+                        @if (_issue.ResolvedAt.HasValue)
+                        {
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Resolved on @_issue.ResolvedAt.Value.ToString("MMM dd, yyyy")</MudText>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @if (!string.IsNullOrEmpty(_issue.AreaHeadRemark))
+                    {
+                        <MudPaper Class="pa-4 rounded-lg mt-2" Elevation="0" Style="background: rgba(0, 114, 207, 0.05); border-left: 4px solid #0072cf;">
+                            <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@_issue.AreaHeadRemark</MudText>
+                        </MudPaper>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mt-2 rounded-lg">
+                            This issue is still pending review by the Area Head.
+                        </MudAlert>
+                    }
+                }
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Class="px-6">CLOSE</MudButton>
+        @if (IsAreaHead)
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Class="rounded-lg px-8 ml-2">SAVE CHANGES</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Issue Issue { get; set; } = default!;
+    [Parameter] public bool IsAreaHead { get; set; }
+    [Parameter] public int CurrentUserId { get; set; }
+
+    private Issue _issue = new();
+
+    protected override void OnInitialized()
+    {
+        // Clone for editing
+        _issue = Issue;
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task Save()
+    {
+        if (_issue.Status == "Resolved" && !_issue.ResolvedAt.HasValue)
+        {
+            _issue.ResolvedAt = DateTime.Now;
+        }
+        else if (_issue.Status != "Resolved")
+        {
+            _issue.ResolvedAt = null;
+        }
+
+        _issue.ReviewedById = CurrentUserId;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        db.Issues.Update(_issue);
+        await db.SaveChangesAsync();
+
+        Snackbar.Add("Issue updated successfully.", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private string GetImageSource()
+    {
+        if (_issue.ImageData == null) return "";
+        return $"data:{_issue.ImageMimeType ?? "image/jpeg"};base64,{Convert.ToBase64String(_issue.ImageData)}";
+    }
+
+    private Color GetPriorityColor(string priority) => priority switch
+    {
+        "Critical" => Color.Error,
+        "High" => Color.Warning,
+        "Medium" => Color.Info,
+        "Low" => Color.Default,
+        _ => Color.Default
+    };
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Resolved" => Color.Success,
+        "Open" => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetThemeClass() => (ThemeService?.CurrentTheme ?? ThemeMode.Lightest) switch
+    {
+        ThemeMode.Lightest => "lightest",
+        ThemeMode.Light => "light",
+        ThemeMode.Dark => "dark",
+        _ => "lightest"
+    };
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(20px); min-width: 320px; max-width: 700px; width: 100%;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+}

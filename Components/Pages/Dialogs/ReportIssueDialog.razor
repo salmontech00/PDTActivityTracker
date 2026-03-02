@@ -181,7 +181,7 @@
                    Variant="Variant.Filled"
                    StartIcon="@Icons.Material.Filled.Send"
                    OnClick="Submit"
-                   Disabled="@(string.IsNullOrEmpty(_issue.Description) || _imageData == null)"
+                   Disabled="@(string.IsNullOrEmpty(_issue.Title) || string.IsNullOrEmpty(_issue.Description) || _imageData == null)"
                    Style="@GetButtonStyle()"
                    Class="@($"rounded-lg px-6 ml-2 {(GetThemeClass() == "light" ? "submit-report-btn" : "")}")">
             SUBMIT REPORT

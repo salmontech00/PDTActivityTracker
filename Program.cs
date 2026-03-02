@@ -327,6 +327,30 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 CONSTRAINT [FK_Issues_Users_ReportedById] FOREIGN KEY ([ReportedById]) REFERENCES [Users] ([Id])
             );
         END
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ImageData' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [ImageData] varbinary(max) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ImageMimeType' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [ImageMimeType] nvarchar(max) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadRemark' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [AreaHeadRemark] nvarchar(max) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ReviewedById' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [ReviewedById] int NULL;
+                IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Issues_Users_ReviewedById')
+                BEGIN
+                    ALTER TABLE [Issues] ADD CONSTRAINT [FK_Issues_Users_ReviewedById] 
+                    FOREIGN KEY ([ReviewedById]) REFERENCES [Users] ([Id]);
+                END
+            END
+        END
 
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'QuantityExpected' AND Object_ID = Object_ID(N'ChecklistItems'))
         BEGIN
@@ -361,9 +385,18 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             BEGIN
                 ALTER TABLE [StoreDailyActivities] ADD [AreaHeadRemark] nvarchar(max) NULL;
             END
-            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadReviewedAt' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            if (NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadReviewedAt' AND Object_ID = Object_ID(N'StoreDailyActivities')))
             BEGIN
                 ALTER TABLE [StoreDailyActivities] ADD [AreaHeadReviewedAt] datetime2 NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadId' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [AreaHeadId] int NULL;
+                IF NOT EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_StoreDailyActivities_Users_AreaHeadId')
+                BEGIN
+                    ALTER TABLE [StoreDailyActivities] ADD CONSTRAINT [FK_StoreDailyActivities_Users_AreaHeadId] 
+                    FOREIGN KEY ([AreaHeadId]) REFERENCES [Users] ([Id]);
+                END
             END
         END
 

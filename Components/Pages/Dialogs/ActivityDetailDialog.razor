@@ -4,6 +4,8 @@
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject UserStateService UserState
+@inject ISnackbar Snackbar
 
 <style>
     /* SHARED GLASS DIALOG STYLES */
@@ -119,7 +121,11 @@
                     @Activity?.Date.ToString("MMMM dd, yyyy") - @(Activity?.StartedBy?.Fullname ?? "---")
                 </MudText>
             </div>
-            <div class="filter-wrapper">
+            <div class="filter-wrapper d-flex align-center gap-2">
+                @if (Activity?.AreaHeadReviewedAt.HasValue == true)
+                {
+                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Icon="@Icons.Material.Filled.Verified" Class="mr-2">REVIEWED</MudChip>
+                }
                 <MudSelect T="string" @bind-Value="_frequencyFilter" Label="Frequency" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="rounded-lg" Style="max-width: 150px;">
                     <MudSelectItem Value="@("All")">All</MudSelectItem>
                     <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
@@ -188,7 +194,6 @@
                     </RowTemplate>
                 </MudTable>
             </div>
-
             <div class="mobile-view">
                 @foreach (var group in _filteredTasks.GroupBy(t => _groupDefinition?.Selector?.Invoke(t) ?? "Other"))
                 {
@@ -218,6 +223,62 @@
                 }
             </div>
         }
+
+        @if (Activity != null)
+        {
+            <MudDivider Class="my-4" Style="opacity: 0.1;" />
+            <div class="pa-4 rounded-lg" style="@GetFeedbackContainerStyle()">
+                <div class="d-flex align-center mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Comment" Size="Size.Small" Class="mr-2" Color="Color.Primary" />
+                    <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Area Head Feedback</MudText>
+                    <MudSpacer />
+                    @if (Activity.AreaHeadReviewedAt.HasValue)
+                    {
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">
+                            Reviewed @(Activity.AreaHead != null ? $"by {Activity.AreaHead.Fullname} " : "")on @Activity.AreaHeadReviewedAt.Value.ToString("MMM dd, yyyy hh:mm tt")
+                        </MudText>
+                    }
+                </div>
+
+                @if (IsAreaHead())
+                {
+                    <MudTextField T="string"
+                                  @bind-Value="_feedbackText"
+                                  Label="Add/Edit Feedback"
+                                  Variant="Variant.Outlined"
+                                  Lines="2"
+                                  Placeholder="Enter your feedback here..."
+                                  Class="mb-2" />
+                    <div class="d-flex justify-end gap-2">
+                        @if (Activity.AreaHeadReviewedAt.HasValue)
+                        {
+                            <MudButton Variant="Variant.Outlined"
+                                       Color="Color.Error"
+                                       Size="Size.Small"
+                                       OnClick="Unapprove"
+                                       StartIcon="@Icons.Material.Filled.Undo"
+                                       Disabled="_isSubmitting">
+                                @(_isSubmitting ? "REVERTING..." : "UNAPPROVE REPORT")
+                            </MudButton>
+                        }
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   OnClick="SubmitFeedback"
+                                   StartIcon="@Icons.Material.Filled.Send"
+                                   Disabled="_isSubmitting">
+                            @(_isSubmitting ? "SUBMITTING..." : (Activity.AreaHeadReviewedAt.HasValue ? "UPDATE FEEDBACK" : "SUBMIT FEEDBACK & APPROVE"))
+                        </MudButton>
+                    </div>
+                }
+                else
+                {
+                    <MudText Typo="Typo.body2" Style="@(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "font-style: italic; opacity: 0.5;" : "")">
+                        @(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "No feedback provided yet." : Activity.AreaHeadRemark)
+                    </MudText>
+                }
+            </div>
+        }
     </DialogContent>
 
     <DialogActions>
@@ -233,6 +294,8 @@
     private List<TaskProgress> _filteredTasks => _frequencyFilter == "All" ? _allTasks : _allTasks.Where(t => t.ChecklistItem?.Frequency == _frequencyFilter).ToList();
     private string _frequencyFilter = "All";
     private bool _isLoading = true;
+    private string? _feedbackText;
+    private bool _isSubmitting = false;
 
     private TableGroupDefinition<TaskProgress> _groupDefinition = new()
     {
@@ -252,6 +315,7 @@
     {
         if (Activity != null)
         {
+            _feedbackText = Activity.AreaHeadRemark;
             await LoadDetails();
         }
         _isLoading = false;
@@ -262,6 +326,19 @@
         if (Activity == null) return;
 
         using var db = await DbFactory.CreateDbContextAsync();
+
+        // Reload activity to get the navigation properties
+        var activity = await db.StoreDailyActivities
+            .Include(a => a.StartedBy)
+            .Include(a => a.AreaHead)
+            .FirstOrDefaultAsync(a => a.Id == Activity.Id);
+
+        if (activity != null)
+        {
+            Activity.AreaHead = activity.AreaHead;
+            Activity.StartedBy = activity.StartedBy;
+        }
+
         _allTasks = await db.TaskProgresses
             .Include(p => p.ChecklistItem)
                 .ThenInclude(c => c!.Category)
@@ -276,10 +353,21 @@
         var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
-            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
+        };
+    }
+
+    private string GetFeedbackContainerStyle()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "background: rgba(0, 114, 207, 0.05); border: 1px solid rgba(0, 114, 207, 0.1);",
+            ThemeMode.Light => "background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.1);",
+            ThemeMode.Dark => "background: rgba(0, 0, 0, 0.2); border: 1px solid rgba(255, 255, 255, 0.05);",
+            _ => "background: #f8fafc;"
         };
     }
 
@@ -294,6 +382,91 @@
         "Monthly" => Color.Secondary,
         _ => Color.Default
     };
+
+    private bool IsAreaHead() => UserState.Role == "Area Head";
+
+    private async Task SubmitFeedback()
+    {
+        if (Activity == null || _isSubmitting) return;
+
+        _isSubmitting = true;
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var activity = await db.StoreDailyActivities.FindAsync(Activity.Id);
+            if (activity != null)
+            {
+                activity.AreaHeadRemark = _feedbackText;
+                activity.AreaHeadId = UserState.UserId;
+                activity.IsCompleted = true; // Finalize on review
+                if (!activity.CompletedAt.HasValue)
+                {
+                    activity.CompletedAt = DateTime.Now;
+                }
+                activity.AreaHeadReviewedAt = DateTime.Now;
+
+                await db.SaveChangesAsync();
+
+                Activity.AreaHeadRemark = _feedbackText;
+                Activity.AreaHeadReviewedAt = activity.AreaHeadReviewedAt;
+                Activity.AreaHeadId = activity.AreaHeadId;
+                Activity.IsCompleted = true;
+
+                // Reload AreaHead name if it has changed or just as a precaution
+                var reviewer = await db.Users.FindAsync(UserState.UserId);
+                if (reviewer != null)
+                {
+                    Activity.AreaHead = reviewer;
+                }
+
+                Snackbar.Add("Feedback submitted and report finalized.", Severity.Success);
+                UserState.NotifyDashboardRefresh();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error submitting feedback: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task Unapprove()
+    {
+        if (Activity == null || _isSubmitting) return;
+
+        _isSubmitting = true;
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var activity = await db.StoreDailyActivities.FindAsync(Activity.Id);
+            if (activity != null)
+            {
+                activity.AreaHeadReviewedAt = null;
+                activity.IsCompleted = false;
+                activity.CompletedAt = null;
+                // Keep the remark as a draft
+                await db.SaveChangesAsync();
+
+                Activity.AreaHeadReviewedAt = null;
+                Activity.IsCompleted = false;
+                Activity.CompletedAt = null;
+
+                Snackbar.Add("Report unapproved. You can now modify and re-submit feedback.", Severity.Info);
+                UserState.NotifyDashboardRefresh();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
 
     private void Close() => MudDialog.Close();
 }
