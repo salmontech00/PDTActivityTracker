@@ -1465,9 +1465,9 @@
         await DialogService.ShowAsync<ActivityDetailDialog>("Activity Details", parameters, options);
     }
 
-    /// <summary>Returns true when deletion should be blocked (record is from today or still active).</summary>
+    /// <summary>Returns true when deletion should be blocked. Only today's active sessions are protected; past incomplete records can be deleted.</summary>
     private bool IsActivityProtected(StoreDailyActivity activity)
-        => activity.Date.Date == DateTime.Today || !activity.IsCompleted;
+        => activity.Date.Date == DateTime.Today;
 
     private async Task DeleteActivity(StoreDailyActivity activity)
     {
