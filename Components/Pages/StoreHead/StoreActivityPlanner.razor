@@ -1146,6 +1146,15 @@
         {
             var (issue, imageData, mimeType) = data;
 
+            if (string.IsNullOrEmpty(issue.Title))
+            {
+                Snackbar.Add("Issue category is required.", Severity.Warning);
+                return;
+            }
+
+            issue.ImageData = imageData;
+            issue.ImageMimeType = mimeType;
+
             using var db = await DbFactory.CreateDbContextAsync();
             db.Issues.Add(issue);
             await db.SaveChangesAsync();

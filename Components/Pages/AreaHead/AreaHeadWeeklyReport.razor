@@ -205,8 +205,9 @@
                 }
                 /* Second button (Issue) and third button (Save) split the second row */
                 .button-group .modern-button:nth-child(2),
-                .button-group .modern-button:nth-child(3) {
-                    flex: 1 1 calc(50% - 4px);
+                .button-group .modern-button:nth-child(3),
+                .button-group .modern-button:nth-child(4) {
+                    flex: 1 1 calc(33% - 6px);
                 }
     }
 
@@ -233,16 +234,28 @@
                        Style="@GetButtonStyle()">
                 BACK
             </MudButton>
-            @if (_viewMode == "Daily")
+            @if (_viewMode == "Daily" && _currentSession != null)
             {
+                @if (_currentSession?.AreaHeadReviewedAt.HasValue == true)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Undo"
+                               OnClick="UnapproveReport"
+                               Class="rounded-lg mr-2"
+                               Style="@GetButtonStyle()">
+                        UNAPPROVE
+                    </MudButton>
+                }
+
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Success"
                            StartIcon="@Icons.Material.Filled.Verified"
                            OnClick="ApproveReport"
                            Class="rounded-lg"
-                           Disabled="@(_currentSession == null || _currentSession.IsCompleted)"
+                           Disabled="@(_currentSession == null)"
                            Style="@GetButtonStyle()">
-                    APPROVE REPORT
+                    @( _currentSession?.AreaHeadReviewedAt.HasValue == true ? "UPDATE FEEDBACK" : "APPROVE REPORT" )
                 </MudButton>
             }
         </div>
@@ -252,14 +265,14 @@
     <div class="d-flex justify-center mb-4">
         <MudPaper Class="@($"pa-4 glass-panel {GetThemeClass()}")" Elevation="0" Style="width: 100%; max-width: 900px;">
             <MudGrid>
-                <MudItem xs="12" sm="4">
+                <MudItem xs="12" sm="3">
                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">STORE</MudText>
                     <MudText Typo="Typo.body1" Style="font-weight: 700;">@_store?.StoreName</MudText>
                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">@_store?.StoreCode • @_store?.Location</MudText>
                 </MudItem>
-                <MudItem xs="12" sm="4" Class="d-flex align-center">
+                <MudItem xs="12" sm="6" Class="d-flex align-center justify-center">
                     <!-- Period Switcher -->
-                    <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary" Class="mt-2 mt-sm-0">
+                    <MudButtonGroup Variant="Variant.Outlined" Color="Color.Primary" Class="mt-2 mt-sm-0" FullWidth="true">
                         <MudButton OnClick='() => SwitchView("Daily")'
                                    Variant="@(_viewMode == "Daily" ? Variant.Filled : Variant.Outlined)"
                                    Color="Color.Primary">Daily</MudButton>
@@ -269,9 +282,12 @@
                         <MudButton OnClick='() => SwitchView("Monthly")'
                                    Variant="@(_viewMode == "Monthly" ? Variant.Filled : Variant.Outlined)"
                                    Color="Color.Primary">Monthly</MudButton>
+                        <MudButton OnClick='() => SwitchView("Issues")'
+                                   Variant="@(_viewMode == "Issues" ? Variant.Filled : Variant.Outlined)"
+                                   Color="Color.Primary">Issues</MudButton>
                     </MudButtonGroup>
                 </MudItem>
-                <MudItem xs="12" sm="4">
+                <MudItem xs="12" sm="3">
                     @if (_viewMode == "Daily")
                     {
                         <MudDatePicker Label="Select Date"
@@ -321,21 +337,23 @@
                             <MudText Typo="Typo.body2" Style="font-weight: 700;">@_dailyCompleted / @_dailyTotal (@((int)GetReportProgress())%)</MudText>
                         </MudItem>
 
-                        @if (_currentSession != null)
+                        @{
+                            var session = _currentSession;
+                        }
+                        @if (session != null)
                         {
                             <MudItem xs="12">
                                 <MudTextField T="string"
-                                              @bind-Value="_currentSession.AreaHeadRemark"
+                                              @bind-Value="session.AreaHeadRemark"
                                               Label="Area Head Remarks / Feedback"
                                               Variant="Variant.Outlined"
                                               Lines="3"
                                               Placeholder="Provide your feedback here before approving..."
-                                              Disabled="@_currentSession.AreaHeadReviewedAt.HasValue"
                                               Class="rounded-lg mt-2" />
-                                @if (_currentSession.AreaHeadReviewedAt.HasValue)
+                                @if (session.AreaHeadReviewedAt.HasValue)
                                 {
                                     <MudText Typo="Typo.caption" Class="mt-1" Style="opacity: 0.6;">
-                                        Reviewed on @_currentSession.AreaHeadReviewedAt.Value.ToString("MMM dd, yyyy hh:mm tt")
+                                        Reviewed on @session.AreaHeadReviewedAt.Value.ToString("MMM dd, yyyy hh:mm tt")
                                     </MudText>
                                 }
                             </MudItem>
@@ -525,6 +543,70 @@
             </div>
         }
     }
+
+    <!-- ISSUES: list of operational issues -->
+    @if (_viewMode == "Issues")
+    {
+        @if (_isLoadingIssues)
+        {
+            <div class="d-flex flex-column align-center justify-center py-16">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-4" />
+                <MudText Typo="Typo.h6">Loading operational issues...</MudText>
+            </div>
+        }
+        else
+        {
+            <div style="max-width: 900px; margin: 0 auto; padding-bottom: 40px;">
+                <MudPaper Class="@($"pa-4 glass-panel {GetThemeClass()} mb-4")" Elevation="0">
+                    <div class="d-flex justify-space-between align-center mb-4">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Operational Issues</MudText>
+                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Total: @_issues.Count</MudText>
+                    </div>
+
+                    @if (!_issues.Any())
+                    {
+                        <div class="d-flex flex-column align-center justify-center py-12" style="opacity: 0.5;">
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircleOutline" Size="Size.Large" Class="mb-2" />
+                            <MudText>No issues reported recently.</MudText>
+                        </div>
+                    }
+                    else
+                    {
+                        <MudList T="string" Clickable="false" DisablePadding="true">
+                            @foreach (var issue in _issues)
+                            {
+                                <MudPaper Class="pa-4 mb-3 rounded-lg" Elevation="0" Style="@GetIssueCardStyle(issue)">
+                                    <div class="d-flex justify-space-between align-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-center gap-2 mb-1">
+                                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.2;">@issue.Title</MudText>
+                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Outlined">@issue.Status</MudChip>
+                                            </div>
+                                            <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap;">@issue.Description</MudText>
+                                            <div class="d-flex align-center gap-2 mt-3" style="opacity: 0.6;">
+                                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                                <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
+                                            </div>
+                                        </div>
+                                        @if (issue.ImageData != null)
+                                        {
+                                            <div class="ml-4" style="cursor: pointer;" @onclick="@(() => OpenIssuePhoto(issue))">
+                                                <img src="@GetIssueImageSource(issue)"
+                                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);"
+                                                     alt="Evidence" />
+                                                <MudText Typo="Typo.caption" Align="Align.Center" Style="display: block; opacity: 0.6;">View Photo</MudText>
+                                            </div>
+                                        }
+                                    </div>
+                                </MudPaper>
+                            }
+                        </MudList>
+                    }
+                </MudPaper>
+            </div>
+        }
+    }
 </div>
 
 @code {
@@ -546,6 +628,8 @@
     private string _viewMode = "Daily";
     private DateTime? _selectedDate = DateTime.Today;
     private List<DayReportRow> _periodRows = new();
+    private List<Issue> _issues = new();
+    private bool _isLoadingIssues = false;
 
     private class DayReportRow
     {
@@ -600,6 +684,7 @@
 
         _currentSession = await db.StoreDailyActivities
             .Include(s => s.CurrentCategory)
+            .Include(s => s.AreaHead)
             .OrderBy(s => s.Id)
             .FirstOrDefaultAsync(s => s.StoreId == StoreId && s.Date >= date && s.Date < date.AddDays(1));
 
@@ -743,6 +828,37 @@
         StateHasChanged();
     }
 
+    // ── ISSUES ─────────────────────────────────────────────────────────────
+    private async Task LoadIssues()
+    {
+        _isLoadingIssues = true;
+        StateHasChanged();
+
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        // Load issues for the current store, possibly filtered by the selected date range
+        // For simplicity, we'll load the last 30 days of issues by default if in Daily,
+        // or the period range if in Weekly/Monthly.
+
+        var query = db.Issues.AsNoTracking()
+            .Include(i => i.ReportedBy)
+            .Where(i => i.StoreId == StoreId);
+
+        if (_viewMode == "Issues")
+        {
+            // Use local Today to avoid timezone discrepancies hiding new reports
+            var today = DateTime.Today;
+            var start = today.AddDays(-30);
+            var end = today.AddDays(1);
+
+            query = query.Where(i => i.ReportedAt >= start && i.ReportedAt < end);
+        }
+
+        _issues = await query.OrderByDescending(i => i.ReportedAt).ToListAsync();
+        _isLoadingIssues = false;
+        StateHasChanged();
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
     private async Task SwitchView(string mode)
     {
@@ -750,6 +866,10 @@
         if (mode == "Daily")
         {
             await LoadDailyData(_selectedDate ?? DateTime.Today);
+        }
+        else if (mode == "Issues")
+        {
+            await LoadIssues();
         }
         else
         {
@@ -816,15 +936,49 @@
         if (session != null)
         {
             session.IsCompleted = true;
-            session.CompletedAt = DateTime.Now;
+            // Only set completed at if it wasn't already set
+            if (!session.CompletedAt.HasValue)
+            {
+                session.CompletedAt = DateTime.Now;
+            }
             session.AreaHeadRemark = _currentSession.AreaHeadRemark;
             session.AreaHeadReviewedAt = DateTime.Now;
+            session.AreaHeadId = UserState.UserId; // Track reviewer
 
             await db.SaveChangesAsync();
             _currentSession.IsCompleted = true;
             _currentSession.AreaHeadReviewedAt = session.AreaHeadReviewedAt;
+            _currentSession.AreaHeadId = session.AreaHeadId;
 
             Snackbar.Add("Report approved and finalized with feedback.", Severity.Success);
+
+            // Reload to get reviewer name if needed
+            await LoadDailyData(_selectedDate ?? DateTime.Today);
+            StateHasChanged();
+        }
+    }
+
+    private async Task UnapproveReport()
+    {
+        if (_currentSession == null) return;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        var session = await db.StoreDailyActivities.FindAsync(_currentSession.Id);
+        if (session != null)
+        {
+            session.AreaHeadReviewedAt = null;
+            session.IsCompleted = false;
+            session.CompletedAt = null;
+            // We keep IsCompleted as true if the store head had completed it,
+            // but for now let's just clear the review status.
+            // If they want to "Unapprove" it means it goes back to "In Progress" for the Area Head review.
+
+            await db.SaveChangesAsync();
+            _currentSession.AreaHeadReviewedAt = null;
+            _currentSession.IsCompleted = false;
+            _currentSession.CompletedAt = null;
+
+            Snackbar.Add("Report unapproved.", Severity.Info);
             StateHasChanged();
         }
     }
@@ -838,7 +992,7 @@
         await DialogService.ShowAsync<PhotoGalleryDialog>("Photo Details", parameters, options);
     }
 
-    private string GetThemeClass() => ThemeService.CurrentTheme switch
+    private string GetThemeClass() => (ThemeService?.CurrentTheme ?? ThemeMode.Lightest) switch
     {
         ThemeMode.Lightest => "lightest",
         ThemeMode.Light => "light",
@@ -866,5 +1020,51 @@
     {
         if (_currentSession == null) return "Inactive";
         return GetReportProgress() >= 100 ? "Completed" : "In Progress";
+    }
+
+    private Color GetPriorityColor(string priority) => priority switch
+    {
+        "Critical" => Color.Error,
+        "High" => Color.Warning,
+        "Medium" => Color.Info,
+        _ => Color.Default
+    };
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Resolved" => Color.Success,
+        "Open" => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetIssueCardStyle(Issue issue)
+    {
+        var isLight = ThemeService.CurrentTheme == ThemeMode.Light || ThemeService.CurrentTheme == ThemeMode.Lightest;
+        var opacity = isLight ? "0.05" : "0.1";
+        var borderColor = issue.Priority == "Critical" ? "rgba(244, 67, 54, 0.3)" : "rgba(255, 255, 255, 0.1)";
+        return $"background: rgba(0, 114, 207, {opacity}); border: 1px solid {borderColor};";
+    }
+
+    private string GetIssueImageSource(Issue issue)
+    {
+        if (issue.ImageData == null) return "";
+        return $"data:{issue.ImageMimeType};base64,{Convert.ToBase64String(issue.ImageData)}";
+    }
+
+    private async Task OpenIssuePhoto(Issue issue)
+    {
+        if (issue.ImageData == null) return;
+
+        var photo = new TaskPhoto
+        {
+            ImageData = issue.ImageData,
+            ImageMimeType = issue.ImageMimeType,
+            Description = $"Evidence for: {issue.Title}",
+            UploadedAt = issue.ReportedAt
+        };
+
+        var parameters = new DialogParameters { ["Photo"] = photo };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        await DialogService.ShowAsync<PhotoGalleryDialog>("Issue Evidence", parameters, options);
     }
 }

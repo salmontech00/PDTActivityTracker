@@ -34,5 +34,10 @@ namespace PDTActivityTracker.Components.Model
 
         public string? AreaHeadRemark { get; set; }
         public DateTime? AreaHeadReviewedAt { get; set; }
+
+        public int? AreaHeadId { get; set; }
+
+        [ForeignKey("AreaHeadId")]
+        public User? AreaHead { get; set; }
     }
 }

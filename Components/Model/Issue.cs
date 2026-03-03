@@ -28,5 +28,12 @@ namespace PDTActivityTracker.Components.Model
         public DateTime ReportedAt { get; set; } = DateTime.UtcNow;
 
         public DateTime? ResolvedAt { get; set; }
+        public byte[]? ImageData { get; set; }
+        public string? ImageMimeType { get; set; }
+
+        public string? AreaHeadRemark { get; set; }
+        public int? ReviewedById { get; set; }
+        [ForeignKey("ReviewedById")]
+        public User? ReviewedBy { get; set; }
     }
 }
