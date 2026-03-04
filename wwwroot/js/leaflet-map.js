@@ -137,7 +137,14 @@ window.leafletMap = {
                     if (clickAction === 'dashboard') {
                         // Use dynamic callback name if provided
                         var callback = (options && options.callbackName) ? options.callbackName : 'OnStorePinClicked';
-                        DotNet.invokeMethodAsync('PDTActivityTracker', callback, store.id);
+
+                        // Use per-instance reference if provided to avoid cross-device/instance interference
+                        if (options && options.dotNetRef) {
+                            options.dotNetRef.invokeMethodAsync(callback, store.id);
+                        } else {
+                            // Fallback to static call
+                            DotNet.invokeMethodAsync('PDTActivityTracker', callback, store.id);
+                        }
                     }
                     // Admin: Default popup behavior (handled by Leaflet auto-open)
                 });

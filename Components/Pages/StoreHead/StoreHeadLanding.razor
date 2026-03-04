@@ -765,7 +765,7 @@
     private bool _isPanelOpen = false;
     private Store? _myStore;
     private List<Store> _stores = new();
-    private static StoreHeadLanding? _instance;
+    private DotNetObjectReference<StoreHeadLanding>? _objRef;
     private bool _mapInitialized = false;
 
     // DASHBOARD DATA
@@ -794,7 +794,6 @@
         ThemeService.OnThemeChanged += OnThemeChanged;
         UserState.DashboardRefreshRequested += OnDashboardRefreshRequested;
         DashboardRefresh.OnRefreshRequested += OnGlobalRefreshRequested;
-        _instance = this;
     }
 
     private void OnGlobalRefreshRequested(int? storeId)
@@ -873,7 +872,7 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= OnDashboardRefreshRequested;
         DashboardRefresh.OnRefreshRequested -= OnGlobalRefreshRequested;
-        _instance = null;
+        _objRef?.Dispose();
         try
         {
             await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
@@ -886,6 +885,7 @@
     {
         if (firstRender)
         {
+            _objRef = DotNetObjectReference.Create(this);
             await UserState.InitializeAsync();
             await LoadData();
             // Small delay to ensure DOM is ready
@@ -936,7 +936,7 @@
             await Task.Delay(50);
 
             // Re-enable intelligent centering on reload with zoom control
-            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8, callbackName = "StoreHeadLanding_OnStorePinClicked" });
+            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8, dotNetRef = _objRef, callbackName = "OnStorePinClicked" });
             _mapInitialized = true;
 
             // Force map resize after initialization
@@ -995,20 +995,20 @@
 
     private int? _selectedStoreId;
 
-    [JSInvokable("StoreHeadLanding_OnStorePinClicked")]
-    public static void OnStorePinClicked(int storeId)
+    [JSInvokable("OnStorePinClicked")]
+    public async Task OnStorePinClicked(int storeId)
     {
-        if (_instance != null)
+        await InvokeAsync(async () =>
         {
-            _instance._selectedStoreId = storeId;
-            _instance._isPanelOpen = true;
-            _instance.StateHasChanged();
+            _selectedStoreId = storeId;
+            _isPanelOpen = true;
+            StateHasChanged();
 
             // Trigger data load
-            _ = _instance.LoadDashboardData(storeId);
+            await LoadDashboardData(storeId);
             // Trigger map resize after layout change
-            _ = _instance.TriggerMapResize();
-        }
+            await TriggerMapResize();
+        });
     }
 
     private async Task LoadDashboardData(int storeId)

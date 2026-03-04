@@ -174,15 +174,18 @@
         top: 20px;
         right: 20px;
         z-index: 1000;
-        padding: 4px 12px;
+        padding: 6px 16px;
         border-radius: 12px;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
         display: flex;
         flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: flex-end;
         gap: 16px;
         align-items: center;
         pointer-events: auto;
+        max-width: calc(100% - 40px);
     }
 
         .map-legend-overlay.lightest {
@@ -317,12 +320,26 @@
         .map-legend-overlay {
             top: 6px;
             right: 6px;
-            padding: 2px 2px;
-            gap: 4px;
+            left: 6px;
+            padding: 2px 8px 2px;
+            gap: 6px;
+            border-radius: 8px;
+            max-width: 100%;
+            flex-wrap: nowrap !important;
+            justify-content: flex-end;
+        }
+
+        .leaflet-control-zoom {
+            display: none !important;
+        }
+
+        .legend-item svg, .legend-item div {
+            width: 14px !important;
+            height: 14px !important;
         }
 
         .legend-text {
-            font-size: 0.5rem;
+            font-size: 0.43rem;
         }
 
         .mobile-panel-content .panel-content {
@@ -354,14 +371,23 @@
             }
 
         .map-legend-overlay {
-            top: 2px;
-            right: 2px;
-            padding: 2px 2px;
-            gap: 2px;
+            top: 4px;
+            right: 4px;
+            left: 4px;
+            padding: 2px 4px 2px;
+            gap: 4px;
+            max-width: 100%;
+            flex-wrap: nowrap !important;
+        }
+
+        .legend-item svg, .legend-item div {
+            width: 14px !important;
+            height: 14px !important;
         }
 
         .legend-text {
             font-size: 0.47rem;
+            letter-spacing: 0.2px;
         }
     }
 
@@ -432,7 +458,7 @@
 
 <div class="store-container">
     <div class="page-header-row">
-        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Maps - My Assigned Stores</MudText>
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Maps</MudText>
     </div>
 
     <!-- UNIFIED DASHBOARD LAYOUT -->
@@ -679,7 +705,7 @@
 @code {
     private bool _isPanelOpen = false;
     private List<Store> _stores = new();
-    private static AreaHeadMap? _instance;
+    private DotNetObjectReference<AreaHeadMap>? _objRef;
     private bool _mapInitialized = false;
 
     // DASHBOARD DATA
@@ -706,7 +732,6 @@
         ThemeService.OnThemeChanged += OnThemeChanged;
         UserState.DashboardRefreshRequested += HandleDashboardChanged;
         DashboardRefresh.OnLocationUpdated += HandleLocationUpdate;
-        _instance = this;
     }
 
     private void HandleLocationUpdate(int userId, double lat, double lng, string name)
@@ -746,7 +771,7 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= HandleDashboardChanged;
         DashboardRefresh.OnLocationUpdated -= HandleLocationUpdate;
-        _instance = null;
+        _objRef?.Dispose();
         try
         {
             await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
@@ -759,6 +784,7 @@
     {
         if (firstRender)
         {
+            _objRef = DotNetObjectReference.Create(this);
             await UserState.InitializeAsync();
             await LoadData();
             await Task.Delay(100);
@@ -797,7 +823,7 @@
         {
             await JSRuntime.InvokeVoidAsync("leafletMap.destroy");
             await Task.Delay(50);
-            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8, callbackName = "AreaHeadMap_OnStorePinClicked" });
+            await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true, maxZoom = 8, dotNetRef = _objRef, callbackName = "OnStorePinClicked" });
             _mapInitialized = true;
             await Task.Delay(200);
             await JSRuntime.InvokeVoidAsync("eval", "if(window.leafletMap && mapInstance) { mapInstance.invalidateSize(); }");
@@ -823,20 +849,17 @@
 
     private int? _selectedStoreId;
 
-    [JSInvokable("AreaHeadMap_OnStorePinClicked")]
-    public static async Task OnStorePinClicked(int storeId)
+    [JSInvokable("OnStorePinClicked")]
+    public async Task OnStorePinClicked(int storeId)
     {
-        if (_instance != null)
+        _selectedStoreId = storeId;
+        _isPanelOpen = true;
+        await InvokeAsync(async () =>
         {
-            _instance._selectedStoreId = storeId;
-            _instance._isPanelOpen = true;
-            await _instance.InvokeAsync(async () =>
-            {
-                await _instance.LoadDashboardData(storeId);
-                await _instance.TriggerMapResize();
-                _instance.StateHasChanged();
-            });
-        }
+            await LoadDashboardData(storeId);
+            await TriggerMapResize();
+            StateHasChanged();
+        });
     }
 
     private async Task LoadDashboardData(int storeId)
