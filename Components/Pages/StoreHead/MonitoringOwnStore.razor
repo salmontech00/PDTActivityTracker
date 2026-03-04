@@ -1058,6 +1058,9 @@
             .Include(p => p.Store)
             .Include(p => p.UploadedBy)
             .Include(p => p.ChecklistItem)
+                .ThenInclude(c => c!.Category)
+            .Include(p => p.StoreDailyActivity)
+                .ThenInclude(s => s!.StartedBy)
             .Where(p => p.StoreId == _myStore.Id)
             .OrderByDescending(p => p.UploadedAt)
             .ToListAsync();

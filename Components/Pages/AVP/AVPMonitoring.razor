@@ -28,20 +28,20 @@
         overflow: hidden;
     }
 
-        .glass-panel.lightest {
-            background-color: rgba(255, 255, 255, 0.15) !important;
-            border: 1px solid #0072cf !important;
-        }
+    .glass-panel.lightest {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid #0072cf !important;
+    }
 
-        .glass-panel.light {
-            background-color: rgba(255, 255, 255, 0.15) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        }
+    .glass-panel.light {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
 
-        .glass-panel.dark {
-            background-color: rgba(30, 41, 59, 0.15) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-        }
+    .glass-panel.dark {
+        background-color: rgba(30, 41, 59, 0.15) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
 
     /* PAGE HEADER */
     .page-header-row {
@@ -64,17 +64,17 @@
         letter-spacing: -0.5px;
     }
 
-        .page-title.lightest {
-            color: #0f172a;
-        }
+    .page-title.lightest {
+        color: #0f172a;
+    }
 
-        .page-title.light {
-            color: #ffffff;
-        }
+    .page-title.light {
+        color: #ffffff;
+    }
 
-        .page-title.dark {
-            color: #ffffff;
-        }
+    .page-title.dark {
+        color: #ffffff;
+    }
 
     /* STAT CARDS */
     .stat-card {
@@ -85,15 +85,15 @@
         border-radius: 20px !important;
     }
 
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #0072cf, #00c6ff);
-        }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #0072cf, #00c6ff);
+    }
 
     .stat-value {
         font-size: 2.2rem;
@@ -118,9 +118,9 @@
         background: rgba(0, 114, 207, 0.1);
     }
 
-        .mud-table-head.lightest {
-            background: rgba(0, 114, 207, 0.05);
-        }
+    .mud-table-head.lightest {
+        background: rgba(0, 114, 207, 0.05);
+    }
 
     .mud-table-cell {
         border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -163,16 +163,16 @@
         transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-        .photo-item:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
+    .photo-item:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
 
-        .photo-item img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+    .photo-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
 
     .photo-overlay {
         position: absolute;
@@ -403,13 +403,13 @@
             </MudPaper>
         </div>
 
-        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true"
+        <MudTabs Elevation="0" Rounded="true" ApplyEffectsToContainer="true" 
                  Class="@($"glass-panel monitoring-tabs {GetThemeClass()}")" PanelClass="pa-4">
-
+            
             <MudTabPanel Text="Activity Reports" Icon="@Icons.Material.Filled.Assignment">
                 <MudPaper Class="@($"glass-panel filter-panel pa-4 mb-4 {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
-                    <MudButton Variant="Variant.Outlined"
-                               StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                    <MudButton Variant="Variant.Outlined" 
+                               StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)" 
                                FullWidth="true"
                                OnClick="@(() => _showFilters = !_showFilters)"
                                Class="filter-toggle-button">
@@ -418,17 +418,17 @@
 
                     <MudGrid Spacing="2">
                         <MudItem xs="12" sm="6">
-                            <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange"
-                                                @bind-DateRange:after="FilterData"
-                                                Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange" 
+                                               @bind-DateRange:after="FilterData"
+                                               Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
-                            <MudAutocomplete T="Store" Label="Search Store"
-                                             Value="@_selectedStore" ValueChanged="OnStoreSelected"
-                                             SearchFunc="@SearchStores"
-                                             ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
-                                             Variant="Variant.Outlined" Margin="Margin.Dense"
-                                             Clearable="true" Placeholder="Store Name or Code" />
+                            <MudAutocomplete T="Store" Label="Search Store" 
+                                           Value="@_selectedStore" ValueChanged="OnStoreSelected"
+                                           SearchFunc="@SearchStores" 
+                                           ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
+                                           Variant="Variant.Outlined" Margin="Margin.Dense"
+                                           Clearable="true" Placeholder="Store Name or Code" />
                         </MudItem>
                     </MudGrid>
                 </MudPaper>
@@ -498,8 +498,8 @@
 
             <MudTabPanel Text="Photo Gallery" Icon="@Icons.Material.Filled.PhotoLibrary">
                 <MudPaper Class="@($"glass-panel filter-panel pa-4 mb-4 {GetThemeClass()} {(_showPhotoFilters ? "filters-visible" : "")}")" Elevation="0">
-                    <MudButton Variant="Variant.Outlined"
-                               StartIcon="@(_showPhotoFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                    <MudButton Variant="Variant.Outlined" 
+                               StartIcon="@(_showPhotoFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)" 
                                FullWidth="true"
                                OnClick="@(() => _showPhotoFilters = !_showPhotoFilters)"
                                Class="filter-toggle-button">
@@ -508,22 +508,22 @@
 
                     <MudGrid Spacing="2">
                         <MudItem xs="12" sm="4">
-                            <MudTextField T="string" @bind-Value="_photoSearchTerm" @bind-Value:after="FilterPhotos"
-                                          Label="Search Tasks" Variant="Variant.Outlined" Margin="Margin.Dense"
-                                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
+                            <MudTextField T="string" @bind-Value="_photoSearchTerm" @bind-Value:after="FilterPhotos" 
+                                           Label="Search Tasks" Variant="Variant.Outlined" Margin="Margin.Dense" 
+                                           Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudAutocomplete T="Store" Label="Store"
-                                             Value="@_photoStore" ValueChanged="OnPhotoStoreSelected"
-                                             SearchFunc="@SearchStores"
-                                             ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
-                                             Variant="Variant.Outlined" Margin="Margin.Dense"
-                                             Clearable="true" />
+                            <MudAutocomplete T="Store" Label="Store" 
+                                           Value="@_photoStore" ValueChanged="OnPhotoStoreSelected"
+                                           SearchFunc="@SearchStores" 
+                                           ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
+                                           Variant="Variant.Outlined" Margin="Margin.Dense"
+                                           Clearable="true" />
                         </MudItem>
                         <MudItem xs="12" sm="4">
-                            <MudDateRangePicker Label="Date Range" @bind-DateRange="_photoDateRange"
-                                                @bind-DateRange:after="FilterPhotos"
-                                                Variant="Variant.Outlined" Margin="Margin.Dense" />
+                            <MudDateRangePicker Label="Date Range" @bind-DateRange="_photoDateRange" 
+                                               @bind-DateRange:after="FilterPhotos"
+                                               Variant="Variant.Outlined" Margin="Margin.Dense" />
                         </MudItem>
                     </MudGrid>
                 </MudPaper>
@@ -558,7 +558,7 @@
             <MudTabPanel Text="Store Directory" Icon="@Icons.Material.Filled.Store">
                 <MudTable T="Store" Items="_stores" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" Elevation="0" QuickFilter="@(new Func<Store, bool>(StoreQuickFilter))">
                     <ToolBarContent>
-                        <MudTextField @bind-Value="_storeSearchString" Placeholder="Search Stores..." Adornment="Adornment.Start"
+                        <MudTextField @bind-Value="_storeSearchString" Placeholder="Search Stores..." Adornment="Adornment.Start" 
                                       AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0" />
                     </ToolBarContent>
                     <HeaderContent>
@@ -658,12 +658,12 @@
     private async Task LoadData()
     {
         using var db = await DbFactory.CreateDbContextAsync();
-
+        
         _stores = await db.Stores.AsNoTracking()
             .Include(s => s.AreaHead)
             .Include(s => s.StoreHead)
             .ToListAsync();
-
+        
         _allActivities = await db.StoreDailyActivities.AsNoTracking()
             .Include(a => a.Store!).ThenInclude(s => s!.AreaHead!)
             .Include(a => a.StartedBy!)
@@ -671,8 +671,15 @@
             .ToListAsync();
 
         _allPhotos = await db.TaskPhotos.AsNoTracking()
+            .Include(p => p.Category)
+            .Include(p => p.UploadedBy)
             .Include(p => p.Store)
             .Include(p => p.ChecklistItem)
+                .ThenInclude(c => c!.Category)
+            .Include(p => p.StoreDailyActivity)
+                .ThenInclude(s => s!.Store)
+            .Include(p => p.StoreDailyActivity)
+                .ThenInclude(s => s!.StartedBy)
             .OrderByDescending(p => p.UploadedAt)
             .ToListAsync();
 
@@ -687,7 +694,7 @@
         var areaHeads = await db.Users.AsNoTracking().Where(u => u.Role == "Area Head").ToListAsync();
         var today = DateTime.Today;
         var todayActivities = _allActivities.Where(a => a.Date.Date == today).ToList();
-
+        
         _areaHeadMetrics = new List<AreaHeadMetric>();
         foreach (var ah in areaHeads)
         {
@@ -715,7 +722,7 @@
     private void FilterData()
     {
         _filteredActivities = _allActivities
-            .Where(a => (_dateRange.Start == null || a.Date.Date >= _dateRange.Start.Value.Date) &&
+            .Where(a => (_dateRange.Start == null || a.Date.Date >= _dateRange.Start.Value.Date) && 
                         (_dateRange.End == null || a.Date.Date <= _dateRange.End.Value.Date))
             .ToList();
 
@@ -732,7 +739,7 @@
         if (!string.IsNullOrWhiteSpace(_photoSearchTerm))
         {
             var term = _photoSearchTerm.ToLower();
-            filtered = filtered.Where(p =>
+            filtered = filtered.Where(p => 
                 (p.ChecklistItem != null && p.ChecklistItem.TaskName != null && p.ChecklistItem.TaskName.ToLower().Contains(term)) ||
                 (p.Store != null && p.Store.StoreName.ToLower().Contains(term)));
         }
@@ -752,7 +759,7 @@
     private Task<IEnumerable<Store>> SearchStores(string value, CancellationToken token)
     {
         if (string.IsNullOrEmpty(value)) return Task.FromResult<IEnumerable<Store>>(_stores);
-        return Task.FromResult(_stores.Where(x => x.StoreName.Contains(value, StringComparison.InvariantCultureIgnoreCase) ||
+        return Task.FromResult(_stores.Where(x => x.StoreName.Contains(value, StringComparison.InvariantCultureIgnoreCase) || 
                                  x.StoreCode.Contains(value, StringComparison.InvariantCultureIgnoreCase)));
     }
 
@@ -823,8 +830,8 @@
         public double ComplianceRate { get; set; }
     }
 
-    private string GetHeaderButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Lightest
-        ? "background: #0072cf; color: white;"
+    private string GetHeaderButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Lightest 
+        ? "background: #0072cf; color: white;" 
         : "background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2);";
 
     private async Task ViewDetails(StoreDailyActivity a)

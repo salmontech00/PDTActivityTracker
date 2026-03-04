@@ -123,6 +123,31 @@
         width: 100%;
     }
 
+    .preview-header-content-group {
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        gap: 8px;
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .preview-task-name-container {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding-top: 2px;
+        flex: 0 0 auto;
+    }
+
+    .preview-description-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 4px;
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
     .preview-remarks-container {
         margin-top: 8px;
         padding-left: 32px;
@@ -169,7 +194,51 @@
             transform: translateY(-1px);
         }
 
+    /* BUTTONS */
+    .modern-button {
+        text-transform: none !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+
+    .button-group .modern-button.light {
+        background-color: #ffffff !important;
+        color: #0072cf !important;
+    }
+
     /* RESPONSIVE */
+    @@media (max-width: 600px) {
+        .preview-task-header {
+            flex-wrap: wrap;
+        }
+
+        .preview-header-content-group {
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .preview-task-name-container {
+            width: 100%;
+        }
+
+        .preview-description-row {
+            width: 100%;
+            padding-left: 0;
+            margin-top: 8px;
+            flex: 0 0 100%;
+        }
+
+        .preview-remarks-container {
+            padding-left: 0;
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        .photo-grid {
+            padding-left: 0;
+        }
+    }
+
     @@media (max-width: 960px) {
         .page-header-row {
             flex-direction: column;
@@ -205,9 +274,8 @@
                 }
                 /* Second button (Issue) and third button (Save) split the second row */
                 .button-group .modern-button:nth-child(2),
-                .button-group .modern-button:nth-child(3),
-                .button-group .modern-button:nth-child(4) {
-                    flex: 1 1 calc(33% - 6px);
+                .button-group .modern-button:nth-child(3) {
+                    flex: 1 1 calc(50% - 4px);
                 }
     }
 
@@ -230,7 +298,7 @@
                        Color="Color.Info"
                        StartIcon="@Icons.Material.Filled.ArrowBack"
                        OnClick="GoBack"
-                       Class="rounded-lg"
+                       Class="@($"modern-button {GetThemeClass()}")"
                        Style="@GetButtonStyle()">
                 BACK
             </MudButton>
@@ -242,7 +310,7 @@
                                Color="Color.Error"
                                StartIcon="@Icons.Material.Filled.Undo"
                                OnClick="UnapproveReport"
-                               Class="rounded-lg mr-2"
+                               Class="@($"modern-button {GetThemeClass()}")"
                                Style="@GetButtonStyle()">
                         UNAPPROVE
                     </MudButton>
@@ -252,7 +320,7 @@
                            Color="Color.Success"
                            StartIcon="@Icons.Material.Filled.Verified"
                            OnClick="ApproveReport"
-                           Class="rounded-lg"
+                           Class="@($"modern-button {GetThemeClass()}")"
                            Disabled="@(_currentSession == null)"
                            Style="@GetButtonStyle()">
                     @( _currentSession?.AreaHeadReviewedAt.HasValue == true ? "UPDATE FEEDBACK" : "APPROVE REPORT" )
@@ -391,17 +459,21 @@
                                         var progress = GetTaskProgress(task.Id);
                                         <div class="preview-task-card">
                                             <div class="preview-task-header">
-                                                <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" />
-                                                <div class="flex-grow-1">
-                                                    <MudText Typo="Typo.body1" Style="font-weight: 700;">@task.TaskName</MudText>
+                                                <div class="preview-header-content-group">
+                                                    <div class="preview-task-name-container">
+                                                        <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
+                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">@task.TaskName</MudText>
+                                                    </div>
                                                     @if (!string.IsNullOrEmpty(task.Description))
                                                     {
-                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                        <div class="preview-description-row">
+                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                        </div>
                                                     }
                                                 </div>
                                                 @if (task.TaskType == "Manpower")
                                                 {
-                                                    <div class="text-right">
+                                                    <div class="text-right" style="flex: 0 0 auto; margin-left: auto;">
                                                         <MudText Typo="Typo.caption">Expected: @task.QuantityExpected</MudText>
                                                         <MudText Typo="Typo.body2" Style="font-weight: 700;">Actual: @(progress.ActualQuantity ?? 0)</MudText>
                                                     </div>
@@ -701,6 +773,15 @@
                 .ToListAsync();
 
             _loadedPhotos = await db.TaskPhotos
+                .Include(p => p.Store)
+                .Include(p => p.UploadedBy)
+                .Include(p => p.Category)
+                .Include(p => p.ChecklistItem)
+                    .ThenInclude(c => c!.Category)
+                .Include(p => p.StoreDailyActivity)
+                    .ThenInclude(s => s!.Store)
+                .Include(p => p.StoreDailyActivity)
+                    .ThenInclude(s => s!.StartedBy)
                 .Where(p => p.StoreDailyActivityId == _currentSession.Id)
                 .ToListAsync();
 
@@ -1000,9 +1081,13 @@
         _ => "lightest"
     };
 
-    private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light
-        ? "background-color: #ffffff !important; color: #0072cf !important;"
-        : "";
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "border-radius: 12px;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
+            : "border-radius: 12px; font-weight: bold;";
+    }
 
     private double GetReportProgress()
     {
