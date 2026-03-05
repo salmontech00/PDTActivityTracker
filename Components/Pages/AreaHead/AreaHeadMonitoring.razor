@@ -110,85 +110,9 @@
         margin-top: 8px;
     }
 
-    /* TABS */
-    .monitoring-tabs {
-        border-radius: 20px !important;
-        overflow: hidden;
-    }
-
-    .mud-tabs .mud-tabs-tab {
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-    }
-
-    .mud-tab-slider {
-        height: 3px !important;
-        border-radius: 3px 3px 0 0 !important;
-    }
-
-    /* MODERN TABLE */
-    .mud-table {
-        background: transparent !important;
-    }
-
-    .mud-table-head {
-        background: rgba(0, 114, 207, 0.1);
-    }
-
-        .mud-table-head.lightest {
-            background: rgba(0, 114, 207, 0.05);
-        }
-
-    .mud-table-cell {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-        padding: 12px 16px !important;
-    }
-
-    .lightest .mud-table-cell {
-        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
-    }
-
-    .mud-table-row:hover {
-        background-color: rgba(255, 255, 255, 0.05) !important;
-    }
-
-    .lightest .mud-table-row:hover {
-        background-color: rgba(0, 114, 207, 0.05) !important;
-    }
-
-    /* MOBILE CARDS */
-    .mobile-card {
-        margin-bottom: 16px;
-        overflow: hidden;
-    }
-
-    .mobile-card-header {
-        padding: 12px 16px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .lightest .mobile-card-header {
-        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
-    }
-
-    .mobile-card-content {
-        padding: 16px;
-    }
-
-    .mobile-card-actions {
-        padding: 12px 16px;
-        background: rgba(255, 255, 255, 0.03);
-        display: flex;
-        justify-content: flex-end;
-        gap: 8px;
-    }
-
-    .lightest .mobile-card-actions {
-        background: rgba(0, 114, 207, 0.03);
+    /* MOBILE STAT CARDS GRID */
+    .mobile-stats-grid {
+        display: none;
     }
 
     /* PHOTO GALLERY */
@@ -230,6 +154,46 @@
         font-size: 0.7rem;
     }
 
+    /* MODERN TABLE */
+    .mud-table {
+        background: transparent !important;
+    }
+
+    .mud-table-head {
+        background: rgba(0, 114, 207, 0.1);
+    }
+
+        .mud-table-head.lightest {
+            background: rgba(0, 114, 207, 0.05);
+        }
+
+    .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 12px 16px !important;
+    }
+
+    .lightest .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    .mud-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .lightest .mud-table-row:hover {
+        background-color: rgba(0, 114, 207, 0.05) !important;
+    }
+
+    .mud-table-pagination {
+        background-color: transparent !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: inherit !important;
+    }
+
+    .lightest .mud-table-pagination {
+        border-top: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
     /* BUTTONS */
     .modern-button {
         text-transform: none !important;
@@ -237,36 +201,52 @@
         border-radius: 12px !important;
     }
 
-    /* LOGS */
-    .activity-item {
-        padding: 12px 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
+    /* CHIPS */
+    .role-chip {
+        font-weight: 700 !important;
+        border-radius: 12px !important;
     }
 
-    .lightest .activity-item {
+    /* Action Icon Buttons white in darker themes */
+    .light .mud-icon-button.mud-info-text,
+    .dark .mud-icon-button.mud-info-text,
+    .light .mud-icon-button.mud-primary-text,
+    .dark .mud-icon-button.mud-primary-text {
+        color: #ffffff !important;
+    }
+
+    /* MOBILE CARDS */
+    .mobile-card {
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+
+    .mobile-card-header {
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .lightest .mobile-card-header {
         border-bottom: 1px solid rgba(0, 114, 207, 0.1);
     }
 
-    .activity-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
+    .mobile-card-content {
+        padding: 16px;
+    }
+
+    .mobile-card-actions {
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
         display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        justify-content: flex-end;
+        gap: 8px;
     }
 
-    .activity-content {
-        flex: 1;
-    }
-
-    .activity-time {
-        font-size: 0.75rem;
-        opacity: 0.6;
+    .lightest .mobile-card-actions {
+        background: rgba(0, 114, 207, 0.03);
     }
 
     /* Filter Toggle Button */
@@ -274,24 +254,70 @@
         display: none;
     }
 
-    .mobile-stats-grid {
-        display: none;
-    }
-
     /* RESPONSIVE */
     @@media (max-width: 960px) {
-        .desktop-view {
+        .mud-picker-datepicker-toolbar {
             display: none !important;
+        }
+
+        .mud-picker-paper {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-popover {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+
+        .desktop-view {
+            display: none;
         }
 
         .page-title {
-            display: none !important;
+            display: none;
         }
 
         .page-header-row {
-            justify-content: center !important;
-            margin-top: 0px !important;
-            margin-bottom: 6px !important;
+            justify-content: center;
+            margin-top: 0px;
+            margin-bottom: 6px;
+        }
+        /* Mobile tab fixes */
+        .monitoring-tabs .mud-tabs-toolbar {
+            overflow: visible !important;
+        }
+
+        .monitoring-tabs .mud-tabs-toolbar-content {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+            .monitoring-tabs .mud-tabs-toolbar-content::-webkit-scrollbar {
+                display: none;
+            }
+
+        .monitoring-tabs .mud-tab {
+            flex: 0 0 auto !important;
+            min-width: unset !important;
+            max-width: none !important;
+            font-size: 0.60rem !important;
+            padding: 4px 8px !important;
+            white-space: nowrap !important;
+        }
+
+        .monitoring-tabs .mud-tabs-scroll-button {
+            display: none !important;
+        }
+
+        .photo-grid {
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
         }
 
         .filter-toggle-button {
@@ -303,7 +329,6 @@
             flex-direction: row !important;
             width: 100%;
             justify-content: space-between;
-            gap: 8px !important;
         }
 
             .button-group .modern-button {
@@ -335,6 +360,10 @@
                 border-radius: 12px !important;
             }
 
+                .mobile-stats-grid .stat-card::before {
+                    height: 3px;
+                }
+
             .mobile-stats-grid .stat-value {
                 font-size: 1.4rem;
                 line-height: 1.1;
@@ -345,38 +374,83 @@
                 letter-spacing: 0.5px;
                 margin-top: 4px;
             }
+    }
 
-        .monitoring-tabs .mud-tabs-toolbar {
-            overflow: visible !important;
+    @@media (min-width: 961px) {
+        .desktop-view {
+            display: block;
         }
 
-        .monitoring-tabs .mud-tabs-toolbar-content {
-            overflow-x: auto !important;
-            overflow-y: hidden !important;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+        .mobile-view {
+            display: none;
+        }
+    }
+
+    @@media (max-width: 375px) {
+        .mud-main-content {
+            padding-bottom: 0px !important;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
         }
 
-            .monitoring-tabs .mud-tabs-toolbar-content::-webkit-scrollbar {
-                display: none;
-            }
+        .mud-picker-paper {
+            max-height: calc(100vh - 80px) !important;
+            overflow-y: auto !important;
+        }
 
         .monitoring-tabs .mud-tab {
             flex: 0 0 auto !important;
             min-width: unset !important;
+            max-width: none !important;
+            font-size: 0.55rem !important;
+            padding: 4px 8px !important;
+            white-space: nowrap !important;
+        }
+
+        .pdt-button {
             font-size: 0.60rem !important;
             padding: 4px 8px !important;
         }
 
-        .monitoring-tabs .mud-tabs-scroll-button {
-            display: none !important;
-        }
+            .pdt-button .mud-button-label {
+                font-size: 0.60rem !important;
+            }
     }
 
-    @@media (min-width: 961px) {
-        .mobile-view {
-            display: none !important;
-        }
+    /* LOGS */
+    .activity-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .lightest .activity-item {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .activity-content {
+        flex: 1;
+    }
+
+    .activity-time {
+        font-size: 0.75rem;
+        opacity: 0.6;
     }
 </style>
 
@@ -435,7 +509,7 @@
         <div class="mobile-stats-grid">
             <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
                 <div class="stat-value text-primary">@_assignedStores.Count</div>
-                <div class="stat-label">Stores</div>
+                <div class="stat-label">Assigned</div>
             </MudPaper>
             <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
                 <div class="stat-value text-success">@_completedToday</div>
@@ -486,7 +560,7 @@
                                                Size="Size.Small"
                                                FullWidth="true"
                                                OnClick="@(() => NavigationManager.NavigateTo($"/area-head/weekly-report/{store.Id}"))"
-                                               Class="modern-button">
+                                               Class="modern-button pdt-button">
                                         VIEW REPORT
                                     </MudButton>
                                     <MudButton Variant="Variant.Filled"
@@ -494,7 +568,7 @@
                                                Size="Size.Small"
                                                FullWidth="true"
                                                OnClick="@(() => OpenGenerateReportDialog(store))"
-                                               Class="modern-button">
+                                               Class="modern-button pdt-button">
                                         GENERATE
                                     </MudButton>
                                 </div>
@@ -554,7 +628,8 @@
                                                Color="Color.Secondary"
                                                Size="Size.Small"
                                                StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearReportFilters">
+                                               OnClick="ClearReportFilters"
+                                               Class="clear-filters-button">
                                         Clear Filters
                                     </MudButton>
                                 }
@@ -566,94 +641,101 @@
                 @if (_activityLogsFiltered.Any())
                 {
                     <div class="desktop-view">
-                    <MudTable Items="_activityLogsFiltered" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
-                        <HeaderContent>
-                            <MudTh>Date</MudTh>
-                            <MudTh>Store</MudTh>
-                            <MudTh>Started By</MudTh>
-                            <MudTh>Status</MudTh>
-                            <MudTh>Review Status</MudTh>
-                            <MudTh>Progress</MudTh>
-                            <MudTh Style="text-align: center;">Action</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Date">@context.Date.ToString("MMM dd, yyyy")</MudTd>
-                            <MudTd DataLabel="Store">@(context.Store?.StoreName ?? "---")</MudTd>
-                            <MudTd DataLabel="Started By">@(context.StartedBy?.Fullname ?? "---")</MudTd>
-                            <MudTd DataLabel="Status">
-                                <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(context)" Variant="Variant.Text" Class="role-chip">
-                                    @GetActivityStatusLabel(context)
-                                </MudChip>
-                            </MudTd>
-                            <MudTd DataLabel="Review Status">
-                                @if (context.AreaHeadReviewedAt.HasValue)
-                                {
-                                    <div class="d-flex flex-column">
-                                        <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Text" Icon="@Icons.Material.Filled.Verified">Reviewed</MudChip>
-                                        @if (context.AreaHead != null)
+                        <MudTable Items="_activityLogsFiltered" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0">
+                            <HeaderContent>
+                                <MudTh>Date</MudTh>
+                                <MudTh>Store</MudTh>
+                                <MudTh>Started By</MudTh>
+                                <MudTh>Status</MudTh>
+                                <MudTh>Review Status</MudTh>
+                                <MudTh>Progress</MudTh>
+                                <MudTh Style="text-align: center;">Action</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Date">@context.Date.ToString("MMM dd, yyyy")</MudTd>
+                                <MudTd DataLabel="Store">@(context.Store?.StoreName ?? "---")</MudTd>
+                                <MudTd DataLabel="Started By">@(context.StartedBy?.Fullname ?? "---")</MudTd>
+                                <MudTd DataLabel="Status">
+                                    <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(context)" Variant="Variant.Text" Class="role-chip">
+                                        @GetActivityStatusLabel(context)
+                                    </MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Review Status">
+                                    @if (context.AreaHeadReviewedAt.HasValue)
+                                    {
+                                        <div class="d-flex flex-column">
+                                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Text" Icon="@Icons.Material.Filled.Verified">Reviewed</MudChip>
+                                            @if (context.AreaHead != null)
+                                            {
+                                                <MudText Typo="Typo.caption" Style="opacity: 0.7; margin-left: 8px;">by @context.AreaHead.Fullname</MudText>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Text">Pending</MudChip>
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="Progress">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(context.Id)" Style="width: 60px;" Rounded="true" />
+                                        <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(context.Id))%</MudText>
+                                    </div>
+                                </MudTd>
+                                <MudTd DataLabel="Action" Style="text-align: center;">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" />
+                                </MudTd>
+                            </RowTemplate>
+                            <PagerContent>
+                                <MudTablePager />
+                            </PagerContent>
+                        </MudTable>
+                    </div>
+
+                    <div class="mobile-view">
+                        @foreach (var activity in _activityLogsFiltered)
+                        {
+                            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                                <div class="mobile-card-header">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@activity.Date.ToString("MMM dd, yyyy")</MudText>
+                                    <div class="d-flex flex-column align-end">
+                                        <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(activity)" Variant="Variant.Text" Class="role-chip">
+                                            @GetActivityStatusLabel(activity)
+                                        </MudChip>
+                                        @if (activity.AreaHeadReviewedAt.HasValue)
                                         {
-                                            <MudText Typo="Typo.caption" Style="opacity: 0.7; margin-left: 8px;">by @context.AreaHead.Fullname</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Success" Style="font-weight: 700;">
+                                                <MudIcon Icon="@Icons.Material.Filled.Verified" Size="Size.Small" /> Reviewed
+                                            </MudText>
                                         }
                                     </div>
-                                }
-                                else
-                                {
-                                    <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Text">Pending</MudChip>
-                                }
-                            </MudTd>
-                            <MudTd DataLabel="Progress">
-                                <div class="d-flex align-center gap-2">
-                                    <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(context.Id)" Style="width: 60px;" Rounded="true" />
-                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(context.Id))%</MudText>
                                 </div>
-                            </MudTd>
-                            <MudTd DataLabel="Action" Style="text-align: center;">
-                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" />
-                            </MudTd>
-                        </RowTemplate>
-                        <PagerContent>
-                            <MudTablePager />
-                        </PagerContent>
-                    </MudTable>
-                </div>
-
-                <div class="mobile-view">
-                    @foreach (var activity in _activityLogsFiltered)
-                    {
-                        <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
-                            <div class="mobile-card-header">
-                                <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@activity.Date.ToString("MMM dd")</MudText>
-                                <div class="d-flex flex-column align-end">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(activity)" Variant="Variant.Text">
-                                        @GetActivityStatusLabel(activity)
-                                    </MudChip>
-                                    @if (activity.AreaHeadReviewedAt.HasValue)
-                                    {
-                                        <MudText Typo="Typo.caption" Color="Color.Success" Style="font-weight: 700;">
-                                            <MudIcon Icon="@Icons.Material.Filled.Verified" Size="Size.Small" /> Reviewed
-                                        </MudText>
-                                        @if (activity.AreaHead != null)
-                                        {
-                                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">by @activity.AreaHead.Fullname</MudText>
-                                        }
-                                    }
+                                <div class="mobile-card-content">
+                                    <MudGrid Spacing="1">
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName ?? "---")</MudText>
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText>
+                                            <MudText Typo="Typo.body2">@(activity.StartedBy?.Fullname ?? "---")</MudText>
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <div class="d-flex align-center justify-space-between mb-1">
+                                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Progress</MudText>
+                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(activity.Id))%</MudText>
+                                            </div>
+                                            <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(activity.Id)" Rounded="true" Size="Size.Small" />
+                                        </MudItem>
+                                    </MudGrid>
                                 </div>
-                            </div>
-                            <div class="mobile-card-content">
-                                <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName)</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Started by: @(activity.StartedBy?.Fullname)</MudText>
-                                <div class="d-flex align-center gap-2 mt-2">
-                                    <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(activity.Id)" Rounded="true" Size="Size.Small" />
-                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(activity.Id))%</MudText>
+                                <div class="mobile-card-actions">
+                                    <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Text" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(activity))" Class="modern-button">
+                                        Details
+                                    </MudButton>
                                 </div>
-                            </div>
-                            <div class="mobile-card-actions">
-                                <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Text" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(activity))">
-                                    View
-                                </MudButton>
-                            </div>
-                        </MudPaper>
-                    }
+                            </MudPaper>
+                        }
                     </div>
                 }
                 else
@@ -790,6 +872,26 @@
                                                 @bind-DateRange:after="FilterPhotos"
                                                 Variant="Variant.Outlined"
                                                 Margin="Margin.Dense" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
+                                    Showing @(_filteredPhotos.Count) of @(_allPhotos.Count) photos
+                                </MudText>
+                                @if (HasPhotoFilters())
+                                {
+                                    <MudButton Variant="Variant.Text"
+                                               Color="Color.Secondary"
+                                               Size="Size.Small"
+                                               StartIcon="@Icons.Material.Filled.Clear"
+                                               OnClick="ClearPhotoFilters"
+                                               Class="clear-filters-button">
+                                        Clear Filters
+                                    </MudButton>
+                                }
+                            </div>
                         </MudItem>
                     </MudGrid>
                 </MudPaper>
@@ -1251,6 +1353,17 @@
         FilterPhotos();
     }
 
+    private void ClearPhotoFilters()
+    {
+        _photoSearchTerm = string.Empty;
+        _photoStoreFilter = null;
+        _photoCategoryFilter = null;
+        _photoDateRange = null;
+        FilterPhotos();
+    }
+
+    private bool HasPhotoFilters() => !string.IsNullOrEmpty(_photoSearchTerm) || _photoStoreFilter.HasValue || _photoCategoryFilter.HasValue || (_photoDateRange?.Start != null);
+
     private void ApplyIssueFilters()
     {
         var filtered = _issues.AsQueryable();
@@ -1293,7 +1406,7 @@
     private string GetHeaderButtonStyle()
     {
         if (ThemeService == null) return "border-radius: 12px;";
-        return ThemeService.CurrentTheme == ThemeMode.Lightest
+        return ThemeService.CurrentTheme == ThemeMode.Light
             ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold; min-width: 150px;"
             : "border-radius: 12px; font-weight: bold; min-width: 150px;";
     }

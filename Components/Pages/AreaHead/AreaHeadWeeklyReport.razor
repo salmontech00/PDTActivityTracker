@@ -163,6 +163,42 @@
         padding-left: 32px;
     }
 
+    .date-picker-full-mobile {
+        max-width: 220px;
+        width: 100%;
+    }
+
+        .date-picker-full-mobile .mud-input-outlined-input {
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+            height: 38px !important;
+        }
+
+        .date-picker-full-mobile .mud-input-label-outlined {
+            transform: translate(14px, 10px) scale(1);
+        }
+
+            .date-picker-full-mobile .mud-input-label-outlined.mud-input-label-inputcontrol {
+                transform: translate(14px, -6px) scale(0.75);
+            }
+
+    /* LIGHT THEME BUTTON SWITCHER */
+    .light .mud-button-group-root {
+        background-color: rgba(255, 255, 255, 0.45) !important;
+        border: 1px solid rgba(0, 114, 207, 0.2) !important;
+    }
+
+        .light .mud-button-group-root .mud-button {
+            color: #0072cf !important;
+            background-color: transparent !important;
+        }
+
+            .light .mud-button-group-root .mud-button.mud-button-filled {
+                background-color: #ffffff !important;
+                color: #0072cf !important;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05) !important;
+            }
+
     .photo-thumb-wrapper {
         position: relative;
         width: 64px;
@@ -237,6 +273,19 @@
         .photo-grid {
             padding-left: 0;
         }
+
+        .planner-container {
+            padding-bottom: 100px !important;
+        }
+
+        .date-picker-full-mobile {
+            max-width: none !important;
+        }
+
+        .mud-button-group-root .mud-button {
+            font-size: 0.7rem !important;
+            padding: 4px 8px !important;
+        }
     }
 
     @@media (max-width: 960px) {
@@ -246,7 +295,7 @@
             align-items: stretch;
             text-align: center;
             padding: 0;
-            margin-bottom: 0px !important;
+            margin-bottom: 12px !important;
         }
 
         .page-title {
@@ -284,6 +333,10 @@
             padding-bottom: 0px !important;
             padding-left: 0px !important;
             padding-right: 0px !important;
+        }
+
+        .page-header-row {
+            margin-bottom: 8px !important;
         }
     }
 </style>
@@ -332,8 +385,8 @@
     <!-- STORE INFO + VIEW MODE SELECTOR -->
     <div class="d-flex justify-center mb-4">
         <MudPaper Class="@($"pa-4 glass-panel {GetThemeClass()}")" Elevation="0" Style="width: 100%; max-width: 900px;">
-            <MudGrid>
-                <MudItem xs="12" sm="3">
+            <MudGrid Class="align-center">
+                <MudItem xs="12" sm="3" Class="d-flex flex-column justify-center">
                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">STORE</MudText>
                     <MudText Typo="Typo.body1" Style="font-weight: 700;">@_store?.StoreName</MudText>
                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">@_store?.StoreCode • @_store?.Location</MudText>
@@ -355,7 +408,7 @@
                                    Color="Color.Primary">Issues</MudButton>
                     </MudButtonGroup>
                 </MudItem>
-                <MudItem xs="12" sm="3">
+                <MudItem xs="12" sm="3" Class="d-flex align-center justify-center justify-sm-end">
                     @if (_viewMode == "Daily")
                     {
                         <MudDatePicker Label="Select Date"
@@ -363,12 +416,12 @@
                                        DateChanged="OnDateChanged"
                                        MaxDate="DateTime.Today"
                                        Variant="Variant.Outlined"
-                                       Class="rounded-lg"
-                                       Style="max-width: 220px;" />
+                                       Margin="Margin.Dense"
+                                       Class="rounded-lg date-picker-full-mobile" />
                     }
                     else
                     {
-                        <div class="d-flex flex-column">
+                        <div class="d-flex flex-column align-center align-sm-end">
                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">PERIOD</MudText>
                             <MudText Typo="Typo.body2" Style="font-weight: 700;">@GetPeriodLabel()</MudText>
                         </div>

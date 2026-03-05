@@ -317,12 +317,20 @@
         .map-legend-overlay {
             top: 6px;
             right: 6px;
-            padding: 2px 2px;
+            left: 6px;
+            padding: 4px 12px;
             gap: 4px;
+            justify-content: space-between;
+            width: auto;
         }
 
         .legend-text {
-            font-size: 0.5rem;
+            font-size: 0.55rem;
+        }
+
+        /* Hide zoom controls on mobile */
+        .leaflet-control-zoom {
+            display: none !important;
         }
 
         .mobile-panel-content .panel-content {
@@ -354,14 +362,17 @@
             }
 
         .map-legend-overlay {
-            top: 2px;
-            right: 2px;
-            padding: 2px 2px;
+            top: 4px;
+            right: 4px;
+            left: 4px;
+            padding: 2px 8px;
             gap: 2px;
+            justify-content: space-between;
+            width: auto;
         }
 
         .legend-text {
-            font-size: 0.47rem;
+            font-size: 0.5rem;
         }
     }
 
