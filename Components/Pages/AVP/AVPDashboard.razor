@@ -7,6 +7,7 @@
 @inject UserStateService UserState
 @inject NavigationManager NavigationManager
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@implements IDisposable
 
 <PageTitle>Executive Dashboard - AVP</PageTitle>
 
@@ -118,6 +119,23 @@
                 font-size: 1.5rem !important;
             }
     }
+
+    /* Force icons white in Light and Dark themes */
+    .glass-panel.light .mud-icon-root,
+    .glass-panel.dark .mud-icon-root {
+        color: #ffffff !important;
+    }
+
+    .glass-panel.light .mud-list-item-icon,
+    .glass-panel.dark .mud-list-item-icon {
+        color: #ffffff !important;
+    }
+
+    /* Force icons brand blue in Lightest theme */
+    .glass-panel.lightest .mud-icon-root,
+    .glass-panel.lightest .mud-list-item-icon {
+        color: #0072cf !important;
+    }
 </style>
 
 <div class="dashboard-container">
@@ -135,28 +153,28 @@
         <MudGrid Class="mb-8 desktop-stats">
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                    <MudIcon Icon="@Icons.Material.Filled.Store" Color="Color.Primary" Size="Size.Large" Class="mb-2" />
+                    <MudIcon Icon="@Icons.Material.Filled.Store" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
                     <div class="stat-value">@_totalStores</div>
                     <div class="stat-label">Total Stores</div>
                 </MudPaper>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                    <MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Large" Class="mb-2" />
+                    <MudIcon Icon="@Icons.Material.Filled.Groups" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
                     <div class="stat-value">@_totalAreaHeads</div>
                     <div class="stat-label">Area Heads</div>
                 </MudPaper>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                    <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Success" Size="Size.Large" Class="mb-2" />
+                    <MudIcon Icon="@Icons.Material.Filled.Verified" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
                     <div class="stat-value text-success">@_overallCompliance%</div>
                     <div class="stat-label">System Compliance</div>
                 </MudPaper>
             </MudItem>
             <MudItem xs="12" sm="6" md="3">
                 <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Color="Color.Secondary" Size="Size.Large" Class="mb-2" />
+                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
                     <div class="stat-value text-info">@_activeOperations</div>
                     <div class="stat-label">Active Today</div>
                 </MudPaper>
@@ -166,22 +184,22 @@
         <!-- Mobile Stats -->
         <div class="mobile-stats-grid">
             <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Store" Color="Color.Primary" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Filled.Store" Style="@GetIconStyle()" Size="Size.Small" />
                 <div class="stat-value">@_totalStores</div>
                 <div class="stat-label">Stores</div>
             </MudPaper>
             <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Groups" Color="Color.Info" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Filled.Groups" Style="@GetIconStyle()" Size="Size.Small" />
                 <div class="stat-value">@_totalAreaHeads</div>
                 <div class="stat-label">Area Heads</div>
             </MudPaper>
             <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.Verified" Color="Color.Success" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Filled.Verified" Style="@GetIconStyle()" Size="Size.Small" />
                 <div class="stat-value">@_overallCompliance%</div>
                 <div class="stat-label">Compliance</div>
             </MudPaper>
             <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
-                <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Color="Color.Secondary" Size="Size.Small" />
+                <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="@GetIconStyle()" Size="Size.Small" />
                 <div class="stat-value">@_activeOperations</div>
                 <div class="stat-label">Active</div>
             </MudPaper>
@@ -228,7 +246,16 @@
                 <RowTemplate>
                     <MudTd DataLabel="Area Head">
                         <div class="d-flex align-center gap-2">
-                            <MudAvatar Color="Color.Primary" Size="Size.Small">@context.Name[0]</MudAvatar>
+                            <MudAvatar Color="@GetAvatarColor()" Size="Size.Small">
+                                @if (!string.IsNullOrEmpty(context.ImagePath))
+                                {
+                                    <img src="@context.ImagePath" style="width: 100%; height: 100%; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="color: white !important;" />
+                                }
+                            </MudAvatar>
                             <MudText Style="font-weight: 600;">@context.Name</MudText>
                         </div>
                     </MudTd>
@@ -265,6 +292,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+
         if (UserState.Role != "AVP" && UserState.Role != "Admin")
         {
             NavigationManager.NavigateTo("/");
@@ -273,6 +302,13 @@
 
         await LoadData();
         _initialized = true;
+    }
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
     }
 
     private async Task LoadData()
@@ -308,9 +344,14 @@
 
             var compliance = ahStores.Count > 0 ? (int)((double)ahActive / ahStores.Count * 100) : 0;
 
+            var imagePath = ah.ImageData != null && !string.IsNullOrEmpty(ah.ImageMimeType)
+                ? $"data:{ah.ImageMimeType};base64,{Convert.ToBase64String(ah.ImageData)}"
+                : null;
+
             _areaHeadPerformance.Add(new AreaHeadMetric
             {
                 Name = ah.Fullname,
+                ImagePath = imagePath,
                 TotalStores = ahStores.Count,
                 ActiveToday = ahActive,
                 ComplianceRate = compliance
@@ -365,6 +406,19 @@
         _ => "light"
     };
 
+    private string GetIconStyle() => ThemeService.CurrentTheme == ThemeMode.Lightest
+        ? "color: #0072cf;"
+        : "color: #ffffff;";
+
+    private Color GetAvatarColor()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => Color.Primary,
+            _ => Color.Inherit
+        };
+    }
+
     private Color GetProgressColor(double value) => value switch
     {
         >= 90 => Color.Success,
@@ -390,6 +444,7 @@
     public class AreaHeadMetric
     {
         public string Name { get; set; } = "";
+        public string? ImagePath { get; set; }
         public int TotalStores { get; set; }
         public int ActiveToday { get; set; }
         public double ComplianceRate { get; set; }

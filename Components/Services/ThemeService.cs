@@ -48,6 +48,7 @@ namespace PDTActivityTracker.Components.Services
             }
 
             _initialized = true;
+            OnThemeChanged?.Invoke(); // Fire event out here to ensure all subscribers catch the final initialized state
         }
 
         public async Task CycleThemeAsync()
