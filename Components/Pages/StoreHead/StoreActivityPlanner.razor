@@ -338,6 +338,11 @@
             width: 100%;
         }
 
+        .center-input input {
+            text-align: center;
+            font-weight: 700;
+        }
+
         .photo-grid {
             padding-left: 0;
         }
@@ -533,125 +538,163 @@
                         </TitleContent>
                         <ChildContent>
                             @{
-                                var lastSection = "";
-                                var orderedTasks = itemsInCategory;
+                                var regularTasks = itemsInCategory.Where(t => t.TaskType != "Manpower" && t.TaskType != "Equipment").ToList();
+                                var gridTasks = itemsInCategory.Where(t => t.TaskType == "Manpower" || t.TaskType == "Equipment").ToList();
                             }
-                            @for (int i = 0; i < orderedTasks.Count; i++)
-                            {
-                                var task = orderedTasks[i];
-                                var taskNumber = i + 1;
-                                var progress = GetTaskProgress(task.Id);
 
-                                // Section Header
-                                @if (task.Section != lastSection && !string.IsNullOrEmpty(task.Section))
+                            @if (regularTasks.Any())
+                            {
+                                var lastSection = "";
+                                @for (int i = 0; i < regularTasks.Count; i++)
                                 {
+                                    var task = regularTasks[i];
+                                    var taskNumber = i + 1;
+                                    var progress = GetTaskProgress(task.Id);
+
+                                    // Section Header
+                                    @if (task.Section != lastSection && !string.IsNullOrEmpty(task.Section))
+                                    {
+                                        <div class="mt-4 mb-2 px-2">
+                                            <MudText Typo="Typo.subtitle2" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 0.7rem; opacity: 0.6;">
+                                                @task.Section
+                                            </MudText>
+                                            <MudDivider Class="mt-1" Style="opacity: 0.1;" />
+                                        </div>
+                                        lastSection = task.Section;
+                                    }
+                                    else if (string.IsNullOrEmpty(task.Section))
+                                    {
+                                        lastSection = "";
+                                    }
+
+                                    <div class="preview-task-card">
+                                        <div class="preview-task-header">
+                                            <div class="preview-header-content-group">
+                                                <div class="preview-task-name-container">
+                                                    <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
+                                                    <MudCheckBox T="bool"
+                                                                 Value="@progress.IsCompleted"
+                                                                 Color="Color.Primary"
+                                                                 Dense="true"
+                                                                 Disabled="true"
+                                                                 Class="pa-0" />
+
+                                                    <div class="d-flex align-center flex-wrap gap-2">
+                                                        @if (task.IsMandatory)
+                                                        {
+                                                            <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
+                                                        }
+                                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
+                                                        <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
+                                                            @task.TaskName
+                                                        </MudText>
+                                                    </div>
+                                                </div>
+
+                                                @if (!string.IsNullOrEmpty(task.Description))
+                                                {
+                                                    <div class="preview-description-row">
+                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                    </div>
+                                                }
+                                            </div>
+
+                                            @if (task.IsPhotoRequired)
+                                            {
+                                                <MudButton Variant="Variant.Filled"
+                                                           StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                                           Size="Size.Small"
+                                                           Color="Color.Primary"
+                                                           OnClick="@(() => CapturePhoto(task))"
+                                                           Class="preview-upload-btn"
+                                                           Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
+                                                           Style="border-radius: 8px; font-weight: bold;">
+                                                    CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                </MudButton>
+                                            }
+                                        </div>
+
+                                        @if (task.IsRemarksRequired)
+                                        {
+                                            <div class="preview-remarks-container">
+                                                <MudTextField T="string"
+                                                              @bind-Value="progress.Remarks"
+                                                              Label="Remarks"
+                                                              Variant="Variant.Outlined"
+                                                              Margin="Margin.Dense"
+                                                              Dense="true"
+                                                              Placeholder="Enter remarks here..."
+                                                              Class="rounded-lg"
+                                                              @bind-Value:after="@(() => OnRemarksChanged(task))" />
+                                            </div>
+                                        }
+
+                                        @if (task.IsPhotoRequired && GetStoredPhotos(task.Id).Any())
+                                        {
+                                            <div class="photo-grid">
+                                                @foreach (var photo in GetStoredPhotos(task.Id))
+                                                {
+                                                    <div class="photo-thumb-wrapper">
+                                                        <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
+                                                        <button class="photo-remove-btn" @onclick="@(() => RemovePhoto(photo))" title="Remove">✕</button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+
+                            @if (gridTasks.Any())
+                            {
+                                var gridGroups = gridTasks.GroupBy(t => t.TaskType).ToList();
+                                foreach (var group in gridGroups)
+                                {
+                                    string headerText = group.Key == "Manpower" ? "MANPOWER TRACKING" : "EQUIPMENT TRACKING";
+                                    string colName = group.Key == "Manpower" ? "POSITION" : "ITEM";
+
                                     <div class="mt-4 mb-2 px-2">
                                         <MudText Typo="Typo.subtitle2" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 0.7rem; opacity: 0.6;">
-                                            @task.Section
+                                            @headerText
                                         </MudText>
-                                        <MudDivider Class="mt-1" Style="opacity: 0.1;" />
+                                        <MudDivider Class="mt-1 mb-3" Style="opacity: 0.1;" />
                                     </div>
-                                    lastSection = task.Section;
-                                }
-                                else if (string.IsNullOrEmpty(task.Section))
-                                {
-                                    lastSection = "";
-                                }
 
-                                <div class="preview-task-card">
-                                    <div class="preview-task-header">
-                                        <div class="preview-header-content-group">
-                                            <div class="preview-task-name-container">
-                                                <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
-                                                <MudCheckBox T="bool"
-                                                             Value="@progress.IsCompleted"
-                                                             Color="Color.Primary"
-                                                             Dense="true"
-                                                             Disabled="true"
-                                                             Class="pa-0" />
-
-                                                <div class="d-flex align-center flex-wrap gap-2">
+                                    <MudTable Items="@group" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Style="background: transparent;">
+                                        <HeaderContent>
+                                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">@colName</MudText></MudTh>
+                                            <MudTh Style="width: 100px;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">EXPECTED</MudText></MudTh>
+                                            <MudTh Style="width: 120px; text-align: center;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">ACTUAL</MudText></MudTh>
+                                        </HeaderContent>
+                                        <RowTemplate Context="task">
+                                            <MudTd DataLabel="@colName">
+                                                <div class="d-flex align-start gap-2">
                                                     @if (task.IsMandatory)
                                                     {
                                                         <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
                                                     }
-                                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
-                                                    <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                        @task.TaskName
-                                                    </MudText>
+                                                    <div>
+                                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@(string.IsNullOrWhiteSpace(task.TaskName) ? task.Description : task.TaskName)</MudText>
+                                                        @if (!string.IsNullOrWhiteSpace(task.TaskName) && !string.IsNullOrWhiteSpace(task.Description))
+                                                        {
+                                                            <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2; margin-top: 2px;">@task.Description</MudText>
+                                                        }
+                                                    </div>
                                                 </div>
-                                            </div>
-
-                                            @if (!string.IsNullOrEmpty(task.Description))
-                                            {
-                                                <div class="preview-description-row">
-                                                    <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
-                                                </div>
-                                            }
-                                        </div>
-
-                                        @if (task.IsPhotoRequired)
-                                        {
-                                            <MudButton Variant="Variant.Filled"
-                                                       StartIcon="@Icons.Material.Filled.PhotoCamera"
-                                                       Size="Size.Small"
-                                                       Color="Color.Primary"
-                                                       OnClick="@(() => CapturePhoto(task))"
-                                                       Class="preview-upload-btn"
-                                                       Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
-                                                       Style="border-radius: 8px; font-weight: bold;">
-                                                CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
-                                            </MudButton>
-                                        }
-                                    </div>
-
-                                    @if (task.TaskType == "Manpower")
-                                    {
-                                        <div class="manpower-input-container">
-                                            <div class="d-flex align-center gap-4">
-                                                <MudText Typo="Typo.body2">Expected: <b>@task.QuantityExpected</b></MudText>
+                                            </MudTd>
+                                            <MudTd DataLabel="Expected">
+                                                <MudText Typo="Typo.body2" Style="font-weight: 700;">@task.QuantityExpected</MudText>
+                                            </MudTd>
+                                            <MudTd DataLabel="Actual" Style="text-align: center;">
                                                 <MudNumericField T="int?"
-                                                                 @bind-Value="progress.ActualQuantity"
-                                                                 Label="Actual"
-                                                                 Variant="Variant.Outlined"
-                                                                 Margin="Margin.Dense"
-                                                                 Class="manpower-input"
-                                                                 @bind-Value:after="@(() => OnManpowerChanged(task, progress))" />
-                                            </div>
-                                        </div>
-                                    }
-
-                                    @if (task.IsRemarksRequired)
-                                    {
-                                        <div class="preview-remarks-container">
-                                            <MudTextField T="string"
-                                                          @bind-Value="progress.Remarks"
-                                                          Label="Remarks"
-                                                          Variant="Variant.Outlined"
-                                                          Margin="Margin.Dense"
-                                                          Dense="true"
-                                                          Placeholder="Enter remarks here..."
-                                                          Class="rounded-lg"
-                                                          @bind-Value:after="@(() => OnRemarksChanged(task))" />
-                                        </div>
-                                    }
-
-                                    @if (task.IsPhotoRequired && GetStoredPhotos(task.Id).Any())
-                                    {
-                                        <div class="photo-grid">
-                                            @foreach (var photo in GetStoredPhotos(task.Id))
-                                            {
-                                                <div class="photo-thumb-wrapper">
-                                                    <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
-                                                    <button class="photo-remove-btn" @onclick="@(() => RemovePhoto(photo))" title="Remove">✕</button>
-                                                </div>
-                                            }
-                                        </div>
-                                    }
-                                </div>
+                                                                 Value="@GetTaskProgress(task.Id).ActualQuantity"
+                                                                 ValueChanged="@((int? val) => { var p = GetTaskProgress(task.Id); p.ActualQuantity = val; _ = OnManpowerChanged(task, p); })"
+                                                                 Variant="Variant.Outlined" Margin="Margin.Dense" HideSpinButtons="true" Class="manpower-input center-input" />
+                                            </MudTd>
+                                        </RowTemplate>
+                                    </MudTable>
+                                }
                             }
-
-                            @* Removed Complete Section Button - Now Automatic *@
                         </ChildContent>
                     </MudExpansionPanel>
                 }
@@ -1188,6 +1231,20 @@
             db.ActivityLogs.Add(activity);
             await db.SaveChangesAsync();
 
+            var notification = new Notification
+            {
+                UserId = _store?.AreaHeadId ?? 0,
+                Message = $"New Issue Reported: {issue.Title} at {_store?.StoreName}",
+                Type = "Alert",
+                IsRead = false,
+                CreatedAt = DateTime.Now
+            };
+            if (notification.UserId > 0)
+            {
+                db.Notifications.Add(notification);
+                await db.SaveChangesAsync();
+            }
+
             Snackbar.Add("Issue report submitted successfully.", Severity.Success);
         }
     }
@@ -1215,13 +1272,14 @@
     {
         if (prog.ActualQuantity.HasValue && prog.ActualQuantity < task.QuantityExpected)
         {
-            Snackbar.Add($"Low manpower reported for {task.TaskName}. Area Head has been notified.", Severity.Warning);
+            string itemType = task.TaskType == "Equipment" ? "Equipment count" : "manpower";
+            Snackbar.Add($"Low {itemType} reported for {task.TaskName}. Area Head has been notified.", Severity.Warning);
 
             using var db = await DbFactory.CreateDbContextAsync();
             var notification = new Notification
             {
                 UserId = _store?.AreaHeadId ?? 0,
-                Message = $"Low manpower alert: Store {_store?.StoreCode} reported {prog.ActualQuantity}/{task.QuantityExpected} for {task.TaskName}.",
+                Message = $"Low {itemType} alert: Store {_store?.StoreCode} reported {prog.ActualQuantity}/{task.QuantityExpected} for {task.TaskName}.",
                 Type = "Alert",
                 IsRead = false,
                 CreatedAt = DateTime.Now
