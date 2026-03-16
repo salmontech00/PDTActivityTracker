@@ -64,6 +64,20 @@
                         <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
                     </MudSelect>
                 </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" Label="Task Type" @bind-Value="_model.TaskType" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
+                        <MudSelectItem Value="@("Regular")">Regular</MudSelectItem>
+                        <MudSelectItem Value="@("Manpower")">Manpower</MudSelectItem>
+                        <MudSelectItem Value="@("Equipment")">Equipment</MudSelectItem>
+                        <MudSelectItem Value="@("PhotoOnly")">Photo Only</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                @if (_model.TaskType == "Manpower" || _model.TaskType == "Equipment")
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="int?" Label="Expected Quantity" @bind-Value="_model.QuantityExpected" Required="true" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                }
                 <MudItem xs="12">
                     <MudAutocomplete T="string"
                                      Label="Section (Optional)"
@@ -141,7 +155,9 @@
                 Frequency = TaskToEdit.Frequency,
                 IsRemarksRequired = TaskToEdit.IsRemarksRequired,
                 SortOrder = TaskToEdit.SortOrder,
-                Section = TaskToEdit.Section
+                Section = TaskToEdit.Section,
+                TaskType = TaskToEdit.TaskType ?? "Regular",
+                QuantityExpected = TaskToEdit.QuantityExpected
             };
         }
         else
@@ -151,6 +167,7 @@
             _model.IsRemarksRequired = true;
             _model.IsPhotoRequired = true;
             _model.NumberOfPhotos = 1;
+            _model.TaskType = "Regular";
         }
     }
 

@@ -309,7 +309,7 @@
         await UserState.InitializeAsync();
         if (UserState.IsAuthenticated)
         {
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            NavigationManager.NavigateTo(UserState.GetDashboardRoute(), forceLoad: true);
         }
 
         ThemeService.OnThemeChanged += OnThemeChanged;
@@ -561,7 +561,7 @@
                 }
                 else
                 {
-                    NavigationManager.NavigateTo("/", forceLoad: true);
+                    NavigationManager.NavigateTo(UserState.GetDashboardRoute(), forceLoad: true);
                 }
             }
         }

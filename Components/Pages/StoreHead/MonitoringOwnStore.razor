@@ -950,6 +950,14 @@
         if (firstRender)
         {
             await UserState.InitializeAsync();
+
+            if (UserState.Role != "Store Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
             await LoadData();
             _isLoading = false;
             StateHasChanged();

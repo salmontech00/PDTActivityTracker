@@ -507,51 +507,142 @@
                                     </div>
                                 </TitleContent>
                                 <ChildContent>
-                                    @foreach (var task in itemsInCategory)
-                                    {
-                                        var progress = GetTaskProgress(task.Id);
-                                        <div class="preview-task-card">
-                                            <div class="preview-task-header">
-                                                <div class="preview-header-content-group">
-                                                    <div class="preview-task-name-container">
-                                                        <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
-                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">@task.TaskName</MudText>
-                                                    </div>
-                                                    @if (!string.IsNullOrEmpty(task.Description))
-                                                    {
-                                                        <div class="preview-description-row">
-                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
-                                                        </div>
-                                                    }
-                                                </div>
-                                                @if (task.TaskType == "Manpower")
+                                    @{
+                                        var itemsInCategory = _checklistItems
+                                        .Where(t => t.CategoryId == category.Id)
+                                        .OrderBy(t => t.SortOrder)
+                                        .ToList();
+
+                                        var groupedItems = new List<List<ChecklistItem>>();
+                                        if (itemsInCategory.Any())
+                                        {
+                                            var currentGroup = new List<ChecklistItem> { itemsInCategory[0] };
+                                            for (int k = 1; k < itemsInCategory.Count; k++)
+                                            {
+                                                var prev = itemsInCategory[k - 1];
+                                                var current = itemsInCategory[k];
+
+                                                bool isPrevGrid = prev.TaskType == "Manpower" || prev.TaskType == "Equipment";
+                                                bool isCurrentGrid = current.TaskType == "Manpower" || current.TaskType == "Equipment";
+
+                                                if (isPrevGrid && isCurrentGrid && prev.Section == current.Section)
                                                 {
-                                                    <div class="text-right" style="flex: 0 0 auto; margin-left: auto;">
-                                                        <MudText Typo="Typo.caption">Expected: @task.QuantityExpected</MudText>
-                                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">Actual: @(progress.ActualQuantity ?? 0)</MudText>
-                                                    </div>
+                                                    currentGroup.Add(current);
                                                 }
-                                            </div>
-
-                                            @if (!string.IsNullOrEmpty(progress.Remarks))
-                                            {
-                                                <div class="preview-remarks-container">
-                                                    <MudText Typo="Typo.body2"><b>Remarks:</b> @progress.Remarks</MudText>
-                                                </div>
+                                                else
+                                                {
+                                                    groupedItems.Add(currentGroup);
+                                                    currentGroup = new List<ChecklistItem> { current };
+                                                }
                                             }
+                                            groupedItems.Add(currentGroup);
+                                        }
 
-                                            @if (GetStoredPhotos(task.Id).Any())
+                                        int groupCounter = 1;
+                                    }
+
+                                    @foreach (var group in groupedItems)
+                                    {
+                                        var firstItem = group[0];
+                                        bool isGrid = firstItem.TaskType == "Manpower" || firstItem.TaskType == "Equipment";
+
+                                        if (!isGrid)
+                                        {
+                                            @foreach (var task in group)
                                             {
-                                                <div class="photo-grid">
-                                                    @foreach (var photo in GetStoredPhotos(task.Id))
+                                                var progress = GetTaskProgress(task.Id);
+                                                <div class="preview-task-card">
+                                                    <div class="preview-task-header">
+                                                        <div class="preview-header-content-group">
+                                                            <div class="preview-task-name-container">
+                                                                <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
+                                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">@groupCounter. @task.TaskName</MudText>
+                                                            </div>
+                                                            @if (!string.IsNullOrEmpty(task.Description))
+                                                            {
+                                                                <div class="preview-description-row">
+                                                                    <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+
+                                                    @if (!string.IsNullOrEmpty(progress.Remarks))
                                                     {
-                                                        <div class="photo-thumb-wrapper" @onclick="@(() => OpenPhotoDialog(photo))">
-                                                            <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
+                                                        <div class="preview-remarks-container">
+                                                            <MudText Typo="Typo.body2"><b>Remarks:</b> @progress.Remarks</MudText>
+                                                        </div>
+                                                    }
+
+                                                    @if (GetStoredPhotos(task.Id).Any())
+                                                    {
+                                                        <div class="photo-grid">
+                                                            @foreach (var photo in GetStoredPhotos(task.Id))
+                                                            {
+                                                                <div class="photo-thumb-wrapper" @onclick="@(() => OpenPhotoDialog(photo))">
+                                                                    <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
+                                                                </div>
+                                                            }
                                                         </div>
                                                     }
                                                 </div>
+                                                groupCounter++;
                                             }
-                                        </div>
+                                        }
+                                        else
+                                        {
+                                            var groupTitle = string.IsNullOrWhiteSpace(firstItem.Section) ? (firstItem.TaskType == "Manpower" ? "Manpower Tracking" : "Equipment Tracking") : firstItem.Section;
+                                            <div class="preview-task-card" style="padding: 12px;">
+                                                <div class="d-flex align-start mb-2">
+                                                    <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@groupCounter.</MudText>
+                                                    <div class="flex-grow-1">
+                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")">@groupTitle</MudText>
+                                                        @if (!string.IsNullOrWhiteSpace(firstItem.Description) && group.Count == 1)
+                                                        {
+                                                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">@firstItem.Description</MudText>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <MudTable Items="@group" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Style="background: transparent;">
+                                                    <HeaderContent>
+                                                        <MudTh Style="width: 40px;"></MudTh>
+                                                        <MudTh><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">@(firstItem.TaskType == "Manpower" ? "POSITION" : "ITEM")</MudText></MudTh>
+                                                        <MudTh Style="width: 80px; text-align: center;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">EXPECTED</MudText></MudTh>
+                                                        <MudTh Style="width: 100px; text-align: center;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">ACTUAL</MudText></MudTh>
+                                                    </HeaderContent>
+                                                    <RowTemplate Context="task">
+                                                        <MudTd>
+                                                            <MudText Typo="Typo.caption" Style="opacity: 0.5; font-weight: 700;">@((char)('a' + group.IndexOf(task))).</MudText>
+                                                        </MudTd>
+                                                        <MudTd DataLabel="Position">
+                                                            <div class="d-flex align-start gap-1">
+                                                                @if (task.IsMandatory)
+                                                                {
+                                                                    <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1rem; line-height: 1;">*</span>
+                                                                }
+                                                                <div>
+                                                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@task.TaskName</MudText>
+                                                                    @if (!string.IsNullOrWhiteSpace(task.Description) && group.Count > 1)
+                                                                    {
+                                                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; font-size: 0.7rem;">@task.Description</MudText>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </MudTd>
+                                                        <MudTd DataLabel="Expected" Style="text-align: center;">
+                                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@task.QuantityExpected</MudText>
+                                                        </MudTd>
+                                                        <MudTd DataLabel="Actual" Style="text-align: center;">
+                                                            <MudText Typo="Typo.body2" Style="@($"font-weight: 700; color: {(GetTaskProgress(task.Id).ActualQuantity < task.QuantityExpected ? "var(--mud-palette-error)" : "inherit")}")">
+                                                                @(GetTaskProgress(task.Id).ActualQuantity ?? 0)
+                                                            </MudText>
+                                                        </MudTd>
+                                                    </RowTemplate>
+                                                </MudTable>
+                                            </div>
+                                            groupCounter++;
+                                        }
                                     }
                                 </ChildContent>
                             </MudExpansionPanel>
@@ -769,11 +860,28 @@
         public Color StatusColor => !HasSession ? Color.Default : (CompletionPercentage >= 100 ? Color.Success : Color.Info);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
-        await LoadStoreAndMeta();
-        await LoadDailyData(DateTime.Today);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await UserState.InitializeAsync();
+
+            if (UserState.Role != "Area Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
+            await LoadStoreAndMeta();
+            await LoadDailyData(DateTime.Today);
+            // Initialization is handled inside LoadDailyData
+        }
     }
 
     private void OnThemeChanged() => StateHasChanged();

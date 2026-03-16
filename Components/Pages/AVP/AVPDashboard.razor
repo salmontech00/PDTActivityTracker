@@ -290,18 +290,27 @@
     private string[] _activityLabels = Array.Empty<string>();
     private List<Insight> _insights = new();
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
+    }
 
-        if (UserState.Role != "AVP" && UserState.Role != "Admin")
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
         {
-            NavigationManager.NavigateTo("/");
-            return;
-        }
+            await UserState.InitializeAsync();
+            if (UserState.Role != "AVP" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
 
-        await LoadData();
-        _initialized = true;
+            await LoadData();
+            _initialized = true;
+            StateHasChanged();
+        }
     }
 
     private void OnThemeChanged() => InvokeAsync(StateHasChanged);

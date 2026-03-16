@@ -1120,6 +1120,14 @@
         if (firstRender && !_initialized)
         {
             await UserState.InitializeAsync();
+
+            if (UserState.Role != "Area Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
             ThemeService.OnThemeChanged += OnThemeChanged;
             UserState.DashboardRefreshRequested += HandleDashboardRefresh;
             DashboardRefresh.OnRefreshRequested += OnGlobalRefreshRequested;

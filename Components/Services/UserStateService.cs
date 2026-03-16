@@ -15,6 +15,8 @@ namespace PDTActivityTracker.Components.Services
         public int SelectedStoreId { get; private set; }
 
 
+        public string? LastValidPage { get; private set; }
+
         public event Action? DashboardRefreshRequested;
         public void NotifyDashboardRefresh()
         {
@@ -43,6 +45,9 @@ namespace PDTActivityTracker.Components.Services
 
                     var selectedStoreId = await _sessionStorage.GetItemAsync<int>("selectedStoreId");
                     SelectedStoreId = selectedStoreId;
+
+                    var lastValidPage = await _sessionStorage.GetItemAsync<string>("lastValidPage");
+                    LastValidPage = lastValidPage;
                 }
 
             }
@@ -66,6 +71,7 @@ namespace PDTActivityTracker.Components.Services
             Fullname = null;
             Role = null;
             UserId = 0;
+            LastValidPage = null;
             try
             {
                 await _sessionStorage.RemoveItemAsync("username");
@@ -73,6 +79,7 @@ namespace PDTActivityTracker.Components.Services
                 await _sessionStorage.RemoveItemAsync("role");
                 await _sessionStorage.RemoveItemAsync("userId");
                 await _sessionStorage.RemoveItemAsync("selectedStoreId");
+                await _sessionStorage.RemoveItemAsync("lastValidPage");
             }
 
             catch { }
@@ -106,6 +113,24 @@ namespace PDTActivityTracker.Components.Services
         {
             SelectedStoreId = storeId;
             try { await _sessionStorage.SetItemAsync("selectedStoreId", storeId); } catch { }
+        }
+
+        public async Task SetLastValidPage(string url)
+        {
+            LastValidPage = url;
+            try { await _sessionStorage.SetItemAsync("lastValidPage", url); } catch { }
+        }
+
+        public string GetDashboardRoute()
+        {
+            return Role switch
+            {
+                "Store Head" => "/store-head/map",
+                "Area Head" => "/area-head/map",
+                "AVP" => "/avp/dashboard",
+                "Admin" => "/",
+                _ => "/login"
+            };
         }
     }
 }
