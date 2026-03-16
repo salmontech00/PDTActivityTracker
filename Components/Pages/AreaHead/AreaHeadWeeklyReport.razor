@@ -769,11 +769,28 @@
         public Color StatusColor => !HasSession ? Color.Default : (CompletionPercentage >= 100 ? Color.Success : Color.Info);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
-        await LoadStoreAndMeta();
-        await LoadDailyData(DateTime.Today);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await UserState.InitializeAsync();
+
+            if (UserState.Role != "Area Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
+            await LoadStoreAndMeta();
+            await LoadDailyData(DateTime.Today);
+            // Initialization is handled inside LoadDailyData
+        }
     }
 
     private void OnThemeChanged() => StateHasChanged();

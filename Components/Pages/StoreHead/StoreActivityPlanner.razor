@@ -687,10 +687,26 @@
     private int _completedCount = 0;
     private int _totalTasksCount = 0;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
-        await LoadData();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await UserState.InitializeAsync();
+
+            if (UserState.Role != "Store Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
+            await LoadData();
+        }
     }
 
     private void OnThemeChanged() => StateHasChanged();

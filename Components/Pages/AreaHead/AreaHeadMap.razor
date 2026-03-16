@@ -786,6 +786,14 @@
         {
             _objRef = DotNetObjectReference.Create(this);
             await UserState.InitializeAsync();
+
+            if (UserState.Role != "Area Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
             await LoadData();
             await Task.Delay(100);
             await InitializeMap();

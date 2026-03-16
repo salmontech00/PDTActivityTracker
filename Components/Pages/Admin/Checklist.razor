@@ -8,6 +8,8 @@
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject ISnackbar Snackbar
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@inject PDTActivityTracker.Components.Services.UserStateService UserState
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <PageTitle>Activity Planner Management</PageTitle>
@@ -1064,12 +1066,33 @@
     private string _categoryFilter = "All";
     private string _frequencyFilter = "All";
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         base.OnInitialized();
         ThemeService.OnThemeChanged += OnThemeChanged;
-        await LoadData();
-        _initialized = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_initialized)
+        {
+            await UserState.InitializeAsync();
+            if (UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+            await LoadData();
+            _initialized = true;
+
+            _objRef = DotNetObjectReference.Create(this);
+            _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/checklist-drag.js");
+            await _jsModule.InvokeVoidAsync("initializeDragAndDrop", _objRef);
+
+            StateHasChanged();
+        }
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private void OnThemeChanged()
@@ -1113,19 +1136,6 @@
     private string GetTitleStyle()
     {
         return $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")}; font-weight: 800;";
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            _objRef = DotNetObjectReference.Create(this);
-            _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/checklist-drag.js");
-            await _jsModule.InvokeVoidAsync("initializeDragAndDrop", _objRef);
-
-            StateHasChanged();
-        }
-        await base.OnAfterRenderAsync(firstRender);
     }
 
     [JSInvokable]

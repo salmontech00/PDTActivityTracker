@@ -327,7 +327,6 @@
         .legend-text {
             font-size: 0.55rem;
         }
-
         /* Hide zoom controls on mobile */
         .leaflet-control-zoom {
             display: none !important;
@@ -898,6 +897,14 @@
         {
             _objRef = DotNetObjectReference.Create(this);
             await UserState.InitializeAsync();
+
+            if (UserState.Role != "Store Head" && UserState.Role != "Admin")
+            {
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
+            }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
+
             await LoadData();
             // Small delay to ensure DOM is ready
             await Task.Delay(100);

@@ -702,12 +702,12 @@
             await UserState.InitializeAsync();
 
             // Check authentication
-            if (UserState.Role == null)
+            if (UserState.Role != "Admin")
             {
-                // Optionally handle redirect
-                // NavigationManager.NavigateTo("/", forceLoad: true);
-                // For now allow render to show empty or adjust logic
+                NavigationManager.NavigateTo(UserState.LastValidPage ?? UserState.GetDashboardRoute(), forceLoad: true);
+                return;
             }
+            await UserState.SetLastValidPage(NavigationManager.Uri);
 
             await LoadData();
 
