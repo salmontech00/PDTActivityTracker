@@ -99,6 +99,16 @@
             Monitoring
         </MudNavLink>
     }
+
+    @if (UserState.Role == "AVP")
+    {
+        <MudNavLink Href="/avp/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Dashboard">
+            Dashboard
+        </MudNavLink>
+        <MudNavLink Href="/avp/monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Assessment">
+            Monitoring
+        </MudNavLink>
+    }
 </MudNavMenu>
 
 @code {

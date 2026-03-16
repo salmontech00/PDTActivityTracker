@@ -221,13 +221,25 @@
         display: none;
     }
 
+    /* DESKTOP MAP STYLING */
+    .glass-panel:has(#map) {
+        padding: 8px !important;
+        border-radius: 12px !important;
+    }
+
+    #map {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
     /* MAP LEGEND */
     .map-legend-overlay {
         position: absolute;
         top: 20px;
         right: 20px;
         z-index: 1000;
-        padding: 2px;
+        padding: 4px 12px;
         border-radius: 12px;
         backdrop-filter: blur(8px);
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -256,14 +268,7 @@
     .legend-item {
         display: flex;
         align-items: center;
-        gap: 4px;
-    }
-
-    .legend-icon-wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        gap: 6px;
     }
 
     .legend-text {
@@ -323,6 +328,24 @@
         .glass-panel:has(#map) {
             height: 555px !important;
         }
+        /* Map Legend Full Width & Thinner */
+        .map-legend-overlay {
+            top: 14px;
+            right: 14px;
+            left: 14px;
+            padding: 4px 12px;
+            gap: 4px;
+            justify-content: space-between;
+            width: auto;
+        }
+
+        .legend-text {
+            font-size: 0.55rem;
+        }
+        /* Hide zoom controls on mobile */
+        .leaflet-control-zoom {
+            display: none !important;
+        }
     }
 
     @@media (min-width: 961px) {
@@ -342,19 +365,13 @@
         }
 
         .map-legend-overlay {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            padding: 2px;
-            border-radius: 12px;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: row;
-            gap: 0px;
-            align-items: center;
-            pointer-events: auto;
+            top: 12px;
+            right: 12px;
+            left: 12px;
+            padding: 2px 8px;
+            gap: 2px;
+            justify-content: space-between;
+            width: auto;
         }
 
         .legend-item {
@@ -364,24 +381,22 @@
         }
 
         .legend-text {
-            font-size: 0.55rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            white-space: nowrap;
+            font-size: 0.5rem;
         }
 
         .glass-panel:has(#map) {
             height: 350px !important;
+            padding: 8px !important;
+            border-radius: 12px !important;
         }
-        .mud-main-content{
+
+        .mud-main-content {
             padding-bottom: 0px !important;
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
     }
 
-    
 </style>
 
 <div class="store-container">
@@ -515,21 +530,17 @@
             <!-- Map Legend Overlay -->
             <div class="@($"map-legend-overlay {GetThemeClass()}")">
                 <div class="legend-item">
-                    <div class="legend-icon-wrapper">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
-                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
-                        </svg>
-                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
+                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                    </svg>
                     <MudText Class="legend-text" Style="@($"color: {GetTitleColor()}")">Assigned</MudText>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-icon-wrapper">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#f44336" stroke="#fff" stroke-width="1.5" />
-                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
-                        </svg>
-                    </div>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#f44336" stroke="#fff" stroke-width="1.5" />
+                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                    </svg>
                     <MudText Class="legend-text" Style="@($"color: {GetTitleColor()}")">Unassigned</MudText>
                 </div>
             </div>

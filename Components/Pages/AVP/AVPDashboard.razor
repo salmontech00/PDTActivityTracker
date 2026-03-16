@@ -1,0 +1,464 @@
+﻿@page "/avp/dashboard"
+@layout PDTActivityTracker.Components.Layout.MainLayout
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Services
+@inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
+@inject UserStateService UserState
+@inject NavigationManager NavigationManager
+@inject PDTActivityTracker.Components.Services.ThemeService ThemeService
+@implements IDisposable
+
+<PageTitle>Executive Dashboard - AVP</PageTitle>
+
+<style>
+    .dashboard-container {
+        padding: 1.5rem;
+    }
+
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 20px !important;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #0072cf !important;
+        }
+
+        .glass-panel.light {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+    .stat-card {
+        padding: 24px;
+        text-align: left;
+        position: relative;
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        opacity: 0.7;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 8px;
+        font-weight: 600;
+    }
+
+    .chart-container {
+        flex-grow: 1;
+        min-height: 250px;
+    }
+
+    .section-header {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        margin-bottom: 24px;
+    }
+
+    .performance-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+    }
+
+    .mobile-stats-grid {
+        display: none;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 960px) {
+        .dashboard-container {
+            padding: 1rem;
+        }
+
+        .section-header {
+            display: none !important;
+        }
+
+        .desktop-stats {
+            display: none !important;
+        }
+
+        .mobile-stats-grid {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+            .mobile-stats-grid .stat-card {
+                padding: 16px 12px;
+                border-radius: 16px !important;
+            }
+
+            .mobile-stats-grid .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .mobile-stats-grid .stat-label {
+                font-size: 0.65rem;
+                margin-top: 4px;
+            }
+
+            .mobile-stats-grid .MudIcon {
+                font-size: 1.5rem !important;
+            }
+    }
+
+    /* Force icons white in Light and Dark themes */
+    .glass-panel.light .mud-icon-root,
+    .glass-panel.dark .mud-icon-root {
+        color: #ffffff !important;
+    }
+
+    .glass-panel.light .mud-list-item-icon,
+    .glass-panel.dark .mud-list-item-icon {
+        color: #ffffff !important;
+    }
+
+    /* Force icons brand blue in Lightest theme */
+    .glass-panel.lightest .mud-icon-root,
+    .glass-panel.lightest .mud-list-item-icon {
+        color: #0072cf !important;
+    }
+</style>
+
+<div class="dashboard-container">
+    <MudText Typo="Typo.h4" Class="@($"section-header {GetThemeClass()}")">Executive Summary</MudText>
+
+    @if (!_initialized)
+    {
+        <div class="d-flex justify-center pa-12">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        </div>
+    }
+    else
+    {
+        <!-- Desktop Stats -->
+        <MudGrid Class="mb-8 desktop-stats">
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Filled.Store" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
+                    <div class="stat-value">@_totalStores</div>
+                    <div class="stat-label">Total Stores</div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Filled.Groups" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
+                    <div class="stat-value">@_totalAreaHeads</div>
+                    <div class="stat-label">Area Heads</div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Filled.Verified" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
+                    <div class="stat-value text-success">@_overallCompliance%</div>
+                    <div class="stat-label">System Compliance</div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                    <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="@GetIconStyle()" Size="Size.Large" Class="mb-2" />
+                    <div class="stat-value text-info">@_activeOperations</div>
+                    <div class="stat-label">Active Today</div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Mobile Stats -->
+        <div class="mobile-stats-grid">
+            <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Store" Style="@GetIconStyle()" Size="Size.Small" />
+                <div class="stat-value">@_totalStores</div>
+                <div class="stat-label">Stores</div>
+            </MudPaper>
+            <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Groups" Style="@GetIconStyle()" Size="Size.Small" />
+                <div class="stat-value">@_totalAreaHeads</div>
+                <div class="stat-label">Area Heads</div>
+            </MudPaper>
+            <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.Verified" Style="@GetIconStyle()" Size="Size.Small" />
+                <div class="stat-value">@_overallCompliance%</div>
+                <div class="stat-label">Compliance</div>
+            </MudPaper>
+            <MudPaper Class="@($"glass-panel stat-card {GetThemeClass()}")" Elevation="0">
+                <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Style="@GetIconStyle()" Size="Size.Small" />
+                <div class="stat-value">@_activeOperations</div>
+                <div class="stat-label">Active</div>
+            </MudPaper>
+        </div>
+
+        <MudGrid Class="mb-8">
+            <MudItem xs="12" lg="7" Class="d-flex">
+                <MudPaper Class="@($"glass-panel pa-6 flex-grow-1 d-flex flex-column {GetThemeClass()}")" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">System-Wide Activity Trend</MudText>
+                    <div class="chart-container">
+                        <MudChart ChartType="ChartType.Line"
+                                  ChartSeries="@_activityChartSeries"
+                                  XAxisLabels="@_activityLabels"
+                                  Width="100%"
+                                  Height="250px" />
+                    </div>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" lg="5" Class="d-flex">
+                <MudPaper Class="@($"glass-panel pa-6 flex-grow-1 d-flex flex-column {GetThemeClass()}")" Elevation="0">
+                    <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Strategic Insights</MudText>
+                    <MudList T="string" Dense="true" Class="flex-grow-1">
+                        @foreach (var insight in _insights)
+                        {
+                            <MudListItem Icon="@Icons.Material.Filled.Lightbulb" IconColor="@insight.Color">
+                                <MudText Typo="Typo.body2">@insight.Text</MudText>
+                            </MudListItem>
+                        }
+                    </MudList>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudText Typo="Typo.h5" Class="@($"section-header mb-4 {GetThemeClass()}")">Area Head Performance</MudText>
+        <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
+            <MudTable Items="_areaHeadPerformance" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Area Head</MudTh>
+                    <MudTh>Stores Managed</MudTh>
+                    <MudTh>Stores Active Today</MudTh>
+                    <MudTh>Avg. Compliance</MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Area Head">
+                        <div class="d-flex align-center gap-2">
+                            <MudAvatar Color="@GetAvatarColor()" Size="Size.Small">
+                                @if (!string.IsNullOrEmpty(context.ImagePath))
+                                {
+                                    <img src="@context.ImagePath" style="width: 100%; height: 100%; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="color: white !important;" />
+                                }
+                            </MudAvatar>
+                            <MudText Style="font-weight: 600;">@context.Name</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Stores Managed">@context.TotalStores</MudTd>
+                    <MudTd DataLabel="Stores Active Today">@context.ActiveToday</MudTd>
+                    <MudTd DataLabel="Avg. Compliance">
+                        <div class="d-flex align-center gap-2">
+                            <MudProgressLinear Color="@GetProgressColor(context.ComplianceRate)" Value="@context.ComplianceRate" Rounded="true" Style="width: 100px;" />
+                            <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)context.ComplianceRate)%</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.ComplianceRate)" Variant="Variant.Text" Style="font-weight: 700;">
+                            @GetStatusLabel(context.ComplianceRate)
+                        </MudChip>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        </MudPaper>
+    }
+</div>
+
+@code {
+    private bool _initialized = false;
+    private int _totalStores;
+    private int _totalAreaHeads;
+    private int _overallCompliance;
+    private int _activeOperations;
+
+    private List<AreaHeadMetric> _areaHeadPerformance = new();
+    private List<ChartSeries> _activityChartSeries = new();
+    private string[] _activityLabels = Array.Empty<string>();
+    private List<Insight> _insights = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeService.OnThemeChanged += OnThemeChanged;
+
+        if (UserState.Role != "AVP" && UserState.Role != "Admin")
+        {
+            NavigationManager.NavigateTo("/");
+            return;
+        }
+
+        await LoadData();
+        _initialized = true;
+    }
+
+    private void OnThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private async Task LoadData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        var today = DateTime.Today;
+
+        // Core Stats
+        _totalStores = await db.Stores.CountAsync();
+        _totalAreaHeads = await db.Users.CountAsync(u => u.Role == "Area Head");
+
+        var allStores = await db.Stores.ToListAsync();
+        var areaHeads = await db.Users.Where(u => u.Role == "Area Head").ToListAsync();
+        var todayActivities = await db.StoreDailyActivities
+            .Where(a => a.Date.Date == today)
+            .Include(a => a.Store!)
+            .ToListAsync();
+
+        _activeOperations = todayActivities.Select(a => a.StoreId).Distinct().Count();
+
+        // Calculate Overall Compliance
+        // For simplicity, overall compliance is the average of current activity progress of all stores
+        // In a real system, you'd calculate this based on task completion
+        // Calculate Overall Compliance based on active stores vs total stores
+        _overallCompliance = _totalStores > 0 ? (int)((double)_activeOperations / _totalStores * 100) : 0;
+
+        // Area Head Performance
+        _areaHeadPerformance = new List<AreaHeadMetric>();
+        foreach (var ah in areaHeads)
+        {
+            var ahStores = allStores.Where(s => s.AreaHeadId == ah.Id).ToList();
+            var ahActive = todayActivities.Count(a => a.Store?.AreaHeadId == ah.Id);
+
+            var compliance = ahStores.Count > 0 ? (int)((double)ahActive / ahStores.Count * 100) : 0;
+
+            var imagePath = ah.ImageData != null && !string.IsNullOrEmpty(ah.ImageMimeType)
+                ? $"data:{ah.ImageMimeType};base64,{Convert.ToBase64String(ah.ImageData)}"
+                : null;
+
+            _areaHeadPerformance.Add(new AreaHeadMetric
+            {
+                Name = ah.Fullname,
+                ImagePath = imagePath,
+                TotalStores = ahStores.Count,
+                ActiveToday = ahActive,
+                ComplianceRate = compliance
+            });
+        }
+
+        // Activity Trend (Last 7 Days)
+        _activityLabels = Enumerable.Range(0, 7).Select(i => DateTime.Today.AddDays(-6 + i).ToString("MMM dd")).ToArray();
+        var trendValues = new double[7];
+        for (int i = 0; i < 7; i++)
+        {
+            var date = DateTime.Today.AddDays(-6 + i);
+            trendValues[i] = await db.StoreDailyActivities.CountAsync(a => a.Date.Date == date.Date);
+        }
+        _activityChartSeries.Add(new ChartSeries { Name = "Active Stores", Data = trendValues });
+
+        // Generate Insights
+        _insights = new List<Insight>();
+
+        // Coverage Insight
+        _insights.Add(new Insight { Text = $"System monitoring activated for all {_totalStores} configured stores.", Color = Color.Primary });
+
+        // Activity Trend (Compare today with yesterday)
+        var yesterday = DateTime.Today.AddDays(-1);
+        var yesterdayCount = await db.StoreDailyActivities.CountAsync(a => a.Date.Date == yesterday.Date);
+
+        if (_activeOperations > yesterdayCount && yesterdayCount > 0)
+            _insights.Add(new Insight { Text = "Operational activity is trending upwards compared to yesterday.", Color = Color.Success });
+        else if (_activeOperations < yesterdayCount && yesterdayCount > 0)
+            _insights.Add(new Insight { Text = "Daily activity has decreased since yesterday; reviewing pending stores highly recommended.", Color = Color.Error });
+        else
+            _insights.Add(new Insight { Text = $"{_activeOperations} stores have initiated operational checklists today.", Color = Color.Info });
+
+        // Compliance Focus
+        var lowComplianceAh = _areaHeadPerformance.OrderBy(p => p.ComplianceRate).FirstOrDefault();
+        if (lowComplianceAh != null && lowComplianceAh.ComplianceRate < 100)
+            _insights.Add(new Insight { Text = $"Portfolio Focus: {lowComplianceAh.Name}'s area is currently at {lowComplianceAh.ComplianceRate:F0}% active reporting.", Color = Color.Warning });
+        else if (_totalStores > 0)
+            _insights.Add(new Insight { Text = "Full chain compliance achieved: All Area Head portfolios are 100% active.", Color = Color.Success });
+
+        // Photo Activity
+        var todayPhotos = await db.TaskPhotos.CountAsync(p => p.UploadedAt.Date == DateTime.Today);
+        if (todayPhotos > 0)
+            _insights.Add(new Insight { Text = $"{todayPhotos} verification photos have been uploaded to the system today.", Color = Color.Info });
+    }
+
+    private string GetThemeClass() => ThemeService.CurrentTheme switch
+    {
+        ThemeMode.Lightest => "lightest",
+        ThemeMode.Light => "light",
+        ThemeMode.Dark => "dark",
+        _ => "light"
+    };
+
+    private string GetIconStyle() => ThemeService.CurrentTheme == ThemeMode.Lightest
+        ? "color: #0072cf;"
+        : "color: #ffffff;";
+
+    private Color GetAvatarColor()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => Color.Primary,
+            _ => Color.Inherit
+        };
+    }
+
+    private Color GetProgressColor(double value) => value switch
+    {
+        >= 90 => Color.Success,
+        >= 70 => Color.Info,
+        >= 50 => Color.Warning,
+        _ => Color.Error
+    };
+
+    private Color GetStatusColor(double value) => value switch
+    {
+        >= 90 => Color.Success,
+        >= 70 => Color.Info,
+        _ => Color.Warning
+    };
+
+    private string GetStatusLabel(double value) => value switch
+    {
+        >= 90 => "Excellent",
+        >= 70 => "Target Met",
+        _ => "Needs Focus"
+    };
+
+    public class AreaHeadMetric
+    {
+        public string Name { get; set; } = "";
+        public string? ImagePath { get; set; }
+        public int TotalStores { get; set; }
+        public int ActiveToday { get; set; }
+        public double ComplianceRate { get; set; }
+    }
+
+    public class RegionMetric
+    {
+        public string Name { get; set; } = "";
+        public int Compliance { get; set; }
+    }
+
+    public class Insight
+    {
+        public string Text { get; set; } = "";
+        public Color Color { get; set; }
+    }
+}

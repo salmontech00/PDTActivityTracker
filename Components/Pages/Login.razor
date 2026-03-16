@@ -555,6 +555,10 @@
                 {
                     NavigationManager.NavigateTo("/area-head/map", forceLoad: true);
                 }
+                else if (user.Role == "AVP")
+                {
+                    NavigationManager.NavigateTo("/avp/dashboard", forceLoad: true);
+                }
                 else
                 {
                     NavigationManager.NavigateTo("/", forceLoad: true);

@@ -70,9 +70,13 @@
     <DialogContent>
         <MudPaper Class="@($"glass-panel pa-6 {GetThemeClass()}")" Elevation="0" Style="background: transparent !important;">
             <MudSelect T="string" @bind-Value="_reportType" Label="Report Type" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4">
-                <MudSelectItem Value="@("All")">All Reports</MudSelectItem>
-                <MudSelectItem Value="@("ByStore")">By Store</MudSelectItem>
-                <MudSelectItem Value="@("ByUser")">By User</MudSelectItem>
+                <MudSelectItem Value="@("All")">Activity Reports</MudSelectItem>
+                <MudSelectItem Value="@("ByStore")">Reports By Store</MudSelectItem>
+                <MudSelectItem Value="@("ByUser")">Reports By User</MudSelectItem>
+                @if (UserState.Role == "AVP" || UserState.Role == "Admin")
+                {
+                    <MudSelectItem Value="@("ExecutiveSummary")">Executive Summary (PDF)</MudSelectItem>
+                }
             </MudSelect>
 
             @if (_reportType == "ByStore")
@@ -117,10 +121,17 @@
                                 Margin="Margin.Dense"
                                 Class="mb-4" />
 
-            <MudSelect T="string" @bind-Value="_exportFormat" Label="Format" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-6">
-                <MudSelectItem Value="@("Excel")">Excel</MudSelectItem>
-                <MudSelectItem Value="@("PDF")">PDF</MudSelectItem>
-            </MudSelect>
+            @if (_reportType != "ExecutiveSummary")
+            {
+                <MudSelect T="string" @bind-Value="_exportFormat" Label="Format" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-6">
+                    <MudSelectItem Value="@("Excel")">Excel</MudSelectItem>
+                    <MudSelectItem Value="@("PDF")">PDF</MudSelectItem>
+                </MudSelect>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Class="mb-6" Dense="true">Executive Summary is optimized for PDF format.</MudAlert>
+            }
 
             <MudButton Variant="Variant.Filled"
                        Color="Color.Primary"
@@ -192,42 +203,52 @@
         try
         {
             using var db = await DbFactory.CreateDbContextAsync();
-            var query = db.StoreDailyActivities
-                .Include(a => a.Store)
-                .Include(a => a.StartedBy)
-                .AsNoTracking();
-
-            // Apply filters
-            if (_dateRange.Start.HasValue)
-                query = query.Where(a => a.Date >= _dateRange.Start.Value.Date);
-            if (_dateRange.End.HasValue)
-                query = query.Where(a => a.Date <= _dateRange.End.Value.Date.AddDays(1).AddSeconds(-1));
-
-            if (_reportType == "ByStore" && _selectedStoreId.HasValue)
-                query = query.Where(a => a.StoreId == _selectedStoreId.Value);
-
-            if (_reportType == "ByUser" && _selectedUserId.HasValue)
-                query = query.Where(a => a.StartedById == _selectedUserId.Value);
-
-            if (UserState.Role == "Area Head")
+            List<StoreDailyActivity> activities = new();
+            if (_reportType != "ExecutiveSummary")
             {
-                var assignedStoreIds = _stores.Select(s => s.Id).ToList();
-                query = query.Where(a => assignedStoreIds.Contains(a.StoreId));
-            }
+                var query = db.StoreDailyActivities
+                    .Include(a => a.Store)
+                    .Include(a => a.StartedBy)
+                    .AsNoTracking();
 
-            var activities = await query.OrderByDescending(a => a.Date).ToListAsync();
+                // Apply filters
+                if (_dateRange.Start.HasValue)
+                    query = query.Where(a => a.Date >= _dateRange.Start.Value.Date);
+                if (_dateRange.End.HasValue)
+                    query = query.Where(a => a.Date <= _dateRange.End.Value.Date.AddDays(1).AddSeconds(-1));
 
-            if (!activities.Any())
-            {
-                Snackbar.Add("No reports found for the selected criteria", Severity.Warning);
-                return;
+                if (_reportType == "ByStore" && _selectedStoreId.HasValue)
+                    query = query.Where(a => a.StoreId == _selectedStoreId.Value);
+
+                if (_reportType == "ByUser" && _selectedUserId.HasValue)
+                    query = query.Where(a => a.StartedById == _selectedUserId.Value);
+
+                if (UserState.Role == "Area Head")
+                {
+                    var assignedStoreIds = _stores.Select(s => s.Id).ToList();
+                    query = query.Where(a => assignedStoreIds.Contains(a.StoreId));
+                }
+
+                activities = await query.OrderByDescending(a => a.Date).ToListAsync();
+
+                if (!activities.Any())
+                {
+                    Snackbar.Add("No reports found for the selected criteria", Severity.Warning);
+                    return;
+                }
             }
 
             byte[] fileBytes;
             string fileName;
             string contentType;
 
-            if (_exportFormat == "Excel")
+            if (_reportType == "ExecutiveSummary")
+            {
+                fileBytes = await ExportService.ExportExecutiveSummaryAsync();
+                fileName = $"Executive_Summary_{DateTime.Now:yyyyMMdd}.pdf";
+                contentType = "application/pdf";
+            }
+            else if (_exportFormat == "Excel")
             {
                 fileBytes = await ExportService.ExportReportsToExcelAsync(activities);
                 fileName = $"Monitoring_Report_{DateTime.Now:yyyyMMdd}.xlsx";
