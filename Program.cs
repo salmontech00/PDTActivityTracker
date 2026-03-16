@@ -361,6 +361,11 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         BEGIN
             ALTER TABLE [ChecklistItems] ADD [TaskType] nvarchar(max) NULL;
         END
+        
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Position' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [Position] nvarchar(max) NULL;
+        END
 
         -- Create StoreDailyActivities Table
         IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[StoreDailyActivities]') AND type in (N'U'))
