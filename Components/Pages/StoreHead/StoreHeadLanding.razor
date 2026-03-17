@@ -1,6 +1,7 @@
 ﻿@page "/store-head/map"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
@@ -1087,7 +1088,8 @@
                 .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
                 .ToListAsync();
 
-            _totalTasksCount = await db.ChecklistItems.CountAsync();
+            var allItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+            _totalTasksCount = allItems.Count(t => IsTaskAssignedToStore(t, storeId));
             _completedTasks = taskProgresses.Count(p => p.IsCompleted);
             _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
         }
@@ -1099,7 +1101,8 @@
 
         // 3. Fetch Category Progress Timeline
         var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var allChecklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var checklistItems = allChecklistItems.Where(t => IsTaskAssignedToStore(t, storeId)).ToList();
 
         var currentProgresses = taskProgresses ?? new List<TaskProgress>();
 
@@ -1217,4 +1220,17 @@
         "Warning" => Color.Warning,
         _ => Color.Info
     };
+    private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
+    {
+        // Only Manpower tasks have store-specific visibility logic
+        if (task.TaskType != "Manpower") return true;
+
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        try
+        {
+            var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
+            return ids != null && ids.Contains(storeId);
+        }
+        catch { return false; }
+    }
 }

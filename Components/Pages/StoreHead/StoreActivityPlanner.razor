@@ -1,6 +1,7 @@
 ﻿@page "/store-head/planner"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
@@ -538,20 +539,14 @@
                         </TitleContent>
                         <ChildContent>
                             @{
-                                var regularTasks = itemsInCategory.Where(t => t.TaskType != "Manpower" && t.TaskType != "Equipment").ToList();
-                                var gridTasks = itemsInCategory.Where(t => t.TaskType == "Manpower" || t.TaskType == "Equipment").ToList();
-                            }
-
-                            @if (regularTasks.Any())
-                            {
                                 var lastSection = "";
-                                @for (int i = 0; i < regularTasks.Count; i++)
+                                @for (int i = 0; i < itemsInCategory.Count; i++)
                                 {
-                                    var task = regularTasks[i];
+                                    var task = itemsInCategory[i];
                                     var taskNumber = i + 1;
                                     var progress = GetTaskProgress(task.Id);
 
-                                    // Section Header
+                                    // Section Header logic
                                     @if (task.Section != lastSection && !string.IsNullOrEmpty(task.Section))
                                     {
                                         <div class="mt-4 mb-2 px-2">
@@ -614,6 +609,95 @@
                                             }
                                         </div>
 
+                                        @if (task.TaskType == "Manpower" || task.TaskType == "Equipment")
+                                        {
+                                            <div class="manpower-input-container">
+                                                <div class="d-flex flex-column gap-3">
+                                                    @if (task.TaskType == "Manpower")
+                                                    {
+                                                        var positions = GetManpowerPositions(task);
+                                                        if (positions.Any())
+                                                        {
+                                                            <div class="mb-1">
+                                                                <MudText Typo="Typo.body2" Style="font-weight: 700; opacity: 0.9;">Manpower Breakdown:</MudText>
+                                                            </div>
+                                                            @for (int j = 0; j < positions.Count; j++)
+                                                            {
+                                                                var pos = positions[j];
+                                                                var index = j;
+                                                                char label = (char)('a' + j);
+                                                                <div class="d-flex align-center gap-4 flex-wrap ml-2 mb-1">
+                                                                    <div style="min-width: 140px; flex-grow: 1;">
+                                                                        <MudText Typo="Typo.caption" Style="font-weight: 600; opacity: 0.8;">
+                                                                            @label. @pos.Name
+                                                                        </MudText>
+                                                                    </div>
+                                                                    <div class="d-flex align-center gap-2">
+                                                                        <div style="width: 80px;">
+                                                                            <MudNumericField T="int?"
+                                                                                             Label="Expected"
+                                                                                             Value="@GetPositionExpectedValue(progress, task, index)"
+                                                                                             ValueChanged="@((int? val) => UpdatePositionExpected(task, progress, index, val))"
+                                                                                             Variant="Variant.Outlined"
+                                                                                             Margin="Margin.Dense"
+                                                                                             HideSpinButtons="true"
+                                                                                             Class="manpower-input center-input" />
+                                                                        </div>
+                                                                        <div style="width: 80px;">
+                                                                            <MudNumericField T="int?"
+                                                                                             Label="Actual"
+                                                                                             Value="@GetPositionActualValue(progress, index)"
+                                                                                             ValueChanged="@((int? val) => UpdatePositionActual(task, progress, index, val))"
+                                                                                             Variant="Variant.Outlined"
+                                                                                             Margin="Margin.Dense"
+                                                                                             HideSpinButtons="true"
+                                                                                             Class="manpower-input center-input" />
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            <div class="mt-2 pt-2 d-flex align-center gap-6" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL EXPECTED: <b style="color: var(--mud-palette-primary);">@GetTotalExpectedValue(progress, task)</b></MudText>
+                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL ACTUAL: <b style="color: var(--mud-palette-success);">@(progress.ActualQuantity ?? 0)</b></MudText>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="d-flex align-center gap-4">
+                                                                <MudText Typo="Typo.body2">Expected: <b>@task.QuantityExpected</b></MudText>
+                                                                <div style="width: 100px;">
+                                                                    <MudNumericField T="int?"
+                                                                                     Label="Actual"
+                                                                                     Value="@progress.ActualQuantity"
+                                                                                     ValueChanged="@((int? val) => { progress.ActualQuantity = val; _ = OnManpowerChanged(task, progress); })"
+                                                                                     Variant="Variant.Outlined"
+                                                                                     Margin="Margin.Dense"
+                                                                                     HideSpinButtons="true"
+                                                                                     Class="manpower-input center-input" />
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="d-flex align-center gap-4">
+                                                            <MudText Typo="Typo.body2">Expected: <b>@task.QuantityExpected</b></MudText>
+                                                            <div style="width: 100px;">
+                                                                <MudNumericField T="int?"
+                                                                                 Label="Actual"
+                                                                                 Value="@progress.ActualQuantity"
+                                                                                 ValueChanged="@((int? val) => { progress.ActualQuantity = val; _ = OnManpowerChanged(task, progress); })"
+                                                                                 Variant="Variant.Outlined"
+                                                                                 Margin="Margin.Dense"
+                                                                                 HideSpinButtons="true"
+                                                                                 Class="manpower-input center-input" />
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+
                                         @if (task.IsRemarksRequired)
                                         {
                                             <div class="preview-remarks-container">
@@ -642,57 +726,6 @@
                                             </div>
                                         }
                                     </div>
-                                }
-                            }
-
-                            @if (gridTasks.Any())
-                            {
-                                var gridGroups = gridTasks.GroupBy(t => t.TaskType).ToList();
-                                foreach (var group in gridGroups)
-                                {
-                                    string headerText = group.Key == "Manpower" ? "MANPOWER TRACKING" : "EQUIPMENT TRACKING";
-                                    string colName = group.Key == "Manpower" ? "POSITION" : "ITEM";
-
-                                    <div class="mt-4 mb-2 px-2">
-                                        <MudText Typo="Typo.subtitle2" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 0.7rem; opacity: 0.6;">
-                                            @headerText
-                                        </MudText>
-                                        <MudDivider Class="mt-1 mb-3" Style="opacity: 0.1;" />
-                                    </div>
-
-                                    <MudTable Items="@group" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Style="background: transparent;">
-                                        <HeaderContent>
-                                            <MudTh><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">@colName</MudText></MudTh>
-                                            <MudTh Style="width: 100px;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">EXPECTED</MudText></MudTh>
-                                            <MudTh Style="width: 120px; text-align: center;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">ACTUAL</MudText></MudTh>
-                                        </HeaderContent>
-                                        <RowTemplate Context="task">
-                                            <MudTd DataLabel="@colName">
-                                                <div class="d-flex align-start gap-2">
-                                                    @if (task.IsMandatory)
-                                                    {
-                                                        <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1.2rem; line-height: 1;">*</span>
-                                                    }
-                                                    <div>
-                                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@(string.IsNullOrWhiteSpace(task.TaskName) ? task.Description : task.TaskName)</MudText>
-                                                        @if (!string.IsNullOrWhiteSpace(task.TaskName) && !string.IsNullOrWhiteSpace(task.Description))
-                                                        {
-                                                            <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2; margin-top: 2px;">@task.Description</MudText>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            </MudTd>
-                                            <MudTd DataLabel="Expected">
-                                                <MudText Typo="Typo.body2" Style="font-weight: 700;">@task.QuantityExpected</MudText>
-                                            </MudTd>
-                                            <MudTd DataLabel="Actual" Style="text-align: center;">
-                                                <MudNumericField T="int?"
-                                                                 Value="@GetTaskProgress(task.Id).ActualQuantity"
-                                                                 ValueChanged="@((int? val) => { var p = GetTaskProgress(task.Id); p.ActualQuantity = val; _ = OnManpowerChanged(task, p); })"
-                                                                 Variant="Variant.Outlined" Margin="Margin.Dense" HideSpinButtons="true" Class="manpower-input center-input" />
-                                            </MudTd>
-                                        </RowTemplate>
-                                    </MudTable>
                                 }
                             }
                         </ChildContent>
@@ -794,7 +827,8 @@
 
 
         _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        _checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var allItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        _checklistItems = allItems.Where(t => IsTaskAssignedToStore(t, StoreId)).ToList();
         // Total count based on filter
 
         var today = DateTime.Today;
@@ -894,9 +928,33 @@
             }
         }
 
-        if (isNowCompleted && task.TaskType == "Manpower" && !prog.ActualQuantity.HasValue)
+        if (isNowCompleted && task.TaskType == "Manpower")
         {
-            isNowCompleted = false;
+            var positions = GetManpowerPositions(task);
+            if (positions.Any())
+            {
+                if (string.IsNullOrWhiteSpace(prog.PositionActuals))
+                {
+                    isNowCompleted = false;
+                }
+                else
+                {
+                    try
+                    {
+                        var actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals);
+                        // All defined positions MUST have a value entered
+                        if (actuals == null || actuals.Count < positions.Count || actuals.Take(positions.Count).Any(a => !a.HasValue))
+                        {
+                            isNowCompleted = false;
+                        }
+                    }
+                    catch { isNowCompleted = false; }
+                }
+            }
+            else if (!prog.ActualQuantity.HasValue)
+            {
+                isNowCompleted = false;
+            }
         }
 
         if (prog.IsCompleted && prog.CompletedAt.HasValue && prog.CompletedAt.Value.Date < DateTime.Today && task.Frequency != "Daily")
@@ -1290,5 +1348,145 @@
                 await db.SaveChangesAsync();
             }
         }
+    }
+    private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
+    {
+        // Only Manpower tasks have store-specific visibility logic
+        if (task.TaskType != "Manpower") return true;
+
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        try
+        {
+            var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
+            return ids != null && ids.Contains(storeId);
+        }
+        catch { return false; }
+    }
+
+    private List<ManpowerPosition> GetManpowerPositions(ChecklistItem task)
+    {
+        if (task.TaskType != "Manpower" || string.IsNullOrWhiteSpace(task.Position))
+            return new List<ManpowerPosition>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<ManpowerPosition>>(task.Position) ?? new List<ManpowerPosition>();
+        }
+        catch { return new List<ManpowerPosition>(); }
+    }
+
+    private int? GetPositionActualValue(TaskProgress prog, int index)
+    {
+        if (string.IsNullOrWhiteSpace(prog.PositionActuals)) return null;
+        try
+        {
+            var actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals);
+            if (actuals != null && index >= 0 && index < actuals.Count)
+            {
+                return actuals[index];
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private int? GetPositionExpectedValue(TaskProgress prog, ChecklistItem task, int index)
+    {
+        // If progress has its own expected values, use them
+        if (!string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            try
+            {
+                var expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected);
+                if (expecteds != null && index >= 0 && index < expecteds.Count)
+                {
+                    return expecteds[index];
+                }
+            }
+            catch { }
+        }
+
+        // Fallback to ChecklistItem default positions
+        var positions = GetManpowerPositions(task);
+        if (index >= 0 && index < positions.Count)
+        {
+            return positions[index].Count;
+        }
+
+        return null;
+    }
+
+    private async Task UpdatePositionExpected(ChecklistItem task, TaskProgress prog, int index, int? value)
+    {
+        List<int?> expecteds;
+        var positions = GetManpowerPositions(task);
+
+        if (string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            expecteds = positions.Select(p => (int?)p.Count).ToList();
+        }
+        else
+        {
+            try
+            {
+                expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected) ?? new List<int?>();
+            }
+            catch { expecteds = new List<int?>(); }
+        }
+
+        while (expecteds.Count <= index) expecteds.Add(null);
+        expecteds[index] = value;
+
+        prog.PositionExpected = JsonSerializer.Serialize(expecteds);
+
+        // We don't necessarily update task.QuantityExpected because that's the Admin's master record
+        // but we might want to update some UI total if needed.
+
+        await OnManpowerChanged(task, prog);
+    }
+
+    private int GetTotalExpectedValue(TaskProgress prog, ChecklistItem task)
+    {
+        if (!string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            try
+            {
+                var expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected);
+                if (expecteds != null)
+                {
+                    return expecteds.Sum(a => a ?? 0);
+                }
+            }
+            catch { }
+        }
+        return task.QuantityExpected ?? 0;
+    }
+
+    private async Task UpdatePositionActual(ChecklistItem task, TaskProgress prog, int index, int? value)
+    {
+        List<int?> actuals;
+        if (string.IsNullOrWhiteSpace(prog.PositionActuals))
+        {
+            var positions = GetManpowerPositions(task);
+            actuals = new List<int?>(new int?[positions.Count]);
+        }
+        else
+        {
+            try
+            {
+                actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals) ?? new List<int?>();
+            }
+            catch { actuals = new List<int?>(); }
+        }
+
+        while (actuals.Count <= index) actuals.Add(null);
+        actuals[index] = value;
+
+        prog.PositionActuals = JsonSerializer.Serialize(actuals);
+
+        // Update total ActualQuantity
+        prog.ActualQuantity = actuals.Sum(a => a ?? 0);
+
+        await OnManpowerChanged(task, prog);
     }
 }
