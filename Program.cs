@@ -367,6 +367,11 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             ALTER TABLE [ChecklistItems] ADD [Position] nvarchar(max) NULL;
         END
 
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'SelectedStores' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [SelectedStores] nvarchar(max) NULL;
+        END
+
         -- Create StoreDailyActivities Table
         IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[StoreDailyActivities]') AND type in (N'U'))
         BEGIN
@@ -422,6 +427,17 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 CONSTRAINT [FK_TaskProgresses_StoreDailyActivities_StoreDailyActivityId] FOREIGN KEY ([StoreDailyActivityId]) REFERENCES [StoreDailyActivities] ([Id]) ON DELETE CASCADE,
                 CONSTRAINT [FK_TaskProgresses_ChecklistItems_ChecklistItemId] FOREIGN KEY ([ChecklistItemId]) REFERENCES [ChecklistItems] ([Id])
             );
+        END
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'PositionActuals' AND Object_ID = Object_ID(N'TaskProgresses'))
+            BEGIN
+                ALTER TABLE [TaskProgresses] ADD [PositionActuals] nvarchar(max) NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'PositionExpected' AND Object_ID = Object_ID(N'TaskProgresses'))
+            BEGIN
+                ALTER TABLE [TaskProgresses] ADD [PositionExpected] nvarchar(max) NULL;
+            END
         END
     ");
 

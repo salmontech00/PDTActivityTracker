@@ -32,6 +32,16 @@ namespace PDTActivityTracker.Components.Model
 
         public string? TaskType { get; set; } // "Regular", "Manpower", "PhotoOnly"
 
+        public string? Position { get; set; }
+
+        public string? SelectedStores { get; set; }
+
         public int SortOrder { get; set; } = 0;
+    }
+
+    public class ManpowerPosition
+    {
+        public string Name { get; set; } = string.Empty;
+        public int Count { get; set; } = 1;
     }
 }

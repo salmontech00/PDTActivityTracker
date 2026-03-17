@@ -1,6 +1,7 @@
 ﻿@page "/area-head/monitoring"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using PDTActivityTracker.Components.Pages.Dialogs
@@ -1194,15 +1195,16 @@
         _activeHeads = todayActivities.Select(a => a.StartedById).Distinct().Count();
 
         var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
-        var checklistCount = checklistItems.Count;
 
         foreach (var storeId in storeIds)
         {
             var activity = _todayActivities.GetValueOrDefault(storeId);
+            var storeChecklistCount = checklistItems.Count(t => IsTaskAssignedToStore(t, storeId));
+
             if (activity != null)
             {
                 var completedTasks = await db.TaskProgresses.CountAsync(tp => tp.StoreDailyActivityId == activity.Id && tp.IsCompleted);
-                var progress = checklistCount > 0 ? (completedTasks * 100.0 / checklistCount) : 0;
+                var progress = storeChecklistCount > 0 ? (completedTasks * 100.0 / storeChecklistCount) : 0;
                 _storeProgresses[storeId] = progress;
             }
             else
@@ -1218,15 +1220,17 @@
         _categoryPerformance.Clear();
         foreach (var category in _categoriesList)
         {
-            var tasksInCategory = checklistItems.Where(item => item.CategoryId == category.Id).Select(item => item.Id).ToList();
+            var tasksInCategory = checklistItems.Where(item => item.CategoryId == category.Id).ToList();
             if (!tasksInCategory.Any()) continue;
 
-            var totalPossible = tasksInCategory.Count * _assignedStores.Count;
+            // totalPossible is the sum of tasks in this category that are assigned to each store
+            var totalPossible = _assignedStores.Sum(s => tasksInCategory.Count(t => IsTaskAssignedToStore(t, s.Id)));
             if (totalPossible == 0) continue;
 
+            var taskIdsInCategory = tasksInCategory.Select(t => t.Id).ToList();
             var activeSessionIds = todayActivities.Select(a => a.Id).ToList();
             var completedCount = await db.TaskProgresses.AsNoTracking()
-                .Where(tp => activeSessionIds.Contains(tp.StoreDailyActivityId) && tasksInCategory.Contains(tp.ChecklistItemId) && tp.IsCompleted)
+                .Where(tp => activeSessionIds.Contains(tp.StoreDailyActivityId) && taskIdsInCategory.Contains(tp.ChecklistItemId) && tp.IsCompleted)
                 .CountAsync();
 
             _categoryPerformance.Add(new CategoryPerformanceModel
@@ -1258,10 +1262,12 @@
 
         // Cache progress for all activities
         _activityProgressCache.Clear();
+        _activityProgressCache.Clear();
         foreach (var activity in _activityLogs)
         {
             var completedCount = await db.TaskProgresses.CountAsync(tp => tp.StoreDailyActivityId == activity.Id && tp.IsCompleted);
-            _activityProgressCache[activity.Id] = checklistCount > 0 ? (completedCount * 100.0 / checklistCount) : 0;
+            var activityChecklistCount = checklistItems.Count(t => IsTaskAssignedToStore(t, activity.StoreId));
+            _activityProgressCache[activity.Id] = activityChecklistCount > 0 ? (completedCount * 100.0 / activityChecklistCount) : 0;
         }
 
         ApplyReportFilters();
@@ -1581,5 +1587,18 @@
             await LoadData();
             StateHasChanged();
         }
+    }
+    private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
+    {
+        // Only Manpower tasks have store-specific visibility logic
+        if (task.TaskType != "Manpower") return true;
+
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        try
+        {
+            var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
+            return ids != null && ids.Contains(storeId);
+        }
+        catch { return false; }
     }
 }

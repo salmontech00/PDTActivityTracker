@@ -2,6 +2,7 @@
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject ISnackbar Snackbar
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
@@ -49,7 +50,7 @@
                 <MudItem xs="12">
                     <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
-                <MudItem xs="12" sm="6">
+                <MudItem xs="12" sm="4">
                     <MudSelect T="int" Label="Category" @bind-Value="_model.CategoryId" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
                         @foreach (var cat in _categories)
                         {
@@ -57,14 +58,14 @@
                         }
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="6">
+                <MudItem xs="12" sm="4">
                     <MudSelect T="string" Label="Frequency" @bind-Value="_model.Frequency" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
                         <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
                         <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
                         <MudSelectItem Value="@("Monthly")">Monthly</MudSelectItem>
                     </MudSelect>
                 </MudItem>
-                <MudItem xs="12" sm="6">
+                <MudItem xs="12" sm="4">
                     <MudSelect T="string" Label="Task Type" @bind-Value="_model.TaskType" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
                         <MudSelectItem Value="@("Regular")">Regular</MudSelectItem>
                         <MudSelectItem Value="@("Manpower")">Manpower</MudSelectItem>
@@ -72,10 +73,74 @@
                         <MudSelectItem Value="@("PhotoOnly")">Photo Only</MudSelectItem>
                     </MudSelect>
                 </MudItem>
-                @if (_model.TaskType == "Manpower" || _model.TaskType == "Equipment")
+                @if (_model.TaskType == "Equipment")
                 {
                     <MudItem xs="12" sm="6">
                         <MudNumericField T="int?" Label="Expected Quantity" @bind-Value="_model.QuantityExpected" Required="true" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    </MudItem>
+                }
+                @if (_model.TaskType == "Manpower")
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Positions Required</MudText>
+                        @foreach (var pos in _manpowerPositions)
+                        {
+                            <MudGrid Spacing="2" Class="align-center mb-2">
+                                <MudItem xs="8">
+                                    <MudTextField T="string" Label="Position Name" @bind-Value="pos.Name" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </MudItem>
+                                <MudItem xs="3">
+                                    <MudNumericField T="int" Label="Expected Count" @bind-Value="pos.Count" Required="true" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </MudItem>
+                                <MudItem xs="1" Class="d-flex justify-center">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemovePosition(pos))" Disabled="@(_manpowerPositions.Count <= 1)" />
+                                </MudItem>
+                            </MudGrid>
+                        }
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small" Color="Color.Primary" OnClick="AddPosition" Style="@GetAddButtonStyle()">Add Position</MudButton>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudPaper Outlined="true" Class="pa-4" Style="@GetGlassStyle()">
+                            <MudText Typo="Typo.subtitle2" Class="mb-3" Style="@GetTitleStyle()">Assign To Specific Stores</MudText>
+                            <MudTextField @bind-Value="_storeSearchTerm" Placeholder="Search stores..." Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-3" Style="background: rgba(255,255,255,0.05);" />
+
+                            <div class="d-flex align-center justify-space-between mb-2">
+                                <MudCheckBox T="bool" Label="Select All Stores"
+                                             Value="@(_stores.Any() && _selectedStoreIds.Count() == _stores.Count)"
+                                             ValueChanged="@OnSelectAllChanged"
+                                             Color="Color.Primary" Dense="true" />
+                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@_selectedStoreIds.Count() selected</MudText>
+                            </div>
+
+                            <MudPaper Outlined="true" Class="pa-2" Style="@(GetGlassStyle() + " max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);")">
+                                @if (_stores == null || !_stores.Any())
+                                {
+                                    <MudText Typo="Typo.caption" Class="pa-4 d-block text-center">No active stores found.</MudText>
+                                }
+                                else
+                                {
+                                    var filtered = _stores.Where(s => string.IsNullOrEmpty(_storeSearchTerm) ||
+                                    s.StoreName.Contains(_storeSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                                    s.StoreCode.Contains(_storeSearchTerm, StringComparison.OrdinalIgnoreCase));
+
+                                    foreach (var store in filtered)
+                                    {
+                                        <div class="d-flex align-center">
+                                            <MudCheckBox T="bool" Label="@($"{store.StoreName} - {store.StoreCode}")"
+                                                         Value="@(_selectedStoreIds.Contains(store.Id))"
+                                                         ValueChanged="@((bool val) => OnStoreToggled(store.Id, val))"
+                                                         Color="Color.Primary" Dense="true" />
+                                        </div>
+                                    }
+
+                                    if (!filtered.Any())
+                                    {
+                                        <MudText Typo="Typo.caption" Class="pa-4 d-block text-center">No stores match "@_storeSearchTerm"</MudText>
+                                    }
+                                }
+                            </MudPaper>
+                        </MudPaper>
                     </MudItem>
                 }
                 <MudItem xs="12">
@@ -134,12 +199,31 @@
     private MudForm _form = default!;
     private List<string> _existingSections = new();
     private List<Category> _categories = new();
+    private List<Store> _stores = new();
+    private string _storeSearchTerm = "";
+    private IEnumerable<int> _selectedStoreIds = new HashSet<int>();
     private bool IsEdit => TaskToEdit != null;
+
+    private List<ManpowerPosition> _manpowerPositions = new() { new ManpowerPosition() };
+
+    private void AddPosition() => _manpowerPositions.Add(new ManpowerPosition());
+
+    private void RemovePosition(ManpowerPosition pos)
+    {
+        if (_manpowerPositions.Count > 1) _manpowerPositions.Remove(pos);
+    }
+
+    private string GetMultiSelectionText(List<string> selectedValues)
+    {
+        if (!selectedValues.Any()) return "Select Stores";
+        return string.Join(", ", selectedValues);
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCategories();
         await LoadExistingSections();
+        await LoadStores();
 
         if (IsEdit)
         {
@@ -157,8 +241,36 @@
                 SortOrder = TaskToEdit.SortOrder,
                 Section = TaskToEdit.Section,
                 TaskType = TaskToEdit.TaskType ?? "Regular",
-                QuantityExpected = TaskToEdit.QuantityExpected
+                QuantityExpected = TaskToEdit.QuantityExpected,
+                Position = TaskToEdit.Position,
+                SelectedStores = TaskToEdit.SelectedStores
             };
+
+            if (!string.IsNullOrWhiteSpace(_model.SelectedStores))
+            {
+                try
+                {
+                    var parsedStores = JsonSerializer.Deserialize<List<int>>(_model.SelectedStores);
+                    if (parsedStores != null)
+                    {
+                        _selectedStoreIds = new HashSet<int>(parsedStores);
+                    }
+                }
+                catch { }
+            }
+
+            if (_model.TaskType == "Manpower" && !string.IsNullOrWhiteSpace(_model.Position))
+            {
+                try
+                {
+                    var parsed = JsonSerializer.Deserialize<List<ManpowerPosition>>(_model.Position);
+                    if (parsed != null && parsed.Any())
+                    {
+                        _manpowerPositions = parsed;
+                    }
+                }
+                catch { }
+            }
         }
         else
         {
@@ -186,6 +298,31 @@
             .Distinct()
             .OrderBy(s => s)
             .ToListAsync();
+    }
+
+    private async Task LoadStores()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _stores = await db.Stores
+            .Where(s => s.Status == "Active")
+            .OrderBy(s => s.StoreName)
+            .ToListAsync();
+    }
+
+    private void OnSelectAllChanged(bool value)
+    {
+        if (value)
+            _selectedStoreIds = new HashSet<int>(_stores.Select(s => s.Id));
+        else
+            _selectedStoreIds = new HashSet<int>();
+    }
+
+    private void OnStoreToggled(int storeId, bool value)
+    {
+        var set = new HashSet<int>(_selectedStoreIds);
+        if (value) set.Add(storeId);
+        else set.Remove(storeId);
+        _selectedStoreIds = set;
     }
 
     private Task<IEnumerable<string>> SearchSections(string value, CancellationToken token)
@@ -222,12 +359,53 @@
     }
 
     private string GetTitleStyle() => $"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")}; font-weight: 700;";
+
+    private string GetGlassStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(15px); border-radius: 12px;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.3);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2);",
+            ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255, 255, 255, 0.05);",
+            _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2);"
+        };
+    }
+
+    private string GetAddButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "color: white !important;" : "";
+
     private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "color: #0072cf !important; background-color: #ffffff !important;" : "";
 
     private async Task Submit()
     {
         await _form.Validate();
         if (!_form.IsValid) return;
+
+        if (_model.TaskType == "Manpower")
+        {
+            var validPositions = _manpowerPositions.Where(p => !string.IsNullOrWhiteSpace(p.Name)).ToList();
+            if (!validPositions.Any())
+            {
+                Snackbar.Add("Please specify at least one position with a valid name.", Severity.Warning);
+                return;
+            }
+            _model.Position = JsonSerializer.Serialize(validPositions);
+            _model.QuantityExpected = validPositions.Sum(p => p.Count);
+
+            if (_selectedStoreIds.Any())
+            {
+                _model.SelectedStores = JsonSerializer.Serialize(_selectedStoreIds.ToList());
+            }
+            else
+            {
+                _model.SelectedStores = null;
+            }
+        }
+        else
+        {
+            _model.Position = null;
+            _model.SelectedStores = null;
+        }
 
         using var db = await DbFactory.CreateDbContextAsync();
         if (IsEdit)
@@ -277,6 +455,8 @@
                 NumberOfPhotos = 1
             };
 
+            _manpowerPositions = new() { new ManpowerPosition() };
+            _selectedStoreIds = new HashSet<int>();
             _form.ResetValidation();
             StateHasChanged();
         }

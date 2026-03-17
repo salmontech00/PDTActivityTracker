@@ -1,6 +1,7 @@
 ﻿@page "/area-head/weekly-report/{StoreId:int}"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using PDTActivityTracker.Components.Pages.Dialogs
@@ -969,9 +970,10 @@
 
             // Task counts (frequency-filtered)
             var todayItems = _checklistItems.Where(i =>
-                i.Frequency == "Daily" ||
+                (i.Frequency == "Daily" ||
                 (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)).ToList();
+                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
+                IsTaskAssignedToStore(i, StoreId)).ToList();
 
             _dailyTotal = todayItems.Count;
             _dailyCompleted = _taskProgresses.Count(p => p.IsCompleted && todayItems.Any(i => i.Id == p.ChecklistItemId));
@@ -979,9 +981,10 @@
         else
         {
             var todayItems = _checklistItems.Where(i =>
-                i.Frequency == "Daily" ||
+                (i.Frequency == "Daily" ||
                 (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)).ToList();
+                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
+                IsTaskAssignedToStore(i, StoreId)).ToList();
             _dailyTotal = todayItems.Count;
         }
 
@@ -1024,9 +1027,10 @@
             bool isFirstOfMonth = d.Day == 1;
 
             var applicableItems = _checklistItems.Where(i =>
-                i.Frequency == "Daily" ||
+                (i.Frequency == "Daily" ||
                 (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)).ToList();
+                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
+                IsTaskAssignedToStore(i, StoreId)).ToList();
 
             var session = sessions.FirstOrDefault(s => s.Date.Date == d.Date);
             var progresses = session != null
@@ -1040,7 +1044,8 @@
                     .Where(i => i.CategoryId == checkInCat.Id &&
                                 (i.Frequency == "Daily" ||
                                  (i.Frequency == "Weekly" && isMonday) ||
-                                 (i.Frequency == "Monthly" && isFirstOfMonth)))
+                                 (i.Frequency == "Monthly" && isFirstOfMonth)) &&
+                                IsTaskAssignedToStore(i, StoreId))
                     .Select(i => i.Id).ToList();
 
                 if (checkInIds.Any())
@@ -1164,7 +1169,7 @@
 
     private string GetCategorySummary(int categoryId)
     {
-        var tasks = _checklistItems.Where(t => t.CategoryId == categoryId).ToList();
+        var tasks = _checklistItems.Where(t => t.CategoryId == categoryId && IsTaskAssignedToStore(t, StoreId)).ToList();
         var completed = _taskProgresses.Count(tp => tasks.Any(t => t.Id == tp.ChecklistItemId) && tp.IsCompleted);
         return $"{completed} / {tasks.Count} Completed";
     }
@@ -1312,5 +1317,18 @@
         var parameters = new DialogParameters { ["Photo"] = photo };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
         await DialogService.ShowAsync<PhotoGalleryDialog>("Issue Evidence", parameters, options);
+    }
+    private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
+    {
+        // Only Manpower tasks have store-specific visibility logic
+        if (task.TaskType != "Manpower") return true;
+
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        try
+        {
+            var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
+            return ids != null && ids.Contains(storeId);
+        }
+        catch { return false; }
     }
 }

@@ -25,6 +25,10 @@ namespace PDTActivityTracker.Components.Model
 
         public int? ActualQuantity { get; set; }
 
+        public string? PositionActuals { get; set; }
+
+        public string? PositionExpected { get; set; }
+
         public string? Remarks { get; set; }
 
         public DateTime? CompletedAt { get; set; }

@@ -1,6 +1,7 @@
 ﻿@page "/avp/monitoring"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
+@using System.Text.Json
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using PDTActivityTracker.Components.Pages.Dialogs
@@ -836,11 +837,12 @@
             .OrderByDescending(p => p.UploadedAt)
             .ToListAsync();
 
-        var checklistCount = await db.ChecklistItems.CountAsync();
+        var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
         foreach (var activity in _allActivities)
         {
             var completedCount = await db.TaskProgresses.CountAsync(tp => tp.StoreDailyActivityId == activity.Id && tp.IsCompleted);
-            _progressCache[activity.Id] = checklistCount > 0 ? (completedCount * 100.0 / checklistCount) : 0;
+            var storeChecklistCount = checklistItems.Count(t => IsTaskAssignedToStore(t, activity.StoreId));
+            _progressCache[activity.Id] = storeChecklistCount > 0 ? (completedCount * 100.0 / storeChecklistCount) : 0;
         }
 
         // Calculate Area Head Metrics
@@ -1034,5 +1036,18 @@
     public void Dispose()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+    private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
+    {
+        // Only Manpower tasks have store-specific visibility logic
+        if (task.TaskType != "Manpower") return true;
+
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        try
+        {
+            var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
+            return ids != null && ids.Contains(storeId);
+        }
+        catch { return false; }
     }
 }
