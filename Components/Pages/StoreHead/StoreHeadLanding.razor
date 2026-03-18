@@ -604,26 +604,6 @@
                     }
                 </MudPaper>
 
-                <!-- NOTIFICATIONS -->
-                <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
-                <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
-                    @if (_notifications?.Any() == true)
-                    {
-                        @foreach (var note in _notifications)
-                        {
-                            <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="@GetNotificationColor(note.Type)" IconSize="Size.Small">
-                                <div class="d-flex flex-column">
-                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@note.Message</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@GetRelativeTime(note.CreatedAt)</MudText>
-                                </div>
-                            </MudListItem>
-                        }
-                    }
-                    else
-                    {
-                        <MudText Typo="Typo.caption" Style="opacity: 0.6; padding-left: 16px;">No new notifications.</MudText>
-                    }
-                </MudList>
             </div>
         </div>
     </div>
@@ -746,26 +726,6 @@
                         }
                     </MudPaper>
 
-                    <!-- NOTIFICATIONS -->
-                    <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight: 700; opacity: 0.5; letter-spacing: 1px;">NOTIFICATIONS</MudText>
-                    <MudList T="string" Dense="true" Clickable="true" DisablePadding="true">
-                        @if (_notifications?.Any() == true)
-                        {
-                            @foreach (var note in _notifications)
-                            {
-                                <MudListItem Icon="@Icons.Material.Filled.Circle" IconColor="@GetNotificationColor(note.Type)" IconSize="Size.Small">
-                                    <div class="d-flex flex-column">
-                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@note.Message</MudText>
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.8;">@GetRelativeTime(note.CreatedAt)</MudText>
-                                    </div>
-                                </MudListItem>
-                            }
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6; padding-left: 16px;">No new notifications.</MudText>
-                        }
-                    </MudList>
                 </div>
             </div>
         </MudPaper>
@@ -782,7 +742,7 @@
     // DASHBOARD DATA
     private StoreDailyActivity? _selectedStoreActivity;
     private List<CategoryProgress> _categoryProgresses = new();
-    private List<Notification> _notifications = new();
+
     private double _completionPercentage = 0;
     private int _completedTasks = 0;
     private int _totalTasksCount = 0;
@@ -1114,13 +1074,6 @@
             CompletedTasks = currentProgresses.Count(tp => checklistItems.Any(i => i.Id == tp.ChecklistItemId && i.CategoryId == c.Id) && tp.IsCompleted)
         }).ToList();
 
-        // 4. Fetch User Notifications
-        _notifications = await db.Notifications
-            .AsNoTracking()
-            .Where(n => n.UserId == UserState.UserId && !n.IsRead)
-            .OrderByDescending(n => n.CreatedAt)
-            .Take(5)
-            .ToListAsync() ?? new List<Notification>();
 
         StateHasChanged();
     }
