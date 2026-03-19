@@ -1102,6 +1102,7 @@
     private string _issueStatusFilter = string.Empty;
 
     private Dictionary<int, double> _activityProgressCache = new();
+    private System.Timers.Timer? _refreshTimer;
 
     public class CategoryPerformanceModel
     {
@@ -1114,6 +1115,11 @@
         base.OnInitialized();
         _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
         _photoDateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+
+        _refreshTimer = new System.Timers.Timer(60000);
+        _refreshTimer.Elapsed += (s, e) => InvokeAsync(StateHasChanged);
+        _refreshTimer.AutoReset = true;
+        _refreshTimer.Start();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1160,6 +1166,7 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= HandleDashboardRefresh;
         DashboardRefresh.OnRefreshRequested -= OnGlobalRefreshRequested;
+        _refreshTimer?.Dispose();
     }
 
     private void OnThemeChanged() => InvokeAsync(StateHasChanged);
@@ -1189,12 +1196,20 @@
 
         _todayActivities = todayActivities
             .GroupBy(a => a.StoreId)
-            .ToDictionary(g => g.Key, g => (StoreDailyActivity?)g.OrderBy(a => a.Id).FirstOrDefault());
+            .ToDictionary(g => g.Key, g => (StoreDailyActivity?)g.OrderByDescending(a => a.Id).FirstOrDefault());
 
         // Progress Calculations
         _activeHeads = todayActivities.Select(a => a.StartedById).Distinct().Count();
 
-        var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
+        bool isFirstOfMonth = today.Day == 1;
+
+        var checklistItems = await db.ChecklistItems
+            .AsNoTracking()
+            .Where(i => i.Frequency == "Daily" ||
+                        (i.Frequency == "Weekly" && isMonday) ||
+                        (i.Frequency == "Monthly" && isFirstOfMonth))
+            .ToListAsync();
 
         foreach (var storeId in storeIds)
         {
@@ -1529,7 +1544,7 @@
     private string GetRelativeTime(DateTime timestamp)
     {
         var diff = DateTime.Now - timestamp;
-        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 1) return "just now";
         if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
         if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
         if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
@@ -1590,15 +1605,12 @@
     }
     private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
     {
-        // Only Manpower tasks have store-specific visibility logic
-        if (task.TaskType != "Manpower") return true;
-
-        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return true;
         try
         {
             var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
             return ids != null && ids.Contains(storeId);
         }
-        catch { return false; }
+        catch { return true; }
     }
 }

@@ -837,7 +837,17 @@
             .OrderByDescending(p => p.UploadedAt)
             .ToListAsync();
 
-        var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var today = DateTime.Today;
+        bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
+        bool isFirstOfMonth = today.Day == 1;
+
+        var checklistItems = await db.ChecklistItems
+            .AsNoTracking()
+            .Where(i => i.Frequency == "Daily" ||
+                        (i.Frequency == "Weekly" && isMonday) ||
+                        (i.Frequency == "Monthly" && isFirstOfMonth))
+            .ToListAsync();
+
         foreach (var activity in _allActivities)
         {
             var completedCount = await db.TaskProgresses.CountAsync(tp => tp.StoreDailyActivityId == activity.Id && tp.IsCompleted);
@@ -847,7 +857,6 @@
 
         // Calculate Area Head Metrics
         var areaHeads = await db.Users.AsNoTracking().Where(u => u.Role == "Area Head").ToListAsync();
-        var today = DateTime.Today;
         var todayActivities = _allActivities.Where(a => a.Date.Date == today).ToList();
 
         _areaHeadMetrics = new List<AreaHeadMetric>();

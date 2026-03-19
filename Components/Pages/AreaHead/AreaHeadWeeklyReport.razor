@@ -282,6 +282,31 @@
             padding-left: 0;
         }
 
+        .period-row {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 12px !important;
+            padding: 16px !important;
+        }
+
+        .period-day-col, .period-checkin-col, .period-status-col {
+            min-width: 0 !important;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .period-row .flex-grow-1 {
+            width: 100% !important;
+            margin: 4px 0;
+            display: block !important;
+        }
+
+        .period-chevron {
+            display: none !important;
+        }
+
         .planner-container {
             padding-bottom: 100px !important;
         }
@@ -693,7 +718,7 @@
                               Style="@($"cursor: {(currentRow.HasSession ? "pointer" : "default")}; opacity: {(currentRow.HasSession ? "1" : "0.5")};")"
                               @onclick="@(async () => { if (currentRow.HasSession) await DrillDownToDay(currentRow.Date); })">
                         <!-- Day label -->
-                        <div style="min-width: 110px;">
+                        <div class="period-day-col">
                             <MudText Typo="Typo.body2" Style="font-weight: 800;">@row.DayLabel</MudText>
                             @if (row.Date == DateTime.Today)
                             {
@@ -702,7 +727,7 @@
                         </div>
 
                         <!-- Check-in time -->
-                        <div style="min-width: 80px;">
+                        <div class="period-checkin-col">
                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">CHECK IN</MudText>
                             <MudText Typo="Typo.body2" Style="font-weight: 700;">@(row.CheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
                         </div>
@@ -719,7 +744,7 @@
                         </div>
 
                         <!-- Status chip -->
-                        <div>
+                        <div class="period-status-col">
                             <MudChip T="string" Color="@row.StatusColor" Size="Size.Small" Variant="Variant.Filled">
                                 @row.StatusText
                             </MudChip>
@@ -727,7 +752,7 @@
 
                         @if (row.HasSession)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Style="opacity: 0.4;" />
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="period-chevron" Style="opacity: 0.4;" />
                         }
                     </MudPaper>
                 }
@@ -901,7 +926,7 @@
         _currentSession = await db.StoreDailyActivities
             .Include(s => s.CurrentCategory)
             .Include(s => s.AreaHead)
-            .OrderBy(s => s.Id)
+            .OrderByDescending(s => s.Id)
             .FirstOrDefaultAsync(s => s.StoreId == StoreId && s.Date >= date && s.Date < date.AddDays(1));
 
         _derivedCheckInTime = null;
@@ -1014,7 +1039,7 @@
                 (i.Frequency == "Monthly" && isFirstOfMonth)) &&
                 IsTaskAssignedToStore(i, StoreId)).ToList();
 
-            var session = sessions.FirstOrDefault(s => s.Date.Date == d.Date);
+            var session = sessions.OrderByDescending(s => s.Id).FirstOrDefault(s => s.Date.Date == d.Date);
             var progresses = session != null
                 ? allProgresses.Where(tp => tp.StoreDailyActivityId == session.Id).ToList()
                 : new List<TaskProgress>();

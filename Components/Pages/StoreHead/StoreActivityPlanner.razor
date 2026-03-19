@@ -837,20 +837,29 @@
         var today = DateTime.Today;
         _currentSession = await db.StoreDailyActivities
             .Include(s => s.CurrentCategory)
-            .FirstOrDefaultAsync(s => s.StoreId == StoreId && s.Date == today && !s.IsCompleted);
+            .OrderByDescending(s => s.Id)
+            .FirstOrDefaultAsync(s => s.StoreId == StoreId && s.Date == today);
 
         if (_currentSession == null)
         {
-            _currentSession = new StoreDailyActivity
+            // Re-fetch to minimize race condition
+            _currentSession = await db.StoreDailyActivities
+                .OrderByDescending(s => s.Id)
+                .FirstOrDefaultAsync(s => s.StoreId == StoreId && s.Date == today);
+
+            if (_currentSession == null)
             {
-                StoreId = StoreId,
-                Date = today,
-                CurrentCategoryId = _categories.First().Id,
-                StartedById = UserState.UserId,
-                IsCompleted = false
-            };
-            db.StoreDailyActivities.Add(_currentSession);
-            await db.SaveChangesAsync();
+                _currentSession = new StoreDailyActivity
+                {
+                    StoreId = StoreId,
+                    Date = today,
+                    CurrentCategoryId = _categories.First().Id,
+                    StartedById = UserState.UserId,
+                    IsCompleted = false
+                };
+                db.StoreDailyActivities.Add(_currentSession);
+                await db.SaveChangesAsync();
+            }
         }
 
         _currentCategoryId = _currentSession.CurrentCategoryId;

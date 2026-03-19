@@ -1088,7 +1088,9 @@
 
         // Today's tasks
         var today = DateTime.Today;
-        var todayActivity = await db.StoreDailyActivities.FirstOrDefaultAsync(a => a.StoreId == _myStore.Id && a.Date.Date == today);
+        var todayActivity = await db.StoreDailyActivities
+            .OrderByDescending(a => a.Id)
+            .FirstOrDefaultAsync(a => a.StoreId == _myStore.Id && a.Date.Date == today);
         if (todayActivity != null)
         {
             _pendingChecks = await db.TaskProgresses.CountAsync(p => p.StoreDailyActivityId == todayActivity.Id && p.IsCompleted);
