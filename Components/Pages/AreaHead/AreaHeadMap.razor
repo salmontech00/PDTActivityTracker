@@ -523,7 +523,7 @@
                            OnClick="NavigateToWeeklyReport"
                            Class="rounded-xl mb-6"
                            Style="@GetButtonStyle()">
-                    VIEW REPORT
+                    VIEW WEEKLY REPORT
                 </MudButton>
 
                 <!-- STATUS CARDS -->
@@ -1110,6 +1110,8 @@
                     var prog = currentProgresses.FirstOrDefault(p => p.ChecklistItemId == mTask.Id);
                     if (prog == null) continue;
 
+                    var taskLabel = (!string.IsNullOrWhiteSpace(mTask.TaskName) ? mTask.TaskName : mTask.Description) ?? "Manpower Task";
+
                     if (!string.IsNullOrWhiteSpace(mTask.Position) && !string.IsNullOrWhiteSpace(prog.PositionActuals))
                     {
                         try
@@ -1119,15 +1121,17 @@
                             for (int pi = 0; pi < positions.Count; pi++)
                             {
                                 var actualVal = pi < actuals.Count ? (actuals[pi] ?? 0) : 0;
-                                var expectedCnt = positions[pi].Count;
-                                if (actualVal < expectedCnt)
+                                var expectedCnt = GetPositionExpectedValue(prog, mTask, pi) ?? positions[pi].Count;
+                                
+                                // Only alert if Actual is provided (> 0) and less than expected
+                                if (actualVal > 0 && actualVal < expectedCnt)
                                 {
                                     var missing = expectedCnt - actualVal;
                                     manpowerAlerts.Add(new Notification
                                     {
                                         Id = -1,
                                         UserId = UserState.UserId,
-                                        Message = $"⚠️ {storeName}: {mTask.TaskName} – {positions[pi].Name} lacking {missing} staff",
+                                        Message = $"⚠️ {storeName}: {taskLabel} – {positions[pi].Name} lacking {missing} staff",
                                         Type = "Alert",
                                         CreatedAt = DateTime.Now
                                     });
@@ -1136,14 +1140,14 @@
                         }
                         catch { }
                     }
-                    else if ((prog.ActualQuantity ?? 0) < (mTask.QuantityExpected ?? 0))
+                    else if ((prog.ActualQuantity ?? 0) > 0 && (prog.ActualQuantity ?? 0) < (mTask.QuantityExpected ?? 0))
                     {
                         var missing = (mTask.QuantityExpected ?? 0) - (prog.ActualQuantity ?? 0);
                         manpowerAlerts.Add(new Notification
                         {
                             Id = -1,
                             UserId = UserState.UserId,
-                            Message = $"⚠️ {storeName}: {mTask.TaskName} lacking {missing} staff",
+                            Message = $"⚠️ {storeName}: {taskLabel} lacking {missing} staff",
                             Type = "Alert",
                             CreatedAt = DateTime.Now
                         });
@@ -1267,4 +1271,42 @@
     };
 
     private class LocationCoords { public double Latitude { get; set; } public double Longitude { get; set; } }
+
+    private int? GetPositionExpectedValue(TaskProgress prog, ChecklistItem task, int index)
+    {
+        // If progress has its own expected values, use them
+        if (!string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            try
+            {
+                var expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected);
+                if (expecteds != null && index >= 0 && index < expecteds.Count)
+                {
+                    return expecteds[index];
+                }
+            }
+            catch { }
+        }
+
+        // Fallback to ChecklistItem default positions
+        var positions = GetManpowerPositions(task);
+        if (index >= 0 && index < positions.Count)
+        {
+            return positions[index].Count;
+        }
+
+        return null;
+    }
+
+    private List<ManpowerPosition> GetManpowerPositions(ChecklistItem task)
+    {
+        if (task.TaskType != "Manpower" || string.IsNullOrWhiteSpace(task.Position))
+            return new List<ManpowerPosition>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<ManpowerPosition>>(task.Position) ?? new List<ManpowerPosition>();
+        }
+        catch { return new List<ManpowerPosition>(); }
+    }
 }

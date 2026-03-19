@@ -79,14 +79,19 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             DROP TABLE [Areas];
         END
 
-        IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AccessTags]') AND type in (N'U'))
+        IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[AccessTags]') AND type in (N'U'))
         BEGIN
-            DROP TABLE [AccessTags];
+            CREATE TABLE [AccessTags] (
+                [Id] int NOT NULL IDENTITY(1, 1),
+                [Name] nvarchar(max) NOT NULL,
+                [Description] nvarchar(max) NULL,
+                CONSTRAINT [PK_AccessTags] PRIMARY KEY ([Id])
+            );
         END
 
-        IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'Tags' AND Object_ID = Object_ID(N'Users'))
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Tags' AND Object_ID = Object_ID(N'Users'))
         BEGIN
-            ALTER TABLE [Users] DROP COLUMN [Tags];
+            ALTER TABLE [Users] ADD [Tags] nvarchar(max) NULL;
         END
 
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'EmployeeNumber' AND Object_ID = Object_ID(N'Users'))

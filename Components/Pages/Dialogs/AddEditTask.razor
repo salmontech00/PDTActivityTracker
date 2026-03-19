@@ -69,16 +69,8 @@
                     <MudSelect T="string" Label="Task Type" @bind-Value="_model.TaskType" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
                         <MudSelectItem Value="@("Regular")">Regular</MudSelectItem>
                         <MudSelectItem Value="@("Manpower")">Manpower</MudSelectItem>
-                        <MudSelectItem Value="@("Equipment")">Equipment</MudSelectItem>
-                        <MudSelectItem Value="@("PhotoOnly")">Photo Only</MudSelectItem>
                     </MudSelect>
                 </MudItem>
-                @if (_model.TaskType == "Equipment")
-                {
-                    <MudItem xs="12" sm="6">
-                        <MudNumericField T="int?" Label="Expected Quantity" @bind-Value="_model.QuantityExpected" Required="true" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" />
-                    </MudItem>
-                }
                 @if (_model.TaskType == "Manpower")
                 {
                     <MudItem xs="12">

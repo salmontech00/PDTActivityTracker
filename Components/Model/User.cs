@@ -24,6 +24,7 @@ namespace PDTActivityTracker.Components.Model
         public string? EmployeeNumber { get; set; }
         public string? Designation { get; set; }
         public string? Status { get; set; } = "Active";
+        public string? Tags { get; set; }
 
         public double? CurrentLatitude { get; set; }
         public double? CurrentLongitude { get; set; }

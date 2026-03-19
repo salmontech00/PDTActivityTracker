@@ -29,5 +29,6 @@ namespace PDTActivityTracker.Model
         public DbSet<Issue> Issues { get; set; }
         public DbSet<StoreDailyActivity> StoreDailyActivities { get; set; }
         public DbSet<TaskProgress> TaskProgresses { get; set; }
+        public DbSet<AccessTag> AccessTags { get; set; }
     }
 }

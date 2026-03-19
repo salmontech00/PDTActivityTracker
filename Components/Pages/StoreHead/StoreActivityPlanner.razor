@@ -762,6 +762,7 @@
 
     private int _completedCount = 0;
     private int _totalTasksCount = 0;
+    private bool _isSaving = false;
 
     protected override void OnInitialized()
     {
@@ -818,7 +819,9 @@
             return;
         }
 
-        _store = await db.Stores.FirstOrDefaultAsync(s => s.Id == StoreId);
+        _store = await db.Stores
+            .Include(s => s.AreaHead)
+            .FirstOrDefaultAsync(s => s.Id == StoreId);
         if (_store == null)
         {
             NavigationManager.NavigateTo("/store-head/map");
@@ -862,12 +865,20 @@
             .Where(p => p.StoreId == StoreId && p.UploadedAt >= today)
             .ToListAsync();
 
-        // Load Persistence for Weekly/Monthly if needed
-        await LoadPeriodProgress(db);
-
         foreach (var task in _checklistItems)
         {
-            await CheckAndSyncTaskCompletion(task);
+            var prog = _taskProgresses.FirstOrDefault(p => p.ChecklistItemId == task.Id);
+            if (prog == null)
+            {
+                prog = new TaskProgress
+                {
+                    StoreDailyActivityId = _currentSession!.Id,
+                    ChecklistItemId = task.Id,
+                    IsCompleted = false
+                };
+                _taskProgresses.Add(prog);
+            }
+            await CheckAndSyncTaskCompletion(task, true); // initialSync = true to skip DB saves during load
         }
 
         UpdateCompletedCount();
@@ -910,7 +921,7 @@
         }
     }
 
-    private async Task CheckAndSyncTaskCompletion(ChecklistItem task)
+    private async Task CheckAndSyncTaskCompletion(ChecklistItem task, bool initialSync = false)
     {
         var prog = GetTaskProgress(task.Id);
         bool isNowCompleted = true;
@@ -976,12 +987,33 @@
             {
                 prog.CompletedAt = null;
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
-                await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+                if (!initialSync) await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
 
                 // If the entire session was completed, revert it
                 if (_currentSession != null && _currentSession.IsCompleted)
                 {
                     await RevertSessionCompletion();
+                }
+
+                // [FIX] Category Reversion Logic
+                // If a task in a previous category becomes incomplete, move the active category pointer back
+                if (!initialSync && _currentSession != null)
+                {
+                    var taskCat = _categories.FirstOrDefault(c => c.Id == task.CategoryId);
+                    var currentCat = _categories.FirstOrDefault(c => c.Id == _currentCategoryId);
+                    if (taskCat != null && currentCat != null && taskCat.SortOrder < currentCat.SortOrder)
+                    {
+                        _currentCategoryId = taskCat.Id;
+                        _currentCategoryOrder = taskCat.SortOrder;
+
+                        using var db = await DbFactory.CreateDbContextAsync();
+                        var session = await db.StoreDailyActivities.FindAsync(_currentSession.Id);
+                        if (session != null)
+                        {
+                            session.CurrentCategoryId = _currentCategoryId;
+                            await db.SaveChangesAsync();
+                        }
+                    }
                 }
             }
             UpdateCompletedCount();
@@ -1159,23 +1191,32 @@
 
     private async Task SaveCurrentProgress()
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-
-        foreach (var prog in _taskProgresses)
+        if (_isSaving) return;
+        _isSaving = true;
+        try
         {
-            if (prog.Id == 0)
-            {
-                db.TaskProgresses.Add(prog);
-            }
-            else
-            {
-                db.Entry(prog).State = EntityState.Modified;
-            }
-        }
+            using var db = await DbFactory.CreateDbContextAsync();
 
-        await db.SaveChangesAsync();
-        UserState.NotifyDashboardRefresh(); // Notify dashboard of changes
-        Snackbar.Add("Progress saved.", Severity.Info);
+            foreach (var prog in _taskProgresses)
+            {
+                if (prog.Id == 0)
+                {
+                    db.TaskProgresses.Add(prog);
+                }
+                else
+                {
+                    db.Entry(prog).State = EntityState.Modified;
+                }
+            }
+
+            await db.SaveChangesAsync();
+            UserState.NotifyDashboardRefresh();
+        }
+        catch { }
+        finally
+        {
+            _isSaving = false;
+        }
     }
 
     private async Task CapturePhoto(ChecklistItem task)
@@ -1311,12 +1352,14 @@
 
     private List<TaskPhoto> GetStoredPhotos(int taskId) => _loadedPhotos.Where(p => p.ChecklistItemId == taskId).ToList();
 
-    private async Task OnManpowerChanged(ChecklistItem task, TaskProgress prog)
+    private async Task OnManpowerChanged(ChecklistItem task, TaskProgress prog, int? positionIndex = null)
     {
-        await ValidateManpower(task, prog);
         await CheckAndSyncTaskCompletion(task);
-        await SaveCurrentProgress(); // Ensure progress status is saved
+        await SaveCurrentProgress();
         await CheckAndAutoProgress();
+
+        // Notification only for new disparities, not for initial setup or empty
+        await ValidateManpower(task, prog, positionIndex);
     }
 
     private async Task OnRemarksChanged(ChecklistItem task)
@@ -1326,28 +1369,51 @@
         await CheckAndAutoProgress();
     }
 
-    private async Task ValidateManpower(ChecklistItem task, TaskProgress prog)
+    private async Task ValidateManpower(ChecklistItem task, TaskProgress prog, int? positionIndex = null)
     {
-        if (prog.ActualQuantity.HasValue && prog.ActualQuantity < task.QuantityExpected)
-        {
-            string itemType = task.TaskType == "Equipment" ? "Equipment count" : "manpower";
-            Snackbar.Add($"Low {itemType} reported for {task.TaskName}. Area Head has been notified.", Severity.Warning);
+        if (task.TaskType != "Manpower") return;
 
-            using var db = await DbFactory.CreateDbContextAsync();
-            var notification = new Notification
+        using var db = await DbFactory.CreateDbContextAsync();
+        try
+        {
+            var positions = JsonSerializer.Deserialize<List<ManpowerPosition>>(task.Position ?? "[]") ?? new();
+            var actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals ?? "[]") ?? new();
+
+            // Stricter check: only notify if a specific position was changed
+            if (!positionIndex.HasValue) return;
+            var pi = positionIndex.Value;
+            if (pi < 0 || pi >= positions.Count) return;
+
+            var areaHeadName = _store?.AreaHead?.Fullname ?? "Area Head";
+            var taskLabel = (!string.IsNullOrWhiteSpace(task.TaskName) ? task.TaskName : task.Description) ?? "Manpower Task";
+
+            var name = positions[pi].Name;
+            var expected = GetPositionExpectedValue(prog, task, pi) ?? positions[pi].Count;
+            var actual = pi < actuals.Count ? (actuals[pi] ?? 0) : 0;
+
+            // Only alert if Actual is provided and less than expected
+            if (actual > 0 && actual < expected)
             {
-                UserId = _store?.AreaHeadId ?? 0,
-                Message = $"Low {itemType} alert: Store {_store?.StoreCode} reported {prog.ActualQuantity}/{task.QuantityExpected} for {task.TaskName}.",
-                Type = "Alert",
-                IsRead = false,
-                CreatedAt = DateTime.Now
-            };
-            if (notification.UserId > 0)
-            {
-                db.Notifications.Add(notification);
-                await db.SaveChangesAsync();
+                int missing = expected - actual;
+                var notification = new Notification
+                {
+                    UserId = _store?.AreaHeadId ?? 0,
+                    Message = $"⚠️ {_store?.StoreName}: {taskLabel} – {name} lacking {missing} staff",
+                    Type = "Alert",
+                    IsRead = false,
+                    CreatedAt = DateTime.Now
+                };
+
+                if (notification.UserId > 0)
+                {
+                    db.Notifications.Add(notification);
+                    await db.SaveChangesAsync(); // Save notification individually
+
+                    Snackbar.Add($"Missing manpower reported for {taskLabel}. {areaHeadName} has been notified.", Severity.Warning);
+                }
             }
         }
+        catch { }
     }
     private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
     {
@@ -1438,11 +1504,7 @@
         expecteds[index] = value;
 
         prog.PositionExpected = JsonSerializer.Serialize(expecteds);
-
-        // We don't necessarily update task.QuantityExpected because that's the Admin's master record
-        // but we might want to update some UI total if needed.
-
-        await OnManpowerChanged(task, prog);
+        await OnManpowerChanged(task, prog, index);
     }
 
     private int GetTotalExpectedValue(TaskProgress prog, ChecklistItem task)
@@ -1487,6 +1549,6 @@
         // Update total ActualQuantity
         prog.ActualQuantity = actuals.Sum(a => a ?? 0);
 
-        await OnManpowerChanged(task, prog);
+        await OnManpowerChanged(task, prog, index);
     }
 }
