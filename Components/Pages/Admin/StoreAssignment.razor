@@ -117,32 +117,29 @@
         border-radius: 12px !important;
     }
 
-    /* CHIPS */
+    /* ROLE CHIPS */
     .role-chip {
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         border-radius: 12px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-size: 0.7rem !important;
     }
 
-    .role-chip-success {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(253, 212, 92) !important;
-        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    .status-active {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .role-chip-info {
-        background-color: rgba(14, 165, 233, 0.15) !important;
-        color: rgb(14, 165, 233) !important;
-        border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    .status-inactive {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .role-chip-inactive {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(239, 68, 68) !important;
-        border: 1px solid rgba(239, 68, 68, 0.3) !important;
-    }
-
-    .lightest .role-chip-success {
-        background-color: rgb(0, 114, 207, 0.5) !important;
+    .lightest .role-chip {
+        /* High opacity for lighter theme */
     }
 
     .button-group .modern-button.light {
@@ -599,9 +596,10 @@
                             }
                         </MudTd>
                         <MudTd DataLabel="Status">
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                     Class="@(context.Status == "Active" ? "role-chip-success" : "role-chip-inactive")">
-                                @context.Status
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                     Color="@GetStatusColor(context.Status ?? "Active")"
+                                     Class="@($"role-chip {GetStatusChipClass(context.Status ?? "Active")}")">
+                                @(context.Status ?? "Active")
                             </MudChip>
                         </MudTd>
                         <MudTd DataLabel="Action" Style="text-align: center;">
@@ -679,9 +677,10 @@
                                 <MudText Typo="Typo.caption" Style="opacity: 0.7;">@store.StoreCode</MudText>
                             </div>
                         </div>
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Class="@(store.Status == "Active" ? "role-chip-success" : "role-chip-inactive")">
-                            @store.Status
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                 Color="@GetStatusColor(store.Status ?? "Active")"
+                                 Class="@($"role-chip {GetStatusChipClass(store.Status ?? "Active")}")">
+                            @(store.Status ?? "Active")
                         </MudChip>
                     </div>
                     <div class="mobile-card-content">
@@ -961,6 +960,20 @@
             ? "color: #0072cf; border-color: #0072cf; border-radius: 12px;"
             : "color: #ffffff; border-color: #ffffff; border-radius: 12px; background-color: transparent !important;";
     }
+
+    private string GetStatusChipClass(string status) => (status ?? "Active") switch
+    {
+        "Active" => "status-active",
+        "Inactive" => "status-inactive",
+        _ => "status-active"
+    };
+
+    private Color GetStatusColor(string status) => (status ?? "Active") switch
+    {
+        "Active" => Color.Success,
+        "Inactive" => Color.Error,
+        _ => Color.Success
+    };
 
     private async Task OpenAddStoreDialog()
     {

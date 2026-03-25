@@ -355,6 +355,18 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                     FOREIGN KEY ([ReviewedById]) REFERENCES [Users] ([Id]);
                 END
             END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Latitude' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [Latitude] float NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Longitude' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [Longitude] float NULL;
+            END
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'CaptureTime' AND Object_ID = Object_ID(N'Issues'))
+            BEGIN
+                ALTER TABLE [Issues] ADD [CaptureTime] datetime2 NULL;
+            END
         END
 
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'QuantityExpected' AND Object_ID = Object_ID(N'ChecklistItems'))
