@@ -8,6 +8,7 @@ namespace PDTActivityTracker.Components.Services
     public interface IEmailService
     {
         Task SendOtpEmailAsync(string toEmail, string otpCode);
+        Task SendRoleRequestEmailAsync(string adminEmail, string userName, string userEmail, string requestedRole, string remarks);
     }
 
     public class EmailService : IEmailService
@@ -40,6 +41,72 @@ namespace PDTActivityTracker.Components.Services
                     <h1 style='color: #7e6fff; font-size: 36px; letter-spacing: 8px;'>{otpCode}</h1>
                     <p>This code will expire in 5 minutes.</p>
                     <p style='color: #666;'>If you didn't request this, please ignore this email.</p>
+                </div>
+            "
+            };
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+
+            try
+            {
+                await client.ConnectAsync(
+                    emailSettings["SmtpServer"],
+                    int.Parse(emailSettings["SmtpPort"]!),
+                    SecureSocketOptions.StartTls
+                );
+
+                await client.AuthenticateAsync(
+                    emailSettings["Username"],
+                    emailSettings["Password"]
+                );
+
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error sending email: {ex.Message}", ex);
+            }
+        }
+        public async Task SendRoleRequestEmailAsync(string adminEmail, string userName, string userEmail, string requestedRole, string remarks)
+        {
+            var emailSettings = _configuration.GetSection("EmailSettings");
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(
+                emailSettings["SenderName"],
+                emailSettings["SenderEmail"]
+            ));
+            message.To.Add(new MailboxAddress("", adminEmail));
+            message.Subject = $"Role Request: {requestedRole} for {userName}";
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                    <h2 style='color: #0072cf;'>User Role Request</h2>
+                    <p>A user has requested an elevated role. Please review their details below:</p>
+                    <table style='width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 20px;'>
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; width: 30%;'>User Fullname:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eee;'>{userName}</td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;'>User Email:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eee;'><a href='mailto:{userEmail}'>{userEmail}</a></td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;'>Requested Role:</td>
+                            <td style='padding: 10px; border-bottom: 1px solid #eee;'><span style='background-color: #0072cf; color: white; padding: 4px 8px; border-radius: 12px; font-weight: bold;'>{requestedRole}</span></td>
+                        </tr>
+                        <tr>
+                            <td style='padding: 10px; font-weight: bold; vertical-align: top;'>Remarks:</td>
+                            <td style='padding: 10px;'>{(string.IsNullOrWhiteSpace(remarks) ? "<i>No remarks provided.</i>" : remarks)}</td>
+                        </tr>
+                    </table>
+                    <p style='margin-top: 30px; font-size: 14px; color: #666;'>Log in to the <b>SMR Activity Tracker</b> User Management Page to update this user's role.</p>
                 </div>
             "
             };

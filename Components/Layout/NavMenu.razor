@@ -67,6 +67,13 @@
 
 <MudNavMenu>
     <div class="nav-section-header-v2" style="color: @GetMenuColor()">Menu</div>
+    @if (UserState.Role == "User")
+    {
+        <MudNavLink Href="/user/request-role" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.AdminPanelSettings">
+            Request Role
+        </MudNavLink>
+    }
+
     @if (UserState.Role == "Admin")
     {
         <MudNavLink Href="/admin/reports-monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Assessment">

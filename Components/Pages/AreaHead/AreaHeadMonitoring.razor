@@ -472,8 +472,9 @@
 
     @if (!_initialized)
     {
-        <div class="d-flex justify-center pa-12">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Area Data...</MudText>
         </div>
     }
     else
@@ -1525,23 +1526,14 @@
         await DialogService.ShowAsync<PhotoGalleryDialog>("Photo Detail", parameters, options);
     }
 
-    private async Task OpenGenerateReportDialog(Store store)
+    private void OpenGenerateReportDialog(Store store)
     {
-        var parameters = new DialogParameters { ["PreselectedStoreId"] = store.Id };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        var dialog = await DialogService.ShowAsync<GenerateReportDialog>("Generate Daily Report", parameters, options);
-        var result = await dialog.Result;
-        if (result != null && !result.Canceled)
-        {
-            await LoadData();
-            StateHasChanged();
-        }
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
-    private async Task OpenExportDialog()
+    private void OpenExportDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<ExportReportsDialog>("Export Reports", options);
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
     private string GetImageSource(TaskPhoto photo)

@@ -441,8 +441,9 @@
 
     @if (!_initialized)
     {
-        <div class="d-flex justify-center pa-12">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading System Monitoring...</MudText>
         </div>
     }
     else
@@ -1067,7 +1068,7 @@
 
     private void ExportData()
     {
-        Snackbar.Add("Feature coming soon: Generating consolidated executive report.", Severity.Info);
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
     public void Dispose()

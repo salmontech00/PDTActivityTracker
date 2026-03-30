@@ -533,8 +533,9 @@
 
     @if (!_initialized)
     {
-        <div class="d-flex justify-center pa-12">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Reports...</MudText>
         </div>
     }
     else
@@ -1693,16 +1694,14 @@
             : "border-radius: 12px; font-weight: bold; min-width: 150px;";
     }
 
-    private async Task OpenExportDialog()
+    private void OpenExportDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<ExportReportsDialog>("Export Reports", options);
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
-    private async Task ExportReport()
+    private void ExportReport()
     {
-        Snackbar.Add($"Export to {_exportFormat} feature currently in development", Severity.Info);
-        await Task.CompletedTask;
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
     private string GetThemeClass() => ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :

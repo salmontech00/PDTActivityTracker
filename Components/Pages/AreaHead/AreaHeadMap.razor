@@ -462,6 +462,15 @@
         <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Maps</MudText>
     </div>
 
+    @if (!_initialized)
+    {
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Store Maps...</MudText>
+        </div>
+    }
+    else
+    {
     <!-- UNIFIED DASHBOARD LAYOUT -->
     <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
         <!-- MAP SECTION -->
@@ -805,9 +814,11 @@
             </div>
         </MudPaper>
     }
+    }
 </div>
 
 @code {
+    private bool _initialized = false;
     private bool _isPanelOpen = false;
     private List<Store> _stores = new();
     private DotNetObjectReference<AreaHeadMap>? _objRef;
@@ -909,6 +920,9 @@
             await UserState.SetLastValidPage(NavigationManager.Uri);
 
             await LoadData();
+            _initialized = true;
+            StateHasChanged();
+            
             await Task.Delay(100);
             await InitializeMap();
             StateHasChanged();
