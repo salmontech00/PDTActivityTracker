@@ -41,6 +41,27 @@
         font-size: 0.7rem !important;
         height: 20px !important;
         border-radius: 8px !important;
+        font-weight: 700 !important;
+        padding: 0 8px !important;
+    }
+
+    .status-chip {
+        font-size: 0.7rem !important;
+        height: 20px !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        padding: 0 8px !important;
+    }
+
+    /* PREMIUM ICON BOXES */
+    .achievement-icon-box {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
     /* DIALOG HEADER */
@@ -164,10 +185,11 @@
                         <MudTh>Task Details</MudTh>
                         <MudTh>Freq.</MudTh>
                         <MudTh>Status</MudTh>
+                        <MudTh>Completed At</MudTh>
                         <MudTh>Remarks</MudTh>
                     </HeaderContent>
                     <GroupHeaderTemplate>
-                        <MudTh Class="mud-table-cell-custom-group" colspan="4" Style="background: rgba(0, 114, 207, 0.05); font-weight: 700;">
+                        <MudTh Class="mud-table-cell-custom-group" colspan="5" Style="background: rgba(0, 114, 207, 0.05); font-weight: 700;">
                             @((context.Key ?? "Uncategorized").ToString())
                         </MudTh>
                     </GroupHeaderTemplate>
@@ -180,13 +202,28 @@
                             }
                         </MudTd>
                         <MudTd DataLabel="Freq.">
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@GetFrequencyColor(context.ChecklistItem?.Frequency)" Class="frequency-chip">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@GetFrequencyColor(context.ChecklistItem?.Frequency)" Class="frequency-chip">
                                 @context.ChecklistItem?.Frequency
                             </MudChip>
                         </MudTd>
                         <MudTd DataLabel="Status">
-                            <MudIcon Icon="@(context.IsCompleted? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"
-                                     Color="@(context.IsCompleted ? Color.Success : Color.Default)" Size="Size.Small" />
+                            @if (context.IsCompleted)
+                            {
+                                <div class="achievement-icon-box" style="background: #10b981; color: #ffffff;">
+                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="achievement-icon-box" style="background: rgba(148, 163, 184, 0.1); color: #94a3b8;">
+                                    <MudIcon Icon="@Icons.Material.Filled.RadioButtonUnchecked" Size="Size.Small" />
+                                </div>
+                            }
+                        </MudTd>
+                        <MudTd DataLabel="Completed At">
+                            <MudText Typo="Typo.caption" Style="font-weight: 600; font-family: monospace;">
+                                @(context.CompletedAt?.ToString("hh:mm tt") ?? "---")
+                            </MudText>
                         </MudTd>
                         <MudTd DataLabel="Remarks">
                             <MudText Typo="Typo.caption">@(string.IsNullOrEmpty(context.Remarks) ? "---" : context.Remarks)</MudText>
@@ -209,13 +246,31 @@
                                         <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 2px;">@task.ChecklistItem.Description</MudText>
                                     }
                                 </div>
-                                <MudIcon Icon="@(task.IsCompleted? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.RadioButtonUnchecked)"
-                                         Color="@(task.IsCompleted ? Color.Success : Color.Default)" Size="Size.Small" Class="ml-2" />
+                                @if (task.IsCompleted)
+                                {
+                                    <div class="achievement-icon-box ml-2" style="background: #10b981; color: #ffffff;">
+                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="achievement-icon-box ml-2" style="background: rgba(148, 163, 184, 0.1); color: #94a3b8;">
+                                        <MudIcon Icon="@Icons.Material.Filled.RadioButtonUnchecked" Size="Size.Small" />
+                                    </div>
+                                }
                             </div>
                             <div class="d-flex align-center justify-space-between pt-2" style="border-top: 1px solid rgba(255,255,255,0.05);">
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="@GetFrequencyColor(task.ChecklistItem?.Frequency)" Class="frequency-chip">
-                                    @task.ChecklistItem?.Frequency
-                                </MudChip>
+                                <div class="d-flex gap-1 align-center">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@GetFrequencyColor(task.ChecklistItem?.Frequency)" Class="frequency-chip">
+                                        @task.ChecklistItem?.Frequency
+                                    </MudChip>
+                                    @if (task.IsCompleted && task.CompletedAt.HasValue)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success" Class="status-chip" Icon="@Icons.Material.Filled.AccessTime">
+                                            @task.CompletedAt.Value.ToString("hh:mm tt")
+                                        </MudChip>
+                                    }
+                                </div>
                                 <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
                             </div>
                         </MudPaper>
@@ -229,7 +284,9 @@
             <MudDivider Class="my-4" Style="opacity: 0.1;" />
             <div class="pa-4 rounded-lg" style="@GetFeedbackContainerStyle()">
                 <div class="d-flex align-center mb-2">
-                    <MudIcon Icon="@Icons.Material.Filled.Comment" Size="Size.Small" Class="mr-2" Color="Color.Primary" />
+                    <div class="achievement-icon-box mr-2" style="background: var(--mud-palette-primary); color: #ffffff;">
+                        <MudIcon Icon="@Icons.Material.Filled.Comment" Size="Size.Small" />
+                    </div>
                     <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Area Head Feedback</MudText>
                     <MudSpacer />
                     @if (Activity.AreaHeadReviewedAt.HasValue)
