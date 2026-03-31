@@ -1588,12 +1588,18 @@
 
     private async Task DeleteIssue(Issue issue)
     {
-        var result = await DialogService.ShowMessageBox(
-            "Delete Issue",
-            "Are you sure you want to delete this issue report?",
-            yesText: "DELETE", cancelText: "CANCEL");
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = "Are you sure you want to delete this issue report?",
+            ["ButtonText"] = "Delete",
+            ["Color"] = Color.Error
+        };
 
-        if (result == true)
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Issue", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
         {
             using var db = await DbFactory.CreateDbContextAsync();
             db.Issues.Remove(issue);

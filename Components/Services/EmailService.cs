@@ -70,6 +70,7 @@ namespace PDTActivityTracker.Components.Services
                 throw new Exception($"Error sending email: {ex.Message}", ex);
             }
         }
+
         public async Task SendRoleRequestEmailAsync(string adminEmail, string userName, string userEmail, string requestedRole, string remarks)
         {
             var emailSettings = _configuration.GetSection("EmailSettings");

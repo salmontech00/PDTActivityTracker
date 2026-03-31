@@ -42,7 +42,7 @@
         height: 20px !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        padding: 0 8px !important;
+        padding: 8px 8px 8px 8px !important;
     }
 
     .status-chip {
@@ -78,8 +78,37 @@
     }
 
     .filter-wrapper {
-        min-width: 150px;
+        min-width: 200px;
     }
+
+    .compact-select {
+        height: 20px !important;
+        margin-top: 0 !important;
+    }
+
+        .compact-select .mud-input-outlined-text {
+            padding: 4px 12px 4px 8px !important;
+            border-radius: 8px !important;
+        }
+
+        .compact-select .mud-input-label-outlined {
+            transform: translate(14px, 8px) scale(0.9) !important;
+        }
+
+            .compact-select .mud-input-label-outlined.mud-input-label-inputcontrol {
+                transform: translate(14px, -12px) scale(0.75) !important;
+            }
+
+        .compact-select .mud-select-input {
+            margin-top: 0 !important;
+            height: 100% !important;
+        }
+
+        .compact-select .mud-input-slot {
+            font-size: 0.8rem !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
 
     /* MOBILE DIALOG CARDS */
     .mobile-detail-card {
@@ -120,6 +149,64 @@
         .mobile-view {
             display: block;
         }
+
+        .category-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .chip-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .remarks-container {
+            text-align: right;
+            opacity: 0.8;
+            font-style: italic;
+        }
+
+        .time-badge {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+            font-weight: 800 !important;
+        }
+
+        .dark .time-badge {
+            background-color: #059669 !important;
+        }
+
+        .feedback-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .feedback-meta {
+            text-align: right;
+            line-height: 1.2;
+        }
+
+        @@media (max-width: 400px) {
+            .feedback-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+
+            .feedback-meta {
+                text-align: left;
+                width: 100%;
+            }
+        }
     }
 
     @@media (min-width: 601px) {
@@ -129,6 +216,42 @@
 
         .mobile-view {
             display: none;
+        }
+    }
+
+    /* SPECIFIC FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .dialog-header {
+            padding-right: 0 !important;
+        }
+
+        .header-info h6 {
+            font-size: 1.1rem !important;
+        }
+
+        .mobile-detail-card {
+            padding: 10px !important;
+        }
+
+        .category-footer {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 4px;
+        }
+
+        .chip-container {
+            width: 100%;
+        }
+
+        .remarks-container {
+            width: 100%;
+            text-align: left !important;
+            margin-top: 2px;
+        }
+
+        .frequency-chip, .status-chip {
+            max-width: none !important;
+            font-size: 0.65rem !important;
         }
     }
 </style>
@@ -145,9 +268,9 @@
             <div class="filter-wrapper d-flex align-center gap-2">
                 @if (Activity?.AreaHeadReviewedAt.HasValue == true)
                 {
-                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Icon="@Icons.Material.Filled.Verified" Class="mr-2">REVIEWED</MudChip>
+                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small" Icon="@Icons.Material.Filled.Verified">REVIEWED</MudChip>
                 }
-                <MudSelect T="string" @bind-Value="_frequencyFilter" Label="Frequency" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="rounded-lg" Style="max-width: 150px;">
+                <MudSelect T="string" @bind-Value="_frequencyFilter" Label="Frequency" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="rounded-lg compact-select">
                     <MudSelectItem Value="@("All")">All</MudSelectItem>
                     <MudSelectItem Value="@("Daily")">Daily</MudSelectItem>
                     <MudSelectItem Value="@("Weekly")">Weekly</MudSelectItem>
@@ -259,19 +382,21 @@
                                     </div>
                                 }
                             </div>
-                            <div class="d-flex align-center justify-space-between pt-2" style="border-top: 1px solid rgba(255,255,255,0.05);">
-                                <div class="d-flex gap-1 align-center">
+                            <div class="d-flex align-center justify-space-between pt-2 category-footer" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                                <div class="d-flex gap-1 align-center chip-container">
                                     <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="@GetFrequencyColor(task.ChecklistItem?.Frequency)" Class="frequency-chip">
                                         @task.ChecklistItem?.Frequency
                                     </MudChip>
                                     @if (task.IsCompleted && task.CompletedAt.HasValue)
                                     {
-                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success" Class="status-chip" Icon="@Icons.Material.Filled.AccessTime">
+                                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Success" Class="status-chip time-badge" Icon="@Icons.Material.Filled.Schedule">
                                             @task.CompletedAt.Value.ToString("hh:mm tt")
                                         </MudChip>
                                     }
                                 </div>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
+                                <div class="remarks-container">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
+                                </div>
                             </div>
                         </MudPaper>
                     }
@@ -283,17 +408,20 @@
         {
             <MudDivider Class="my-4" Style="opacity: 0.1;" />
             <div class="pa-4 rounded-lg" style="@GetFeedbackContainerStyle()">
-                <div class="d-flex align-center mb-2">
-                    <div class="achievement-icon-box mr-2" style="background: var(--mud-palette-primary); color: #ffffff;">
-                        <MudIcon Icon="@Icons.Material.Filled.Comment" Size="Size.Small" />
+                <div class="feedback-header mb-3">
+                    <div class="d-flex align-center">
+                        <div class="achievement-icon-box mr-2" style="background: var(--mud-palette-primary); color: #ffffff;">
+                            <MudIcon Icon="@Icons.Material.Filled.Comment" Size="Size.Small" />
+                        </div>
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Area Head Feedback</MudText>
                     </div>
-                    <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Area Head Feedback</MudText>
-                    <MudSpacer />
                     @if (Activity.AreaHeadReviewedAt.HasValue)
                     {
-                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">
-                            Reviewed @(Activity.AreaHead != null ? $"by {Activity.AreaHead.Fullname} " : "")on @Activity.AreaHeadReviewedAt.Value.ToString("MMM dd, yyyy hh:mm tt")
-                        </MudText>
+                        <div class="feedback-meta">
+                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">
+                                Reviewed @(Activity.AreaHead != null ? $"by {Activity.AreaHead.Fullname} " : "")on @Activity.AreaHeadReviewedAt.Value.ToString("MMM dd, yyyy hh:mm tt")
+                            </MudText>
+                        </div>
                     }
                 </div>
 
