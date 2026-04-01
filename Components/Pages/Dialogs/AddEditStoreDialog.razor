@@ -104,17 +104,22 @@
                 </MudItem>
                 <MudItem xs="12" sm="12" Class="d-flex align-center">
                     <MudTooltip Text="Get Current Location">
-                        <MudIconButton Icon="@Icons.Material.Filled.MyLocation"
-                                       OnClick="FetchGPSLocation"
-                                       Disabled="_isFetchingLocation"
-                                       Size="Size.Small"
-                                       Style="@GetCancelButtonStyle()" />
-                                       Fetch Location
+                        <div class="d-flex align-center gap-3" style="@(_isFetchingLocation ? "cursor: not-allowed; opacity: 0.7;" : "cursor: pointer;")" @onclick="@(async () => { if (!_isFetchingLocation) await FetchGPSLocation(); })">
+                            <MudAvatar Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium">
+                                @if (_isFetchingLocation)
+                                {
+                                    <MudProgressCircular Color="Color.Inherit" Size="Size.Small" Indeterminate="true" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.MyLocation" Size="Size.Medium" />
+                                }
+                            </MudAvatar>
+                            <MudText Typo="Typo.body2" Style="@GetCancelButtonStyle()">
+                                @(_isFetchingLocation ? "Fetching Location..." : "Fetch Location")
+                            </MudText>
+                        </div>
                     </MudTooltip>
-                    @if (_isFetchingLocation)
-                    {
-                        <MudProgressCircular Style="@GetCancelButtonStyle()" Size="Size.Small" Indeterminate="true" Class="ml-2" />
-                    }
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudNumericField @bind-Value="Store.GPSLatitude" Label="GPS Latitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />

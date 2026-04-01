@@ -101,6 +101,75 @@
         font-weight: 700 !important;
         border-radius: 12px !important;
     }
+
+    /* MOBILE RESPONSIVE DIALOG */
+    @@media (max-width: 600px) {
+        .profile-section {
+            padding: 12px 0;
+            margin-bottom: 12px;
+        }
+
+        .placeholder-container {
+            width: 80px;
+            height: 80px;
+        }
+
+            .placeholder-container .mud-icon-root {
+                font-size: 40px !important;
+            }
+
+        .profile-image {
+            max-width: 100px;
+            max-height: 100px;
+        }
+
+        .glass-dialog .mud-dialog-content {
+            padding: 8px 12px !important;
+        }
+
+        .info-item {
+            padding: 8px 12px;
+        }
+    }
+
+    /* SPECIFIC FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .glass-dialog {
+            padding: 8px !important;
+        }
+
+            .glass-dialog .mud-dialog-title {
+                padding: 12px 40px 4px 12px !important;
+            }
+
+            .glass-dialog .mud-typography-h6 {
+                font-size: 1.05rem !important;
+                line-height: 1.2 !important;
+            }
+
+            .glass-dialog .mud-dialog-actions {
+                padding: 8px 8px 12px 8px !important;
+            }
+
+                .glass-dialog .mud-dialog-actions .mud-button {
+                    min-height: 32px !important;
+                    font-size: 0.70rem !important;
+                    padding: 6px 12px !important;
+                    width: 100% !important;
+                }
+
+        .info-item {
+            padding: 8px;
+        }
+
+        .info-label {
+            font-size: 0.65rem;
+        }
+
+        .info-value {
+            font-size: 0.85rem;
+        }
+    }
 </style>
 
 <MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
@@ -145,7 +214,8 @@
                     <div class="info-value">
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Variant="Variant.Text"
+                                 Variant="Variant.Filled"
+                                 Color="@GetRoleColor(UserToView.Role)"
                                  Class="@($"status-chip {GetRoleChipClass(UserToView.Role)}")">
                             @UserToView.Role
                         </MudChip>
@@ -164,7 +234,8 @@
                     <div class="info-value">
                         <MudChip T="string"
                                  Size="Size.Small"
-                                 Variant="Variant.Text"
+                                 Variant="Variant.Filled"
+                                 Color="@GetStatusColor(UserToView.Status ?? "Active")"
                                  Class="@($"status-chip {GetStatusChipClass(UserToView.Status ?? "Active")}")">
                             @UserToView.Status
                         </MudChip>
@@ -250,6 +321,22 @@
         "Active" => "status-chip-active",
         "Inactive" => "status-chip-inactive",
         _ => "status-chip-active"
+    };
+
+    private Color GetStatusColor(string status) => (status ?? "Active") switch
+    {
+        "Active" => Color.Success,
+        "Inactive" => Color.Error,
+        _ => Color.Success
+    };
+
+    private Color GetRoleColor(string role) => role switch
+    {
+        "Admin" => Color.Success,
+        "AVP" => Color.Secondary,
+        "Area Head" => Color.Info,
+        "Store Head" => Color.Success,
+        _ => Color.Success
     };
 
     private void Close() => MudDialog.Close();

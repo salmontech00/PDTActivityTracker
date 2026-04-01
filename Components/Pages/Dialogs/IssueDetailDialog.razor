@@ -22,7 +22,7 @@
 
     .detail-label {
         font-size: 0.75rem;
-        opacity: 0.6;
+        opacity: 0.8;
         text-transform: uppercase;
         letter-spacing: 1px;
         font-weight: 700;
@@ -147,16 +147,16 @@
     <DialogContent>
         <MudGrid Spacing="3">
             <!-- Basic Info -->
-            <MudItem xs="12" sm="6">
+            <MudItem xs="6" sm="6">
                 <div class="d-flex flex-column">
                     <span class="detail-label">Status</span>
                     <MudChip T="string" Color="@GetStatusColor(_issue.Status)" Size="Size.Small" Variant="Variant.Filled">@_issue.Status</MudChip>
                 </div>
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="6" sm="6">
                 <div class="d-flex flex-column">
                     <span class="detail-label">Priority</span>
-                    <MudChip T="string" Color="@GetPriorityColor(_issue.Priority)" Size="Size.Small" Variant="Variant.Outlined">@_issue.Priority</MudChip>
+                    <MudChip T="string" Color="@GetPriorityColor(_issue.Priority)" Size="Size.Small" Variant="Variant.Filled">@_issue.Priority</MudChip>
                 </div>
             </MudItem>
 
@@ -248,7 +248,7 @@
                     }
                     else
                     {
-                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mt-2 rounded-lg">
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Class="mt-2 rounded-lg">
                             This issue is still pending review by the Area Head.
                         </MudAlert>
                     }

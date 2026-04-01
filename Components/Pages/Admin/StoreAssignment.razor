@@ -276,6 +276,66 @@
         white-space: nowrap;
     }
 
+    /* SUMMARY CARDS ON MOBILE */
+    @@media (max-width: 600px) {
+        .summary-grid {
+            margin: -8px !important;
+            width: calc(100% + 16px) !important;
+            margin-bottom: 8px !important;
+        }
+
+            .summary-grid > .mud-grid-item {
+                padding: 8px !important;
+            }
+
+        .summary-card {
+            padding: 10px 12px !important;
+            min-height: 60px !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+            .summary-card .mud-typography-subtitle2 {
+                font-size: 0.65rem !important;
+                margin-bottom: -2px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .summary-card .mud-typography-h4 {
+                font-size: 1.5rem !important;
+                line-height: 1 !important;
+            }
+    }
+
+    /* ULTRA-THIN SPACING FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .summary-grid {
+            margin: -4px !important;
+            width: calc(100% + 8px) !important;
+            margin-bottom: 4px !important;
+        }
+
+            .summary-grid > .mud-grid-item {
+                padding: 4px !important;
+            }
+
+        .summary-card {
+            padding: 8px 10px !important;
+            min-height: 50px !important;
+        }
+
+            .summary-card .mud-typography-subtitle2 {
+                font-size: 0.6rem !important;
+            }
+
+            .summary-card .mud-typography-h4 {
+                font-size: 1.2rem !important;
+            }
+    }
+
     /* RESPONSIVE */
     @@media (max-width: 960px) {
         .filter-toggle-button {
@@ -433,27 +493,27 @@
     else
     {
         <!-- Summary Cards -->
-        <MudGrid Class="mb-4">
+        <MudGrid Class="mb-4 summary-grid">
             <MudItem xs="6" sm="6" md="3">
-                <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
                     <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Total Stores</MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">@_allStores.Count</MudText>
                 </MudPaper>
             </MudItem>
             <MudItem xs="6" sm="6" md="3">
-                <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
                     <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Assigned</MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@_allStores.Count(s => s.StoreHeadId != null && s.AreaHeadId != null)</MudText>
                 </MudPaper>
             </MudItem>
             <MudItem xs="6" sm="6" md="3">
-                <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
                     <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Unassigned</MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold text-error">@_allStores.Count(s => s.StoreHeadId == null || s.AreaHeadId == null)</MudText>
                 </MudPaper>
             </MudItem>
             <MudItem xs="6" sm="6" md="3">
-                <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
                     <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Area Heads</MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold text-info">@_allStores.Select(s => s.AreaHeadId).Distinct().Count(id => id != null)</MudText>
                 </MudPaper>
@@ -583,7 +643,7 @@
                                 else
                                 {
                                     <div class="d-flex flex-column">
-                                        <span class="text-error">Unassigned</span>
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
                                         <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
                                     </div>
                                 }
@@ -599,7 +659,7 @@
                                 else
                                 {
                                     <div class="d-flex flex-column">
-                                        <span class="text-error" style="opacity: 0.5">Unassigned</span>
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
                                         <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
                                     </div>
                                 }
@@ -627,9 +687,9 @@
                                             <MudItem xs="12" md="4">
                                                 <MudText Typo="Typo.subtitle2" Color="Color.Primary">Contact Info</MudText>
                                                 <MudDivider Class="mb-2" />
-                                                <MudText Typo="Typo.body2"><strong>Phone:</strong> @(context.ContactPhone ?? "N/A")</MudText>
-                                                <MudText Typo="Typo.body2"><strong>Email:</strong> @(context.ContactEmail ?? "N/A")</MudText>
-                                                <MudText Typo="Typo.body2"><strong>GPS:</strong> @(context.GPSLatitude), @(context.GPSLongitude)</MudText>
+                                                <MudText Typo="Typo.body2"><strong>Phone:</strong> @(string.IsNullOrWhiteSpace(context.ContactPhone) ? "N/A" : context.ContactPhone)</MudText>
+                                                <MudText Typo="Typo.body2"><strong>Email:</strong> @(string.IsNullOrWhiteSpace(context.ContactEmail) ? "N/A" : context.ContactEmail)</MudText>
+                                                <MudText Typo="Typo.body2"><strong>GPS:</strong> @(context.GPSLatitude.HasValue && context.GPSLongitude.HasValue ? $"{context.GPSLatitude}, {context.GPSLongitude}" : "N/A")</MudText>
                                             </MudItem>
                                             <MudItem xs="12" md="4">
                                                 <MudText Typo="Typo.subtitle2" Color="Color.Primary">Assignment History</MudText>
@@ -700,7 +760,7 @@
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Contact</MudText>
-                                    <MudText Typo="Typo.body2">@(store.ContactPhone ?? "N/A")</MudText>
+                                    <MudText Typo="Typo.body2">@(string.IsNullOrWhiteSpace(store.ContactPhone) ? "N/A" : store.ContactPhone)</MudText>
                                 </MudItem>
                                 <MudItem xs="12">
                                     <MudDivider Class="my-2" Style="opacity: 0.1" />
@@ -713,7 +773,7 @@
                                     }
                                     else
                                     {
-                                        <MudText Typo="Typo.body2" Color="Color.Error">Unassigned</MudText>
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mt-1">Unassigned</MudChip>
                                     }
                                 </MudItem>
                                 <MudItem xs="6">
@@ -724,7 +784,7 @@
                                     }
                                     else
                                     {
-                                        <MudText Typo="Typo.body2" Color="Color.Error">Unassigned</MudText>
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mt-1">Unassigned</MudChip>
                                     }
                                 </MudItem>
                             </MudGrid>
