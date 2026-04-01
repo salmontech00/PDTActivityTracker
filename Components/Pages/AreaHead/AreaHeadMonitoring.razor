@@ -472,8 +472,9 @@
 
     @if (!_initialized)
     {
-        <div class="d-flex justify-center pa-12">
-            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Area Data...</MudText>
         </div>
     }
     else
@@ -600,21 +601,20 @@
                                                 Margin="Margin.Dense" />
                         </MudItem>
                         <MudItem xs="12" sm="6">
-                            <MudSelect T="int?"
-                                       Label="Store"
-                                       Value="_selectedStoreId"
-                                       ValueChanged="OnStoreFilterChanged"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       Dense="true"
-                                       Placeholder="All Stores"
-                                       Clearable="true">
-                                <MudSelectItem Value="@((int?)null)">All Stores</MudSelectItem>
-                                @foreach (var store in _assignedStores)
-                                {
-                                    <MudSelectItem Value="@((int?)store.Id)">@store.StoreCode - @store.StoreName</MudSelectItem>
-                                }
-                            </MudSelect>
+                            <MudAutocomplete T="Store"
+                                             Label="Store"
+                                             Value="@(_assignedStores.FirstOrDefault(s => s.Id == _selectedStoreId))"
+                                             ValueChanged="@(s => OnStoreFilterChanged(s?.Id))"
+                                             SearchFunc="@SearchStores"
+                                             ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
+                                             ResetValueOnEmptyText="true"
+                                             CoerceText="true"
+                                             CoerceValue="false"
+                                             Clearable="true"
+                                             Placeholder="Search stores..."
+                                             Variant="Variant.Outlined"
+                                             Margin="Margin.Dense"
+                                             Class="rounded-lg" />
                         </MudItem>
                     </MudGrid>
                     <MudGrid>
@@ -625,7 +625,7 @@
                                 </MudText>
                                 @if (HasActiveReportFilters())
                                 {
-                                    <MudButton Variant="Variant.Text"
+                                    <MudButton Variant="Variant.Filled"
                                                Color="Color.Secondary"
                                                Size="Size.Small"
                                                StartIcon="@Icons.Material.Filled.Clear"
@@ -648,7 +648,7 @@
                                 <MudTh>Store</MudTh>
                                 <MudTh>Started By</MudTh>
                                 <MudTh>Status</MudTh>
-                                <MudTh>Review Status</MudTh>
+                                <MudTh>Review Status</MudTh><MudTh>Completed At</MudTh>
                                 <MudTh>Progress</MudTh>
                                 <MudTh Style="text-align: center;">Action</MudTh>
                             </HeaderContent>
@@ -657,413 +657,403 @@
                                 <MudTd DataLabel="Store">@(context.Store?.StoreName ?? "---")</MudTd>
                                 <MudTd DataLabel="Started By">@(context.StartedBy?.Fullname ?? "---")</MudTd>
                                 <MudTd DataLabel="Status">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(context)" Variant="Variant.Text" Class="role-chip">
+                                    <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(context)" Variant="Variant.Filled" Class="role-chip">
                                         @GetActivityStatusLabel(context)
                                     </MudChip>
                                 </MudTd>
-                                <MudTd DataLabel="Review Status">
-                                    @if (context.AreaHeadReviewedAt.HasValue)
-                                    {
-                                        <div class="d-flex flex-column">
-                                            <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Text" Icon="@Icons.Material.Filled.Verified">Reviewed</MudChip>
-                                            @if (context.AreaHead != null)
-                                            {
-                                                <MudText Typo="Typo.caption" Style="opacity: 0.7; margin-left: 8px;">by @context.AreaHead.Fullname</MudText>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Text">Pending</MudChip>
-                                    }
-                                </MudTd>
-                                <MudTd DataLabel="Progress">
-                                    <div class="d-flex align-center gap-2">
-                                        <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(context.Id)" Style="width: 60px;" Rounded="true" />
-                                        <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(context.Id))%</MudText>
-                                    </div>
-                                </MudTd>
-                                <MudTd DataLabel="Action" Style="text-align: center;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" />
-                                </MudTd>
-                            </RowTemplate>
-                            <PagerContent>
-                                <MudTablePager />
-                            </PagerContent>
-                        </MudTable>
-                    </div>
+                                <MudTd DataLabel="Review Status">@if (context.AreaHeadReviewedAt.HasValue){
+                                <div class="d-flex flex-column"><MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Verified">Reviewed</MudChip></div>
+                            }
+                            else
+                            {
 
-                    <div class="mobile-view">
-                        @foreach (var activity in _activityLogsFiltered)
-                        {
-                            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
-                                <div class="mobile-card-header">
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@activity.Date.ToString("MMM dd, yyyy")</MudText>
-                                    <div class="d-flex flex-column align-end">
-                                        <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(activity)" Variant="Variant.Text" Class="role-chip">
-                                            @GetActivityStatusLabel(activity)
-                                        </MudChip>
-                                        @if (activity.AreaHeadReviewedAt.HasValue)
-                                        {
-                                            <MudText Typo="Typo.caption" Color="Color.Success" Style="font-weight: 700;">
-                                                <MudIcon Icon="@Icons.Material.Filled.Verified" Size="Size.Small" /> Reviewed
-                                            </MudText>
-                                        }
+                                <MudChip T="string" Color="Color.Default" Size="Size.Small" Variant="Variant.Filled">Pending</MudChip>
+                            }
+    </MudTd><MudTd DataLabel="Completed At">@GetActivityCompletedAt(context)</MudTd>
+                            <MudTd DataLabel="Progress">
+                                <div class="d-flex align-center gap-2">
+                                    <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(context.Id)" Style="width: 60px;" Rounded="true" />
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(context.Id))%</MudText>
+                                </div>
+                            </MudTd>
+                            <MudTd DataLabel="Action" Style="text-align: center;">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                </div>
+
+                <div class="mobile-view">
+                    @foreach (var activity in _activityLogsFiltered)
+                    {
+                        <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                            <div class="mobile-card-header">
+                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@activity.Date.ToString("MMM dd, yyyy")</MudText>
+                                <div class="d-flex flex-column align-end">
+                                    <MudChip T="string" Size="Size.Small" Color="@GetActivityStatusColor(activity)" Variant="Variant.Filled" Class="role-chip">
+                                        @GetActivityStatusLabel(activity)
+                                    </MudChip>
+                                    @if (activity.AreaHeadReviewedAt.HasValue)
+                                    {
+                                        <MudChip T="string" Color="Color.Success" Size="Size.Small" Variant="Variant.Filled" Icon="@Icons.Material.Filled.Verified" Style="margin: 0; margin-top: 4px;">Reviewed</MudChip>
+                                    }
+                                </div>
+                            </div>
+                            <div class="mobile-card-content">
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="12">
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName ?? "---")</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText><MudText Typo="Typo.body2">@(activity.StartedBy?.Fullname ?? "---")</MudText></MudItem><MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Completed At</MudText><MudText Typo="Typo.body2">@GetActivityCompletedAt(activity)</MudText></MudItem>
+                                    <MudItem xs="12">
+                                        <div class="d-flex align-center justify-space-between mb-1">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Progress</MudText>
+                                            <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(activity.Id))%</MudText>
+                                        </div>
+                                        <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(activity.Id)" Rounded="true" Size="Size.Small" />
+                                    </MudItem>
+                                </MudGrid>
+                            </div>
+                            <div class="mobile-card-actions">
+                                <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Filled" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(activity))" Class="modern-button">
+                                    Details
+                                </MudButton>
+                            </div>
+                        </MudPaper>
+                    }
+                </div>
+            }
+                        else
+            {
+                <div class="pa-12 text-center" style="opacity: 0.5;">
+                    <MudIcon Icon="@Icons.Material.Filled.ReportOff" Size="Size.Large" Class="mb-2" />
+                    <MudText>No activity reports found matching your criteria.</MudText>
+                </div>
+            }
+        </MudTabPanel>
+
+        <!-- Area Analytics -->
+        <MudTabPanel Text="Area Analytics" Icon="@Icons.Material.Filled.BarChart">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="@($"pa-6 glass-panel h-100 {GetThemeClass()}")" Elevation="0" Style="height: 100%;">
+                        <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Category Performance</MudText>
+                        <div class="d-flex flex-column gap-4">
+                            @foreach (var cat in _categoryPerformance.OrderByDescending(c => c.CompletionRate))
+                            {
+                                <div>
+                                    <div class="d-flex justify-space-between mb-1">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@cat.CategoryName</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 800;">@((int)cat.CompletionRate)%</MudText>
                                     </div>
+                                    <MudProgressLinear Color="@GetProgressColor(cat.CompletionRate)" Value="@cat.CompletionRate" Rounded="true" Size="Size.Medium" />
                                 </div>
-                                <div class="mobile-card-content">
-                                    <MudGrid Spacing="1">
-                                        <MudItem xs="12">
-                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store</MudText>
-                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName ?? "---")</MudText>
-                                        </MudItem>
-                                        <MudItem xs="12">
-                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText>
-                                            <MudText Typo="Typo.body2">@(activity.StartedBy?.Fullname ?? "---")</MudText>
-                                        </MudItem>
-                                        <MudItem xs="12">
-                                            <div class="d-flex align-center justify-space-between mb-1">
-                                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Progress</MudText>
-                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)GetCompletionProgress(activity.Id))%</MudText>
-                                            </div>
-                                            <MudProgressLinear Color="Color.Primary" Value="@GetCompletionProgress(activity.Id)" Rounded="true" Size="Size.Small" />
-                                        </MudItem>
-                                    </MudGrid>
+                            }
+                        </div>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" md="6">
+                    <MudPaper Class="@($"pa-6 glass-panel h-100 {GetThemeClass()}")" Elevation="0" Style="height: 100%;">
+                        <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Store Comparison</MudText>
+                        <div class="d-flex flex-column gap-4">
+                            @foreach (var store in _assignedStores.OrderByDescending(s => GetStoreProgress(s.Id)))
+                            {
+                                <div>
+                                    <div class="d-flex justify-space-between mb-1">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.StoreName</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 800;">@((int)GetStoreProgress(store.Id))%</MudText>
+                                    </div>
+                                    <MudProgressLinear Color="@GetProgressColor(GetStoreProgress(store.Id))" Value="@GetStoreProgress(store.Id)" Rounded="true" Size="Size.Medium" />
                                 </div>
-                                <div class="mobile-card-actions">
-                                    <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Text" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(activity))" Class="modern-button">
-                                        Details
-                                    </MudButton>
-                                </div>
-                            </MudPaper>
-                        }
-                    </div>
-                }
-                else
+                            }
+                        </div>
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudTabPanel>
+
+        <!-- Live Activity Log -->
+        <MudTabPanel Text="Live Activity Log" Icon="@Icons.Material.Filled.History">
+            <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0" Style="max-height: 500px; overflow-y: auto;">
+                @if (!_activityLogsList.Any())
                 {
-                    <div class="pa-12 text-center" style="opacity: 0.5;">
-                        <MudIcon Icon="@Icons.Material.Filled.ReportOff" Size="Size.Large" Class="mb-2" />
-                        <MudText>No activity reports found matching your criteria.</MudText>
+                    <div class="pa-8 text-center" style="opacity: 0.5;">
+                        <MudIcon Icon="@Icons.Material.Filled.HistoryToggleOff" Size="Size.Large" Class="mb-2" />
+                        <MudText>No activity logs found for your stores.</MudText>
                     </div>
                 }
-            </MudTabPanel>
 
-            <!-- Area Analytics -->
-            <MudTabPanel Text="Area Analytics" Icon="@Icons.Material.Filled.BarChart">
-                <MudGrid>
-                    <MudItem xs="12" md="6">
-                        <MudPaper Class="@($"pa-6 glass-panel h-100 {GetThemeClass()}")" Elevation="0" Style="height: 100%;">
-                            <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Category Performance</MudText>
-                            <div class="d-flex flex-column gap-4">
-                                @foreach (var cat in _categoryPerformance.OrderByDescending(c => c.CompletionRate))
-                                {
-                                    <div>
-                                        <div class="d-flex justify-space-between mb-1">
-                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@cat.CategoryName</MudText>
-                                            <MudText Typo="Typo.body2" Style="font-weight: 800;">@((int)cat.CompletionRate)%</MudText>
-                                        </div>
-                                        <MudProgressLinear Color="@GetProgressColor(cat.CompletionRate)" Value="@cat.CompletionRate" Rounded="true" Size="Size.Medium" />
-                                    </div>
-                                }
-                            </div>
-                        </MudPaper>
+                @foreach (var log in _activityLogsList)
+                {
+                    <div class="activity-item">
+                        <div class="activity-icon" style="@GetActivityIconStyle(log.Action)">
+                            <MudIcon Icon="@GetLogIcon(log.Action)" Size="Size.Small" />
+                        </div>
+                        <div class="activity-content">
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">
+                                @(log.User?.Fullname)
+                                <span style="font-weight: 400;">@log.Action: @log.Details</span>
+                            </MudText>
+                            <MudText Class="activity-time">
+                                @GetRelativeTime(log.Timestamp) • @(log.Store?.StoreName)
+                            </MudText>
+                        </div>
+                    </div>
+                }
+            </MudPaper>
+        </MudTabPanel>
+
+        <!-- Photo Gallery -->
+        <MudTabPanel Text="Photo Gallery" Icon="@Icons.Material.Filled.PhotoLibrary">
+            <MudPaper Class="@($"glass-panel filter-panel pb-2 pt-2 pr-3 pl-3 mb-4 {GetThemeClass()} {(_showPhotoFilters ? "filters-visible" : "")}")" Elevation="0">
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@(_showPhotoFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                           FullWidth="true"
+                           OnClick="@(() => _showPhotoFilters = !_showPhotoFilters)"
+                           Class="filter-toggle-button"
+                           Style="margin-bottom: 16px;">
+                    @(_showPhotoFilters ? "Hide Filters" : "Show Filters")
+                </MudButton>
+
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudTextField T="string"
+                                      @bind-Value="_photoSearchTerm"
+                                      @bind-Value:after="FilterPhotos"
+                                      Label="Search"
+                                      Placeholder="Task or user..."
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search" />
                     </MudItem>
-                    <MudItem xs="12" md="6">
-                        <MudPaper Class="@($"pa-6 glass-panel h-100 {GetThemeClass()}")" Elevation="0" Style="height: 100%;">
-                            <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Store Comparison</MudText>
-                            <div class="d-flex flex-column gap-4">
-                                @foreach (var store in _assignedStores.OrderByDescending(s => GetStoreProgress(s.Id)))
-                                {
-                                    <div>
-                                        <div class="d-flex justify-space-between mb-1">
-                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.StoreName</MudText>
-                                            <MudText Typo="Typo.body2" Style="font-weight: 800;">@((int)GetStoreProgress(store.Id))%</MudText>
-                                        </div>
-                                        <MudProgressLinear Color="@GetProgressColor(GetStoreProgress(store.Id))" Value="@GetStoreProgress(store.Id)" Rounded="true" Size="Size.Medium" />
-                                    </div>
-                                }
-                            </div>
-                        </MudPaper>
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudAutocomplete T="Store"
+                                         Label="Store"
+                                         Value="@(_assignedStores.FirstOrDefault(s => s.Id == _photoStoreFilter))"
+                                         ValueChanged="@(s => OnPhotoStoreFilterChanged(s?.Id))"
+                                         SearchFunc="@SearchStores"
+                                         ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
+                                         ResetValueOnEmptyText="true"
+                                         CoerceText="true"
+                                         CoerceValue="false"
+                                         Clearable="true"
+                                         Placeholder="Search stores..."
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Class="rounded-lg" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4" md="3">
+                        <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="FilterPhotos" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
+                            @foreach (var cat in _categoriesList)
+                            {
+                                <MudSelectItem Value="@((int?)cat.Id)">@cat.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="12" md="3">
+                        <MudDateRangePicker Label="Date Range"
+                                            @bind-DateRange="_photoDateRange"
+                                            @bind-DateRange:after="FilterPhotos"
+                                            Variant="Variant.Outlined"
+                                            Margin="Margin.Dense" />
                     </MudItem>
                 </MudGrid>
-            </MudTabPanel>
+                <MudGrid>
+                    <MudItem xs="12">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
+                                Showing @(_filteredPhotos.Count) of @(_allPhotos.Count) photos
+                            </MudText>
+                            @if (HasPhotoFilters())
+                            {
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Clear"
+                                           OnClick="ClearPhotoFilters"
+                                           Class="clear-filters-button">
+                                    Clear Filters
+                                </MudButton>
+                            }
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
 
-            <!-- Live Activity Log -->
-            <MudTabPanel Text="Live Activity Log" Icon="@Icons.Material.Filled.History">
-                <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0" Style="max-height: 500px; overflow-y: auto;">
-                    @if (!_activityLogsList.Any())
+            @if (_filteredPhotos.Any())
+            {
+                <div class="photo-grid">
+                    @foreach (var photo in _filteredPhotos)
                     {
-                        <div class="pa-8 text-center" style="opacity: 0.5;">
-                            <MudIcon Icon="@Icons.Material.Filled.HistoryToggleOff" Size="Size.Large" Class="mb-2" />
-                            <MudText>No activity logs found for your stores.</MudText>
+                        <div class="photo-item" @onclick="@(() => OpenPhotoDialog(photo))">
+                            <img src="@GetImageSource(photo)" alt="Store Photo" />
+                            <div class="photo-overlay">
+                                <div class="font-weight-bold">@(photo.StoreDailyActivity?.Store?.StoreName)</div>
+                                <div style="opacity: 0.8;">@photo.UploadedAt.ToString("MMM dd, HH:mm")</div>
+                            </div>
                         </div>
                     }
+                </div>
+            }
+            else
+            {
+                <div class="pa-12 text-center" style="opacity: 0.5;">
+                    <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" Size="Size.Large" Class="mb-2" />
+                    <MudText>No photos found.</MudText>
+                </div>
+            }
+        </MudTabPanel>
 
-                    @foreach (var log in _activityLogsList)
-                    {
-                        <div class="activity-item">
-                            <div class="activity-icon" style="@GetActivityIconStyle(log.Action)">
-                                <MudIcon Icon="@GetLogIcon(log.Action)" Size="Size.Small" />
-                            </div>
-                            <div class="activity-content">
-                                <MudText Typo="Typo.body2" Style="font-weight: 600;">
-                                    @(log.User?.Fullname)
-                                    <span style="font-weight: 400;">@log.Action: @log.Details</span>
-                                </MudText>
-                                <MudText Class="activity-time">
-                                    @GetRelativeTime(log.Timestamp) • @(log.Store?.StoreName)
-                                </MudText>
-                            </div>
+        <!-- Operational Issues -->
+        <MudTabPanel Text="Operational Issues" Icon="@Icons.Material.Filled.ReportProblem">
+            <MudPaper Class="@($"glass-panel filter-panel pb-2 pt-2 pr-3 pl-3 mb-4 {GetThemeClass()} {(_showIssueFilters ? "filters-visible" : "")}")" Elevation="0">
+                <MudButton Variant="Variant.Outlined"
+                           StartIcon="@(_showIssueFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                           FullWidth="true"
+                           OnClick="@(() => _showIssueFilters = !_showIssueFilters)"
+                           Class="filter-toggle-button"
+                           Style="margin-bottom: 16px;">
+                    @(_showIssueFilters ? "Hide Filters" : "Show Filters")
+                </MudButton>
+
+                <MudGrid Spacing="2">
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      @bind-Value="_issueSearchTerm"
+                                      @bind-Value:after="ApplyIssueFilters"
+                                      Label="Search Issues"
+                                      Placeholder="Category or description..."
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Search" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudAutocomplete T="Store"
+                                         Label="Store"
+                                         Value="@(_assignedStores.FirstOrDefault(s => s.Id == _issueStoreFilter))"
+                                         ValueChanged="@(s => OnIssueStoreFilterChanged(s?.Id))"
+                                         SearchFunc="@SearchStores"
+                                         ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
+                                         ResetValueOnEmptyText="true"
+                                         CoerceText="true"
+                                         CoerceValue="false"
+                                         Clearable="true"
+                                         Placeholder="Search stores..."
+                                         Variant="Variant.Outlined"
+                                         Margin="Margin.Dense"
+                                         Class="rounded-lg" />
+                    </MudItem>
+                    <MudItem xs="12" sm="2">
+                        <MudSelect T="string" @bind-Value="_issueStatusFilter" @bind-Value:after="ApplyIssueFilters" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            <MudSelectItem Value="@(string.Empty)">All Status</MudSelectItem>
+                            <MudSelectItem Value="@("Open")">Open</MudSelectItem>
+                            <MudSelectItem Value="@("Resolved")">Resolved</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+
+                <MudGrid>
+                    <MudItem xs="12">
+                        <div class="d-flex justify-space-between align-center px-1">
+                            <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
+                                Showing @(_issuesFiltered.Count) of @(_issues.Count) issues
+                            </MudText>
+                            @if (HasIssueFilters())
+                            {
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Secondary"
+                                           Size="Size.Small"
+                                           StartIcon="@Icons.Material.Filled.Clear"
+                                           OnClick="ClearIssueFilters"
+                                           Class="clear-filters-button">
+                                    Clear Filters
+                                </MudButton>
+                            }
                         </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @if (_issuesFiltered.Any())
+            {
+                <div class="desktop-view">
+                    <MudTable Items="_issuesFiltered" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Class="glass-panel">
+                        <HeaderContent>
+                            <MudTh>Date</MudTh>
+                            <MudTh>Store</MudTh>
+                            <MudTh>Category</MudTh>
+                            <MudTh>Priority</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh Style="text-align: center;">Action</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Date">@context.ReportedAt.ToString("MMM dd, yyyy")</MudTd>
+                            <MudTd DataLabel="Store">@(context.Store?.StoreName ?? "---")</MudTd>
+                            <MudTd DataLabel="Category">@context.Title</MudTd>
+                            <MudTd DataLabel="Priority">
+                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(context.Priority)" Variant="Variant.Filled">@context.Priority</MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Status">
+                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">@context.Status</MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Action" Style="text-align: center;">
+                                <div class="d-flex justify-center gap-1">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenIssueDetail(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteIssue(context))" />
+                                </div>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                </div>
+
+                <div class="mobile-view">
+                    @foreach (var issue in _issuesFiltered)
+                    {
+                        <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                            <div class="mobile-card-header">
+                                <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@issue.ReportedAt.ToString("MMM dd")</MudText>
+                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled">
+                                    @issue.Status
+                                </MudChip>
+                            </div>
+                            <div class="mobile-card-content">
+                                <div class="d-flex justify-space-between align-start">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">@issue.Title</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
+                                </div>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
+                                <MudText Typo="Typo.body2" Class="mt-2 truncate-2-lines">@issue.Description</MudText>
+                            </div>
+                            <div class="mobile-card-actions">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteIssue(issue))" />
+                                <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Filled" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenIssueDetail(issue))">
+                                    Review
+                                </MudButton>
+                            </div>
+                        </MudPaper>
                     }
-                </MudPaper>
-            </MudTabPanel>
-
-            <!-- Photo Gallery -->
-            <MudTabPanel Text="Photo Gallery" Icon="@Icons.Material.Filled.PhotoLibrary">
-                <MudPaper Class="@($"glass-panel filter-panel pb-2 pt-2 pr-3 pl-3 mb-4 {GetThemeClass()} {(_showPhotoFilters ? "filters-visible" : "")}")" Elevation="0">
-                    <MudButton Variant="Variant.Outlined"
-                               StartIcon="@(_showPhotoFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
-                               FullWidth="true"
-                               OnClick="@(() => _showPhotoFilters = !_showPhotoFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
-                        @(_showPhotoFilters ? "Hide Filters" : "Show Filters")
-                    </MudButton>
-
-                    <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="4" md="3">
-                            <MudTextField T="string"
-                                          @bind-Value="_photoSearchTerm"
-                                          @bind-Value:after="FilterPhotos"
-                                          Label="Search"
-                                          Placeholder="Task or user..."
-                                          Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          Adornment="Adornment.Start"
-                                          AdornmentIcon="@Icons.Material.Filled.Search" />
-                        </MudItem>
-                        <MudItem xs="12" sm="4" md="3">
-                            <MudSelect T="int?"
-                                       Label="Store"
-                                       Value="_photoStoreFilter"
-                                       ValueChanged="OnPhotoStoreFilterChanged"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       Clearable="true">
-                                <MudSelectItem Value="@((int?)null)">All Stores</MudSelectItem>
-                                @foreach (var store in _assignedStores)
-                                {
-                                    <MudSelectItem Value="@((int?)store.Id)">@store.StoreCode - @store.StoreName</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" sm="4" md="3">
-                            <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="FilterPhotos" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
-                                <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
-                                @foreach (var cat in _categoriesList)
-                                {
-                                    <MudSelectItem Value="@((int?)cat.Id)">@cat.Name</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" sm="12" md="3">
-                            <MudDateRangePicker Label="Date Range"
-                                                @bind-DateRange="_photoDateRange"
-                                                @bind-DateRange:after="FilterPhotos"
-                                                Variant="Variant.Outlined"
-                                                Margin="Margin.Dense" />
-                        </MudItem>
-                    </MudGrid>
-                    <MudGrid>
-                        <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
-                                    Showing @(_filteredPhotos.Count) of @(_allPhotos.Count) photos
-                                </MudText>
-                                @if (HasPhotoFilters())
-                                {
-                                    <MudButton Variant="Variant.Text"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearPhotoFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
-                            </div>
-                        </MudItem>
-                    </MudGrid>
-                </MudPaper>
-
-                @if (_filteredPhotos.Any())
-                {
-                    <div class="photo-grid">
-                        @foreach (var photo in _filteredPhotos)
-                        {
-                            <div class="photo-item" @onclick="@(() => OpenPhotoDialog(photo))">
-                                <img src="@GetImageSource(photo)" alt="Store Photo" />
-                                <div class="photo-overlay">
-                                    <div class="font-weight-bold">@(photo.StoreDailyActivity?.Store?.StoreName)</div>
-                                    <div style="opacity: 0.8;">@photo.UploadedAt.ToString("MMM dd, HH:mm")</div>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="pa-12 text-center" style="opacity: 0.5;">
-                        <MudIcon Icon="@Icons.Material.Filled.ImageNotSupported" Size="Size.Large" Class="mb-2" />
-                        <MudText>No photos found.</MudText>
-                    </div>
-                }
-            </MudTabPanel>
-
-            <!-- Operational Issues -->
-            <MudTabPanel Text="Operational Issues" Icon="@Icons.Material.Filled.ReportProblem">
-                <MudPaper Class="@($"glass-panel filter-panel pb-2 pt-2 pr-3 pl-3 mb-4 {GetThemeClass()} {(_showIssueFilters ? "filters-visible" : "")}")" Elevation="0">
-                    <MudButton Variant="Variant.Outlined"
-                               StartIcon="@(_showIssueFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
-                               FullWidth="true"
-                               OnClick="@(() => _showIssueFilters = !_showIssueFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
-                        @(_showIssueFilters ? "Hide Filters" : "Show Filters")
-                    </MudButton>
-
-                    <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6">
-                            <MudTextField T="string"
-                                          @bind-Value="_issueSearchTerm"
-                                          @bind-Value:after="ApplyIssueFilters"
-                                          Label="Search Issues"
-                                          Placeholder="Category or description..."
-                                          Variant="Variant.Outlined"
-                                          Margin="Margin.Dense"
-                                          Adornment="Adornment.Start"
-                                          AdornmentIcon="@Icons.Material.Filled.Search" />
-                        </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudSelect T="int?"
-                                       Label="Store"
-                                       Value="_issueStoreFilter"
-                                       ValueChanged="OnIssueStoreFilterChanged"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       Clearable="true">
-                                <MudSelectItem Value="@((int?)null)">All Stores</MudSelectItem>
-                                @foreach (var store in _assignedStores)
-                                {
-                                    <MudSelectItem Value="@((int?)store.Id)">@store.StoreCode - @store.StoreName</MudSelectItem>
-                                }
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12" sm="2">
-                            <MudSelect T="string" @bind-Value="_issueStatusFilter" @bind-Value:after="ApplyIssueFilters" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
-                                <MudSelectItem Value="@(string.Empty)">All Status</MudSelectItem>
-                                <MudSelectItem Value="@("Open")">Open</MudSelectItem>
-                                <MudSelectItem Value="@("Resolved")">Resolved</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                    </MudGrid>
-
-                    <MudGrid>
-                        <MudItem xs="12">
-                            <div class="d-flex justify-space-between align-center px-1">
-                                <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
-                                    Showing @(_issuesFiltered.Count) of @(_issues.Count) issues
-                                </MudText>
-                                @if (HasIssueFilters())
-                                {
-                                    <MudButton Variant="Variant.Text"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearIssueFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
-                            </div>
-                        </MudItem>
-                    </MudGrid>
-                </MudPaper>
-
-                @if (_issuesFiltered.Any())
-                {
-                    <div class="desktop-view">
-                        <MudTable Items="_issuesFiltered" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Class="glass-panel">
-                            <HeaderContent>
-                                <MudTh>Date</MudTh>
-                                <MudTh>Store</MudTh>
-                                <MudTh>Category</MudTh>
-                                <MudTh>Priority</MudTh>
-                                <MudTh>Status</MudTh>
-                                <MudTh Style="text-align: center;">Action</MudTh>
-                            </HeaderContent>
-                            <RowTemplate>
-                                <MudTd DataLabel="Date">@context.ReportedAt.ToString("MMM dd, yyyy")</MudTd>
-                                <MudTd DataLabel="Store">@(context.Store?.StoreName ?? "---")</MudTd>
-                                <MudTd DataLabel="Category">@context.Title</MudTd>
-                                <MudTd DataLabel="Priority">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(context.Priority)" Variant="Variant.Text">@context.Priority</MudChip>
-                                </MudTd>
-                                <MudTd DataLabel="Status">
-                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">@context.Status</MudChip>
-                                </MudTd>
-                                <MudTd DataLabel="Action" Style="text-align: center;">
-                                    <div class="d-flex justify-center gap-1">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenIssueDetail(context))" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteIssue(context))" />
-                                    </div>
-                                </MudTd>
-                            </RowTemplate>
-                            <PagerContent>
-                                <MudTablePager />
-                            </PagerContent>
-                        </MudTable>
-                    </div>
-
-                    <div class="mobile-view">
-                        @foreach (var issue in _issuesFiltered)
-                        {
-                            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
-                                <div class="mobile-card-header">
-                                    <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@issue.ReportedAt.ToString("MMM dd")</MudText>
-                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled">
-                                        @issue.Status
-                                    </MudChip>
-                                </div>
-                                <div class="mobile-card-content">
-                                    <div class="d-flex justify-space-between align-start">
-                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">@issue.Title</MudText>
-                                        <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Text">@issue.Priority</MudChip>
-                                    </div>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
-                                    <MudText Typo="Typo.body2" Class="mt-2 truncate-2-lines">@issue.Description</MudText>
-                                </div>
-                                <div class="mobile-card-actions">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteIssue(issue))" />
-                                    <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Text" Color="Color.Info" Size="Size.Small" OnClick="@(() => OpenIssueDetail(issue))">
-                                        Review
-                                    </MudButton>
-                                </div>
-                            </MudPaper>
-                        }
-                    </div>
-                }
-                else
-                {
-                    <div class="pa-12 text-center" style="opacity: 0.5;">
-                        <MudIcon Icon="@Icons.Material.Filled.ReportOff" Size="Size.Large" Class="mb-2" />
-                        <MudText>No operational issues found matching your criteria.</MudText>
-                    </div>
-                }
-            </MudTabPanel>
-        </MudTabs>
-    }
+                </div>
+            }
+            else
+            {
+                <div class="pa-12 text-center" style="opacity: 0.5;">
+                    <MudIcon Icon="@Icons.Material.Filled.ReportOff" Size="Size.Large" Class="mb-2" />
+                    <MudText>No operational issues found matching your criteria.</MudText>
+                </div>
+            }
+        </MudTabPanel>
+    </MudTabs>
+        }
 </div>
 
 @code {
@@ -1101,7 +1091,8 @@
     private int? _issueStoreFilter;
     private string _issueStatusFilter = string.Empty;
 
-    private Dictionary<int, double> _activityProgressCache = new();
+    private Dictionary<int, (double progress, DateTime? lastCompletedAt)> _activityProgressCache = new();
+    private System.Timers.Timer? _refreshTimer;
 
     public class CategoryPerformanceModel
     {
@@ -1114,6 +1105,11 @@
         base.OnInitialized();
         _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
         _photoDateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+
+        _refreshTimer = new System.Timers.Timer(60000);
+        _refreshTimer.Elapsed += (s, e) => InvokeAsync(StateHasChanged);
+        _refreshTimer.AutoReset = true;
+        _refreshTimer.Start();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -1160,6 +1156,7 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= HandleDashboardRefresh;
         DashboardRefresh.OnRefreshRequested -= OnGlobalRefreshRequested;
+        _refreshTimer?.Dispose();
     }
 
     private void OnThemeChanged() => InvokeAsync(StateHasChanged);
@@ -1189,12 +1186,20 @@
 
         _todayActivities = todayActivities
             .GroupBy(a => a.StoreId)
-            .ToDictionary(g => g.Key, g => (StoreDailyActivity?)g.OrderBy(a => a.Id).FirstOrDefault());
+            .ToDictionary(g => g.Key, g => (StoreDailyActivity?)g.OrderByDescending(a => a.Id).FirstOrDefault());
 
         // Progress Calculations
         _activeHeads = todayActivities.Select(a => a.StartedById).Distinct().Count();
 
-        var checklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
+        bool isFirstOfMonth = today.Day == 1;
+
+        var checklistItems = await db.ChecklistItems
+            .AsNoTracking()
+            .Where(i => i.Frequency == "Daily" ||
+                        (i.Frequency == "Weekly" && isMonday) ||
+                        (i.Frequency == "Monthly" && isFirstOfMonth))
+            .ToListAsync();
 
         foreach (var storeId in storeIds)
         {
@@ -1262,12 +1267,20 @@
 
         // Cache progress for all activities
         _activityProgressCache.Clear();
-        _activityProgressCache.Clear();
         foreach (var activity in _activityLogs)
         {
-            var completedCount = await db.TaskProgresses.CountAsync(tp => tp.StoreDailyActivityId == activity.Id && tp.IsCompleted);
+            var taskProgresses = await db.TaskProgresses
+                .Where(tp => tp.StoreDailyActivityId == activity.Id)
+                .ToListAsync();
+
+            var completedTasks = taskProgresses.Where(tp => tp.IsCompleted).ToList();
+            var completedCount = completedTasks.Count;
             var activityChecklistCount = checklistItems.Count(t => IsTaskAssignedToStore(t, activity.StoreId));
-            _activityProgressCache[activity.Id] = activityChecklistCount > 0 ? (completedCount * 100.0 / activityChecklistCount) : 0;
+
+            var progress = activityChecklistCount > 0 ? (completedCount * 100.0 / activityChecklistCount) : 0;
+            var lastTaskTime = completedTasks.Any() ? completedTasks.Max(tp => tp.CompletedAt) : null;
+
+            _activityProgressCache[activity.Id] = (progress, lastTaskTime);
         }
 
         ApplyReportFilters();
@@ -1409,6 +1422,15 @@
 
     private bool HasIssueFilters() => !string.IsNullOrEmpty(_issueSearchTerm) || _issueStoreFilter.HasValue || !string.IsNullOrEmpty(_issueStatusFilter);
 
+    private Task<IEnumerable<Store>> SearchStores(string value, CancellationToken token)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(_assignedStores.AsEnumerable());
+        return Task.FromResult(_assignedStores.Where(s =>
+            s.StoreCode.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            s.StoreName.Contains(value, StringComparison.OrdinalIgnoreCase)));
+    }
+
     private void OnIssueStoreFilterChanged(int? storeId)
     {
         _issueStoreFilter = storeId;
@@ -1430,7 +1452,19 @@
 
     private double GetStoreProgress(int storeId) => _storeProgresses.GetValueOrDefault(storeId, 0);
 
-    private double GetCompletionProgress(int activityId) => _activityProgressCache.GetValueOrDefault(activityId, 0);
+    private double GetCompletionProgress(int activityId) => _activityProgressCache.GetValueOrDefault(activityId, (0, null)).progress;
+
+    private string GetActivityCompletedAt(StoreDailyActivity activity)
+    {
+        if (activity.CompletedAt.HasValue)
+            return activity.CompletedAt.Value.ToString("hh:mm tt");
+
+        var cached = _activityProgressCache.GetValueOrDefault(activity.Id, (0, null));
+        if (cached.progress >= 100 && cached.lastCompletedAt.HasValue)
+            return cached.lastCompletedAt.Value.ToString("hh:mm tt");
+
+        return "-";
+    }
 
     private Color GetStoreStatusColor(int storeId)
     {
@@ -1452,14 +1486,14 @@
 
     private string GetActivityStatusLabel(StoreDailyActivity activity)
     {
-        if (activity.IsCompleted) return "Completed";
+        if (activity.IsCompleted || GetCompletionProgress(activity.Id) >= 100) return "Completed";
         if (activity.Date.Date < DateTime.Today) return "Incomplete";
         return "In Progress";
     }
 
     private Color GetActivityStatusColor(StoreDailyActivity activity)
     {
-        if (activity.IsCompleted) return Color.Success;
+        if (activity.IsCompleted || GetCompletionProgress(activity.Id) >= 100) return Color.Success;
         if (activity.Date.Date < DateTime.Today) return Color.Error;
         return Color.Warning;
     }
@@ -1476,16 +1510,7 @@
         _ => Icons.Material.Filled.Info
     };
 
-    private string GetActivityIconStyle(string action) => action switch
-    {
-        "TaskCompleted" => "background: rgba(34, 197, 94, 0.2); color: #22c55e;",
-        "PhotoUploaded" => "background: rgba(0, 114, 207, 0.2); color: #0072cf;",
-        "Login" => "background: rgba(14, 165, 233, 0.2); color: #0ea5e9;",
-        "PhotoRemoved" => "background: rgba(239, 68, 68, 0.2); color: #ef4444;",
-        "TaskReverted" => "background: rgba(245, 158, 11, 0.2); color: #f59e0b;",
-        "SessionReverted" => "background: rgba(239, 68, 68, 0.2); color: #ef4444;",
-        _ => "background: rgba(148, 163, 184, 0.2); color: #94a3b8;"
-    };
+    private string GetActivityIconStyle(string action) => action switch { "TaskCompleted" => "background: #22c55e; color: #fff;", "PhotoUploaded" => "background: #0072cf; color: #fff;", "Login" => "background: #0ea5e9; color: #fff;", "PhotoRemoved" => "background: #ef4444; color: #fff;", "TaskReverted" => "background: #f59e0b; color: #fff;", "SessionReverted" => "background: #ef4444; color: #fff;", _ => "background: #94a3b8; color: #fff;" };
 
     private async Task OpenActivityDetail(StoreDailyActivity activity)
     {
@@ -1501,23 +1526,14 @@
         await DialogService.ShowAsync<PhotoGalleryDialog>("Photo Detail", parameters, options);
     }
 
-    private async Task OpenGenerateReportDialog(Store store)
+    private void OpenGenerateReportDialog(Store store)
     {
-        var parameters = new DialogParameters { ["PreselectedStoreId"] = store.Id };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        var dialog = await DialogService.ShowAsync<GenerateReportDialog>("Generate Daily Report", parameters, options);
-        var result = await dialog.Result;
-        if (result != null && !result.Canceled)
-        {
-            await LoadData();
-            StateHasChanged();
-        }
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
-    private async Task OpenExportDialog()
+    private void OpenExportDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
-        await DialogService.ShowAsync<ExportReportsDialog>("Export Reports", options);
+        Snackbar.Add("Feature coming soon...", Severity.Info);
     }
 
     private string GetImageSource(TaskPhoto photo)
@@ -1529,7 +1545,7 @@
     private string GetRelativeTime(DateTime timestamp)
     {
         var diff = DateTime.Now - timestamp;
-        if (diff.TotalMinutes < 1) return "Just now";
+        if (diff.TotalMinutes < 1) return "just now";
         if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
         if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
         if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
@@ -1572,12 +1588,18 @@
 
     private async Task DeleteIssue(Issue issue)
     {
-        var result = await DialogService.ShowMessageBox(
-            "Delete Issue",
-            "Are you sure you want to delete this issue report?",
-            yesText: "DELETE", cancelText: "CANCEL");
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = "Are you sure you want to delete this issue report?",
+            ["ButtonText"] = "Delete",
+            ["Color"] = Color.Error
+        };
 
-        if (result == true)
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Issue", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
         {
             using var db = await DbFactory.CreateDbContextAsync();
             db.Issues.Remove(issue);
@@ -1602,3 +1624,7 @@
         catch { return false; }
     }
 }
+
+
+
+

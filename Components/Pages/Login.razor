@@ -225,6 +225,7 @@
                                   Style="@GetInputFieldStyle()" />
 
                     <MudTextField T="string"
+                                  @ref="_passwordField"
                                   @bind-Value="Password"
                                   Label="Password"
                                   InputType="@(_showPassword ? InputType.Text : InputType.Password)"
@@ -294,6 +295,7 @@
     private bool isLoading = false;
     private bool _showPassword = false;
     MudForm form = default!;
+    private MudTextField<string> _passwordField = default!;
 
     [CascadingParameter(Name = "IsDarkMode")]
     public bool IsDarkMode { get; set; }
@@ -419,7 +421,14 @@
     {
         if (e.Key == "Enter" || e.Key == "NumpadEnter")
         {
-            await LoginUser();
+            if (!string.IsNullOrWhiteSpace(Username) && !string.IsNullOrWhiteSpace(Password))
+            {
+                await LoginUser();
+            }
+            else if (!string.IsNullOrWhiteSpace(Username) && string.IsNullOrWhiteSpace(Password))
+            {
+                await _passwordField.FocusAsync();
+            }
         }
     }
 

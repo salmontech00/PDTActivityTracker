@@ -1,0 +1,183 @@
+﻿@page "/user/request-role"
+@using PDTActivityTracker.Components.Services
+@using MudBlazor
+@inject IEmailService EmailService
+@inject UserStateService UserState
+@inject ISnackbar Snackbar
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@using Microsoft.EntityFrameworkCore
+@using PDTActivityTracker.Model
+@using PDTActivityTracker.Components.Model
+@inject IDbContextFactory<AppDbContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Request Role</PageTitle>
+
+<style>
+    .glass-request-card {
+        backdrop-filter: blur(25px);
+        border-radius: 16px;
+    }
+</style>
+
+<div class="@ThemeService.CurrentTheme.ToString().ToLower()">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
+        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6 fw-bold" Style="@GetTitleStyle()">Request Elevated Role</MudText>
+
+        <MudPaper Class="glass-request-card pa-8" Elevation="0" Style="@GetCardStyle()">
+            <MudText Typo="Typo.body1" Align="Align.Center" Class="mb-6" Style="@($"opacity: 0.9; {GetTextStyle()}")">
+                Your current role is basic <b>User</b>. Please select the role you require and provide a justification. The admin will be notified via email.
+            </MudText>
+
+            <MudForm @ref="_form" IsValid="@_success" IsValidChanged="OnValidChanged">
+                <MudSelect T="string" @bind-Value="_requestedRole" Label="Requested Role" Required="true" RequiredError="Role selection is required" Variant="Variant.Outlined" Class="mb-6">
+                    <MudSelectItem Value="@("Store Head")">Store Head</MudSelectItem>
+                    <MudSelectItem Value="@("Area Head")">Area Head</MudSelectItem>
+                    <MudSelectItem Value="@("AVP")">AVP</MudSelectItem>
+                </MudSelect>
+
+                <MudTextField T="string" @bind-Value="_remarks" Label="Remarks / Justification (Optional)" Variant="Variant.Outlined" Lines="4" Class="mb-8" />
+
+                <div class="d-flex justify-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="SubmitRequest" Disabled="_isSubmitting" Class="rounded-lg px-8 py-3" Style="width: 100%; font-weight: 800;">
+                        @if (_isSubmitting)
+                        {
+                            <MudProgressCircular Class="ms-n1 mr-2" Size="Size.Small" Indeterminate="true" />
+                            <span>SENDING REQUEST...</span>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Send" Class="mr-2" />
+                            <span>NOTIFY ADMIN</span>
+                        }
+                    </MudButton>
+                </div>
+            </MudForm>
+        </MudPaper>
+    </MudContainer>
+</div>
+
+@code {
+    [Inject] private ThemeService ThemeService { get; set; } = default!;
+
+    private MudForm _form = default!;
+    private bool _success;
+    private bool _isSubmitting;
+    private string? _requestedRole;
+    private string? _remarks;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ThemeService.OnThemeChanged += StateHasChanged;
+
+        if (UserState.Role != "User")
+        {
+            NavigationManager.NavigateTo(UserState.GetDashboardRoute(), forceLoad: true);
+            return;
+        }
+
+        await CheckAndUpdateRoleAsync();
+    }
+
+    private async Task<bool> CheckAndUpdateRoleAsync()
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var currentUser = await db.Users.FirstOrDefaultAsync(u => u.Id == UserState.UserId);
+
+            if (currentUser != null && currentUser.Role != "User")
+            {
+                await UserState.SetRole(currentUser.Role);
+                Snackbar.Add("Your role has been upgraded! Redirecting to access page...", Severity.Success);
+                await Task.Delay(1500);
+                NavigationManager.NavigateTo(UserState.GetDashboardRoute(), forceLoad: true);
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking user role: {ex.Message}");
+        }
+        return false;
+    }
+
+    private string GetTitleStyle()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest
+            ? "color: #0f172a; font-weight: 800;"
+            : "color: #f8fafc; font-weight: 800;";
+    }
+
+    private string GetCardStyle()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "background-color: rgba(255, 255, 255, 0.15); border: 1px solid #0072cf;",
+            ThemeMode.Light => "background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Dark => "background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            _ => "background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);"
+        };
+    }
+
+    private string GetTextStyle()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "color: #0f172a;" : "color: #ffffff;";
+    }
+
+    private void OnValidChanged(bool isValid)
+    {
+        _success = isValid;
+    }
+
+    private async Task SubmitRequest()
+    {
+        if (await CheckAndUpdateRoleAsync()) return;
+
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var adminEmail = Configuration["EmailSettings:SenderEmail"];
+            if (string.IsNullOrEmpty(adminEmail))
+            {
+                adminEmail = "015mhikebertillo@gmail.com";
+            }
+
+            var userName = UserState.Fullname ?? UserState.Username;
+            var userEmail = UserState.Username ?? "Unknown Email";
+
+            await EmailService.SendRoleRequestEmailAsync(
+                adminEmail: adminEmail,
+                userName: userName!,
+                userEmail: userEmail,
+                requestedRole: _requestedRole!,
+                remarks: _remarks ?? ""
+            );
+
+            Snackbar.Add("Your role request has been sent to the Admin successfully.", Severity.Success);
+
+            _requestedRole = null;
+            _remarks = null;
+            await _form.ResetAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to send request: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= StateHasChanged;
+    }
+}

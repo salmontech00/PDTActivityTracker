@@ -117,32 +117,29 @@
         border-radius: 12px !important;
     }
 
-    /* CHIPS */
+    /* ROLE CHIPS */
     .role-chip {
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         border-radius: 12px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-size: 0.7rem !important;
     }
 
-    .role-chip-success {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(253, 212, 92) !important;
-        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    .status-active {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .role-chip-info {
-        background-color: rgba(14, 165, 233, 0.15) !important;
-        color: rgb(14, 165, 233) !important;
-        border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    .status-inactive {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .role-chip-inactive {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(239, 68, 68) !important;
-        border: 1px solid rgba(239, 68, 68, 0.3) !important;
-    }
-
-    .lightest .role-chip-success {
-        background-color: rgb(0, 114, 207, 0.5) !important;
+    .lightest .role-chip {
+        /* High opacity for lighter theme */
     }
 
     .button-group .modern-button.light {
@@ -277,6 +274,66 @@
         text-transform: uppercase;
         letter-spacing: 1px;
         white-space: nowrap;
+    }
+
+    /* SUMMARY CARDS ON MOBILE */
+    @@media (max-width: 600px) {
+        .summary-grid {
+            margin: -8px !important;
+            width: calc(100% + 16px) !important;
+            margin-bottom: 8px !important;
+        }
+
+            .summary-grid > .mud-grid-item {
+                padding: 8px !important;
+            }
+
+        .summary-card {
+            padding: 10px 12px !important;
+            min-height: 60px !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+            .summary-card .mud-typography-subtitle2 {
+                font-size: 0.65rem !important;
+                margin-bottom: -2px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .summary-card .mud-typography-h4 {
+                font-size: 1.5rem !important;
+                line-height: 1 !important;
+            }
+    }
+
+    /* ULTRA-THIN SPACING FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .summary-grid {
+            margin: -4px !important;
+            width: calc(100% + 8px) !important;
+            margin-bottom: 4px !important;
+        }
+
+            .summary-grid > .mud-grid-item {
+                padding: 4px !important;
+            }
+
+        .summary-card {
+            padding: 8px 10px !important;
+            min-height: 50px !important;
+        }
+
+            .summary-card .mud-typography-subtitle2 {
+                font-size: 0.6rem !important;
+            }
+
+            .summary-card .mud-typography-h4 {
+                font-size: 1.2rem !important;
+            }
     }
 
     /* RESPONSIVE */
@@ -426,331 +483,344 @@
         </div>
     </div>
 
-    <!-- Summary Cards -->
-    <MudGrid Class="mb-4">
-        <MudItem xs="6" sm="6" md="3">
-            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
-                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Total Stores</MudText>
-                <MudText Typo="Typo.h4" Class="font-weight-bold">@_allStores.Count</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="6" sm="6" md="3">
-            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
-                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Assigned</MudText>
-                <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@_allStores.Count(s => s.StoreHeadId != null && s.AreaHeadId != null)</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="6" sm="6" md="3">
-            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
-                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Unassigned</MudText>
-                <MudText Typo="Typo.h4" Class="font-weight-bold text-error">@_allStores.Count(s => s.StoreHeadId == null || s.AreaHeadId == null)</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="6" sm="6" md="3">
-            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0">
-                <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Area Heads</MudText>
-                <MudText Typo="Typo.h4" Class="font-weight-bold text-info">@_allStores.Select(s => s.AreaHeadId).Distinct().Count(id => id != null)</MudText>
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
-
-    <!-- Filter Section -->
-    <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
-        <MudButton Variant="Variant.Outlined"
-                   StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
-                   FullWidth="true"
-                   OnClick="@(() => _showFilters = !_showFilters)"
-                   Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
-                   Style="@GetFilterButtonStyle()">
-            @(_showFilters ? "Hide Filters" : "Show Filters")
-        </MudButton>
-
-        <MudGrid Spacing="3" AlignItems="AlignItems.Center">
-            <MudItem xs="12" sm="7">
-                <MudTextField @bind-Value="_searchTerm" Label="Search Stores" Placeholder="Search Store Name, Code, Location..."
-                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
-                              Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg"
-                              Immediate="true" TextChanged="ApplyFilters" />
-            </MudItem>
-            <MudItem xs="12" sm="3">
-                <MudSelect T="string" Label="Assignment" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           @bind-Value="_assignmentFilter" SelectedValuesChanged="ApplyFilters">
-                    <MudSelectItem Value="@("All")">All Assignments</MudSelectItem>
-                    <MudSelectItem Value="@("Assigned")">Assigned (Both Heads)</MudSelectItem>
-                    <MudSelectItem Value="@("Unassigned")">Unassigned (Missing Any)</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" sm="2">
-                <MudSelect T="string" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense"
-                           @bind-Value="_statusFilter" SelectedValuesChanged="ApplyFilters">
-                    <MudSelectItem Value="@("All")">All Status</MudSelectItem>
-                    <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                    <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
-
-        <div class="d-flex align-center justify-space-between">
-            <div class="d-flex align-center">
-                <div class="mobile-view mr-3">
-                    <div class="d-flex align-center">
-                        <MudCheckBox T="bool" Value="@IsAllSelected()" ValueChanged="HandleSelectAll"
-                                     Color="Color.Primary" Dense="true"
-                                     Style="@($"color: {(ThemeService.CurrentTheme == ThemeMode.Lightest ? "#0f172a" : "#ffffff")} !important;")" />
-                    </div>
-                </div>
-                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
-                    Showing @_filteredStores.Count of @_allStores.Count stores
-                </MudText>
-            </div>
-            <div class="d-flex align-center gap-2">
-                @if (HasActiveFilters())
-                {
-                    <MudButton Variant="Variant.Text"
-                               Color="Color.Error"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.RestartAlt"
-                               OnClick="ClearFilters"
-                               Class="modern-button">
-                        Reset Filters
-                    </MudButton>
-                }
-                <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
-                                     Icon="@Icons.Material.Filled.Map" Color="Color.Default" Title="@(_isMapView ? "List View" : "Map View")" Size="Size.Small"
-                                     ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Primary" />
-            </div>
-        </div>
-    </MudPaper>
-
-    @if (_isMapView)
+    @if (!_initialized)
     {
-        <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0" Style="height: 600px; position: relative; overflow: hidden;">
-            <div id="map" style="width: 100%; height: 100%; z-index: 1;"></div>
-
-            <!-- Map Legend Overlay -->
-            <div class="@($"map-legend-overlay {GetThemeClass()}")">
-                <div class="legend-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
-                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
-                    </svg>
-                    <MudText Class="legend-text" Style="@($"color: {GetTitleColor()}")">Assigned</MudText>
-                </div>
-                <div class="legend-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#f44336" stroke="#fff" stroke-width="1.5" />
-                        <circle cx="12" cy="11" r="2.5" fill="#fff" />
-                    </svg>
-                    <MudText Class="legend-text" Style="@($"color: {GetTitleColor()}")">Unassigned</MudText>
-                </div>
-            </div>
-        </MudPaper>
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Stores...</MudText>
+        </div>
     }
     else
     {
-        <!-- Desktop Table View -->
-        <div class="desktop-view">
-            <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
-                <MudTable Items="_filteredStores" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass" MultiSelection="true" @bind-SelectedItems="_selectedStores"
-                          SelectOnRowClick="false" @bind-ExpandedItems="_expandedRows">
-                    <HeaderContent>
-                        <MudTh>Store Code</MudTh>
-                        <MudTh>Store Name</MudTh>
-                        <MudTh>Location</MudTh>
-                        <MudTh>Store Head</MudTh>
-                        <MudTh>Area Head</MudTh>
-                        <MudTh>Status</MudTh>
-                        <MudTh Style="text-align: center;">Action</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Store Code">@context.StoreCode</MudTd>
-                        <MudTd DataLabel="Store Name" Style="font-weight: 600;">@context.StoreName</MudTd>
-                        <MudTd DataLabel="Location">@context.Location</MudTd>
-                        <MudTd DataLabel="Store Head">
-                            @if (context.StoreHead != null)
-                            {
-                                <div class="d-flex flex-column">
-                                    <span style="font-weight: 500">@context.StoreHead.Fullname</span>
-                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="d-flex flex-column">
-                                    <span class="text-error">Unassigned</span>
-                                    <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
-                                </div>
-                            }
-                        </MudTd>
-                        <MudTd DataLabel="Area Head">
-                            @if (context.AreaHead != null)
-                            {
-                                <div class="d-flex flex-column">
-                                    <span style="font-weight: 500">@context.AreaHead.Fullname</span>
-                                    <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="d-flex flex-column">
-                                    <span class="text-error" style="opacity: 0.5">Unassigned</span>
-                                    <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
-                                </div>
-                            }
-                        </MudTd>
-                        <MudTd DataLabel="Status">
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                     Class="@(context.Status == "Active" ? "role-chip-success" : "role-chip-inactive")">
-                                @context.Status
-                            </MudChip>
-                        </MudTd>
-                        <MudTd DataLabel="Action" Style="text-align: center;">
-                            <div class="d-flex justify-center gap-1">
-                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
-                            </div>
-                        </MudTd>
-                    </RowTemplate>
-                    <ChildRowContent>
-                        <MudTr>
-                            <td colspan="8">
-                                <MudCard Elevation="0" Class="pa-4 ma-2" Style="background: rgba(255,255,255,0.05); border-radius: 8px;">
-                                    <MudGrid>
-                                        <MudItem xs="12" md="4">
-                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Contact Info</MudText>
-                                            <MudDivider Class="mb-2" />
-                                            <MudText Typo="Typo.body2"><strong>Phone:</strong> @(context.ContactPhone ?? "N/A")</MudText>
-                                            <MudText Typo="Typo.body2"><strong>Email:</strong> @(context.ContactEmail ?? "N/A")</MudText>
-                                            <MudText Typo="Typo.body2"><strong>GPS:</strong> @(context.GPSLatitude), @(context.GPSLongitude)</MudText>
-                                        </MudItem>
-                                        <MudItem xs="12" md="4">
-                                            <MudText Typo="Typo.subtitle2" Color="Color.Primary">Assignment History</MudText>
-                                            <MudDivider Class="mb-2" />
-                                            @if (_storeLogs.ContainsKey(context.Id) && _storeLogs[context.Id].Any())
-                                            {
-                                                <div style="max-height: 70px; overflow-y: auto;">
-                                                    @foreach (var log in _storeLogs[context.Id].OrderByDescending(l => l.Timestamp).Take(5))
-                                                    {
-                                                        <div class="mb-2">
-                                                            <MudText Typo="Typo.caption" Class="d-block" Style="font-weight: 600;">@log.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudText>
-                                                            <MudText Typo="Typo.body2">@log.Action: @(log.User?.Fullname ?? "Unknown") (@log.Role)</MudText>
-                                                            @if (!string.IsNullOrEmpty(log.Remarks))
-                                                            {
-                                                                <MudText Typo="Typo.caption" Class="italic">@log.Remarks</MudText>
-                                                            }
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <MudText Typo="Typo.caption" Style="opacity: 0.7">No history available</MudText>
-                                            }
-                                        </MudItem>
-                                        <MudItem xs="12" md="4" Class="d-flex align-end justify-end gap-2">
-                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="@(() => ViewFullHistory(context))">View Full History</MudButton>
-                                            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Map" OnClick="@(() => ViewOnMap(context))">View on Map</MudButton>
-                                        </MudItem>
-                                    </MudGrid>
-                                </MudCard>
-                            </td>
-                        </MudTr>
-                    </ChildRowContent>
-                    <PagerContent>
-                        <MudTablePager />
-                    </PagerContent>
-                </MudTable>
-            </MudPaper>
-        </div>
-
-        <!-- Mobile View -->
-        <div class="mobile-view">
-            @foreach (var store in _filteredStores)
-            {
-                <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
-                    <div class="mobile-card-header">
-                        <div class="d-flex align-center gap-2">
-                            <MudCheckBox T="bool" Value="@_selectedStores.Contains(store)"
-                                         ValueChanged="@((bool val) => { if(val) _selectedStores.Add(store); else _selectedStores.Remove(store); })"
-                                         Color="Color.Primary" Dense="true" />
-                            <div>
-                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@store.StoreName</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@store.StoreCode</MudText>
-                            </div>
-                        </div>
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
-                                 Class="@(store.Status == "Active" ? "role-chip-success" : "role-chip-inactive")">
-                            @store.Status
-                        </MudChip>
-                    </div>
-                    <div class="mobile-card-content">
-                        <MudGrid Spacing="1">
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Location</MudText>
-                                <MudText Typo="Typo.body2">@store.Location</MudText>
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Contact</MudText>
-                                <MudText Typo="Typo.body2">@(store.ContactPhone ?? "N/A")</MudText>
-                            </MudItem>
-                            <MudItem xs="12">
-                                <MudDivider Class="my-2" Style="opacity: 0.1" />
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store Head</MudText>
-                                @if (store.StoreHead != null)
-                                {
-                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.StoreHead.Fullname</MudText>
-                                }
-                                else
-                                {
-                                    <MudText Typo="Typo.body2" Color="Color.Error">Unassigned</MudText>
-                                }
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Area Head</MudText>
-                                @if (store.AreaHead != null)
-                                {
-                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.AreaHead.Fullname</MudText>
-                                }
-                                else
-                                {
-                                    <MudText Typo="Typo.body2" Color="Color.Error">Unassigned</MudText>
-                                }
-                            </MudItem>
-                        </MudGrid>
-                    </div>
-                    <div class="mobile-card-actions flex-column gap-2 pa-3">
-                        <div class="d-flex gap-2">
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" FullWidth="true"
-                                       StartIcon="@Icons.Material.Filled.Person"
-                                       OnClick="@(() => OpenAssignStoreHeadDialog(store))"
-                                       Class="modern-button">Assign SH</MudButton>
-                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small" FullWidth="true"
-                                       StartIcon="@Icons.Material.Filled.SupervisorAccount"
-                                       OnClick="@(() => OpenAssignAreaHeadDialog(store))"
-                                       Class="modern-button">Assign AH</MudButton>
-                        </div>
-                        <div class="d-flex justify-space-between align-center px-1">
-                            <div class="d-flex gap-1">
-                                <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(store))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Default" Size="Size.Small" OnClick="@(() => ViewFullHistory(store))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Map" Color="Color.Default" Size="Size.Small" OnClick="@(() => ViewOnMap(store))" />
-                            </div>
-                            <div class="d-flex gap-1">
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(store))" />
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(store))" />
-                            </div>
-                        </div>
-                    </div>
+        <!-- Summary Cards -->
+        <MudGrid Class="mb-4 summary-grid">
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
+                    <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Total Stores</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold">@_allStores.Count</MudText>
                 </MudPaper>
-            }
-        </div>
+            </MudItem>
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
+                    <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Assigned</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold text-success">@_allStores.Count(s => s.StoreHeadId != null && s.AreaHeadId != null)</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
+                    <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Unassigned</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold text-error">@_allStores.Count(s => s.StoreHeadId == null || s.AreaHeadId == null)</MudText>
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="6" sm="6" md="3">
+                <MudPaper Class="@($"glass-panel summary-card pa-4 {GetThemeClass()}")" Elevation="0">
+                    <MudText Typo="Typo.subtitle2" Style="opacity: 0.7">Area Heads</MudText>
+                    <MudText Typo="Typo.h4" Class="font-weight-bold text-info">@_allStores.Select(s => s.AreaHeadId).Distinct().Count(id => id != null)</MudText>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <!-- Filter Section -->
+        <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")" Elevation="0">
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                       FullWidth="true"
+                       OnClick="@(() => _showFilters = !_showFilters)"
+                       Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                       Style="@GetFilterButtonStyle()">
+                @(_showFilters ? "Hide Filters" : "Show Filters")
+            </MudButton>
+
+            <MudGrid Spacing="3" AlignItems="AlignItems.Center">
+                <MudItem xs="12" sm="7">
+                    <MudTextField @bind-Value="_searchTerm" Label="Search Stores" Placeholder="Search Store Name, Code, Location..."
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg"
+                                  Immediate="true" TextChanged="ApplyFilters" />
+                </MudItem>
+                <MudItem xs="12" sm="3">
+                    <MudSelect T="string" Label="Assignment" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               @bind-Value="_assignmentFilter" SelectedValuesChanged="ApplyFilters">
+                        <MudSelectItem Value="@("All")">All Assignments</MudSelectItem>
+                        <MudSelectItem Value="@("Assigned")">Assigned (Both Heads)</MudSelectItem>
+                        <MudSelectItem Value="@("Unassigned")">Unassigned (Missing Any)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="2">
+                    <MudSelect T="string" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense"
+                               @bind-Value="_statusFilter" SelectedValuesChanged="ApplyFilters">
+                        <MudSelectItem Value="@("All")">All Status</MudSelectItem>
+                        <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex align-center justify-space-between">
+                <div class="d-flex align-center">
+                    <div class="mobile-view mr-3">
+                        <div class="d-flex align-center">
+                            <MudCheckBox T="bool" Value="@IsAllSelected()" ValueChanged="HandleSelectAll"
+                                         Color="Color.Primary" Dense="true"
+                                         Style="@($"color: {GetTitleColor()} !important;")" />
+                        </div>
+                    </div>
+                    <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                        Showing @_filteredStores.Count of @_allStores.Count stores
+                    </MudText>
+                </div>
+                <div class="d-flex align-center gap-2">
+                    @if (HasActiveFilters())
+                    {
+                        <MudButton Variant="Variant.Text"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.RestartAlt"
+                                   OnClick="ClearFilters"
+                                   Class="modern-button">
+                            Reset Filters
+                        </MudButton>
+                    }
+                    <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
+                                         Icon="@Icons.Material.Filled.Map" Color="Color.Default" Title="@(_isMapView ? "List View" : "Map View")" Size="Size.Small"
+                                         ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Primary" />
+                </div>
+            </div>
+        </MudPaper>
+
+        @if (_isMapView)
+        {
+            <MudPaper Class="@($"glass-panel pa-4 {GetThemeClass()}")" Elevation="0" Style="height: 600px; position: relative; overflow: hidden;">
+                <div id="map" style="width: 100%; height: 100%; z-index: 1;"></div>
+
+                <!-- Map Legend Overlay -->
+                <div class="@($"map-legend-overlay {GetThemeClass()}")">
+                    <div class="legend-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#4caf50" stroke="#fff" stroke-width="1.5" />
+                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                        </svg>
+                        <MudText Class="legend-text" Style="@($"color: {GetTitleColor()}")">Assigned</MudText>
+                    </div>
+                    <div class="legend-item">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="#f44336" stroke="#fff" stroke-width="1.5" />
+                            <circle cx="12" cy="11" r="2.5" fill="#fff" />
+                        </svg>
+                        <MudText Class="legend-text" Style="@($"color: {GetTitleColor()}")">Unassigned</MudText>
+                    </div>
+                </div>
+            </MudPaper>
+        }
+        else
+        {
+            <!-- Desktop Table View -->
+            <div class="desktop-view">
+                <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
+                    <MudTable Items="_filteredStores" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass" MultiSelection="true" @bind-SelectedItems="_selectedStores"
+                              SelectOnRowClick="false" @bind-ExpandedItems="_expandedRows">
+                        <HeaderContent>
+                            <MudTh>Store Code</MudTh>
+                            <MudTh>Store Name</MudTh>
+                            <MudTh>Location</MudTh>
+                            <MudTh>Store Head</MudTh>
+                            <MudTh>Area Head</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh Style="text-align: center;">Action</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Store Code">@context.StoreCode</MudTd>
+                            <MudTd DataLabel="Store Name" Style="font-weight: 600;">@context.StoreName</MudTd>
+                            <MudTd DataLabel="Location">@context.Location</MudTd>
+                            <MudTd DataLabel="Store Head">
+                                @if (context.StoreHead != null)
+                                {
+                                    <div class="d-flex flex-column">
+                                        <span style="font-weight: 500">@context.StoreHead.Fullname</span>
+                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-column">
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
+                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                    </div>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Area Head">
+                                @if (context.AreaHead != null)
+                                {
+                                    <div class="d-flex flex-column">
+                                        <span style="font-weight: 500">@context.AreaHead.Fullname</span>
+                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="d-flex flex-column">
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
+                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                    </div>
+                                }
+                            </MudTd>
+                            <MudTd DataLabel="Status">
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                         Color="@GetStatusColor(context.Status ?? "Active")"
+                                         Class="@($"role-chip {GetStatusChipClass(context.Status ?? "Active")}")">
+                                    @(context.Status ?? "Active")
+                                </MudChip>
+                            </MudTd>
+                            <MudTd DataLabel="Action" Style="text-align: center;">
+                                <div class="d-flex justify-center gap-1">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                                </div>
+                            </MudTd>
+                        </RowTemplate>
+                        <ChildRowContent>
+                            <MudTr>
+                                <td colspan="8">
+                                    <MudCard Elevation="0" Class="pa-4 ma-2" Style="background: rgba(255,255,255,0.05); border-radius: 8px;">
+                                        <MudGrid>
+                                            <MudItem xs="12" md="4">
+                                                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Contact Info</MudText>
+                                                <MudDivider Class="mb-2" />
+                                                <MudText Typo="Typo.body2"><strong>Phone:</strong> @(string.IsNullOrWhiteSpace(context.ContactPhone) ? "N/A" : context.ContactPhone)</MudText>
+                                                <MudText Typo="Typo.body2"><strong>Email:</strong> @(string.IsNullOrWhiteSpace(context.ContactEmail) ? "N/A" : context.ContactEmail)</MudText>
+                                                <MudText Typo="Typo.body2"><strong>GPS:</strong> @(context.GPSLatitude.HasValue && context.GPSLongitude.HasValue ? $"{context.GPSLatitude}, {context.GPSLongitude}" : "N/A")</MudText>
+                                            </MudItem>
+                                            <MudItem xs="12" md="4">
+                                                <MudText Typo="Typo.subtitle2" Color="Color.Primary">Assignment History</MudText>
+                                                <MudDivider Class="mb-2" />
+                                                @if (_storeLogs.ContainsKey(context.Id) && _storeLogs[context.Id].Any())
+                                                {
+                                                    <div style="max-height: 70px; overflow-y: auto;">
+                                                        @foreach (var log in _storeLogs[context.Id].OrderByDescending(l => l.Timestamp).Take(5))
+                                                        {
+                                                            <div class="mb-2">
+                                                                <MudText Typo="Typo.caption" Class="d-block" Style="font-weight: 600;">@log.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudText>
+                                                                <MudText Typo="Typo.body2">@log.Action: @(log.User?.Fullname ?? "Unknown") (@log.Role)</MudText>
+                                                                @if (!string.IsNullOrEmpty(log.Remarks))
+                                                                {
+                                                                    <MudText Typo="Typo.caption" Class="italic">@log.Remarks</MudText>
+                                                                }
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <MudText Typo="Typo.caption" Style="opacity: 0.7">No history available</MudText>
+                                                }
+                                            </MudItem>
+                                            <MudItem xs="12" md="4" Class="d-flex align-end justify-end gap-2">
+                                                <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.History" OnClick="@(() => ViewFullHistory(context))">View Full History</MudButton>
+                                                <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Map" OnClick="@(() => ViewOnMap(context))">View on Map</MudButton>
+                                            </MudItem>
+                                        </MudGrid>
+                                    </MudCard>
+                                </td>
+                            </MudTr>
+                        </ChildRowContent>
+                        <PagerContent>
+                            <MudTablePager />
+                        </PagerContent>
+                    </MudTable>
+                </MudPaper>
+            </div>
+
+            <!-- Mobile View -->
+            <div class="mobile-view">
+                @foreach (var store in _filteredStores)
+                {
+                    <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                        <div class="mobile-card-header">
+                            <div class="d-flex align-center gap-2">
+                                <MudCheckBox T="bool" Value="@_selectedStores.Contains(store)"
+                                             ValueChanged="@((bool val) => { if(val) _selectedStores.Add(store); else _selectedStores.Remove(store); })"
+                                             Color="Color.Primary" Dense="true" />
+                                <div>
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@store.StoreName</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@store.StoreCode</MudText>
+                                </div>
+                            </div>
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                     Color="@GetStatusColor(store.Status ?? "Active")"
+                                     Class="@($"role-chip {GetStatusChipClass(store.Status ?? "Active")}")">
+                                @(store.Status ?? "Active")
+                            </MudChip>
+                        </div>
+                        <div class="mobile-card-content">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Location</MudText>
+                                    <MudText Typo="Typo.body2">@store.Location</MudText>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Contact</MudText>
+                                    <MudText Typo="Typo.body2">@(string.IsNullOrWhiteSpace(store.ContactPhone) ? "N/A" : store.ContactPhone)</MudText>
+                                </MudItem>
+                                <MudItem xs="12">
+                                    <MudDivider Class="my-2" Style="opacity: 0.1" />
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store Head</MudText>
+                                    @if (store.StoreHead != null)
+                                    {
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.StoreHead.Fullname</MudText>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mt-1">Unassigned</MudChip>
+                                    }
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Area Head</MudText>
+                                    @if (store.AreaHead != null)
+                                    {
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.AreaHead.Fullname</MudText>
+                                    }
+                                    else
+                                    {
+                                        <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mt-1">Unassigned</MudChip>
+                                    }
+                                </MudItem>
+                            </MudGrid>
+                        </div>
+                        <div class="mobile-card-actions flex-column gap-2 pa-3">
+                            <div class="d-flex gap-2">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" FullWidth="true"
+                                           StartIcon="@Icons.Material.Filled.Person"
+                                           OnClick="@(() => OpenAssignStoreHeadDialog(store))"
+                                           Class="modern-button">Assign SH</MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small" FullWidth="true"
+                                           StartIcon="@Icons.Material.Filled.SupervisorAccount"
+                                           OnClick="@(() => OpenAssignAreaHeadDialog(store))"
+                                           Class="modern-button">Assign AH</MudButton>
+                            </div>
+                            <div class="d-flex justify-space-between align-center px-1">
+                                <div class="d-flex gap-1">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(store))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.History" Color="Color.Default" Size="Size.Small" OnClick="@(() => ViewFullHistory(store))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Map" Color="Color.Default" Size="Size.Small" OnClick="@(() => ViewOnMap(store))" />
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(store))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(store))" />
+                                </div>
+                            </div>
+                        </div>
+                    </MudPaper>
+                }
+            </div>
+        }
     }
 </div>
 
 @code {
+    private bool _initialized = false;
     private List<Store> _allStores = new();
     private List<Store> _filteredStores = new();
     private HashSet<Store> _selectedStores = new();
@@ -800,6 +870,7 @@
         if (firstRender)
         {
             await LoadData();
+            _initialized = true;
             StateHasChanged();
         }
 
@@ -961,6 +1032,20 @@
             ? "color: #0072cf; border-color: #0072cf; border-radius: 12px;"
             : "color: #ffffff; border-color: #ffffff; border-radius: 12px; background-color: transparent !important;";
     }
+
+    private string GetStatusChipClass(string status) => (status ?? "Active") switch
+    {
+        "Active" => "status-active",
+        "Inactive" => "status-inactive",
+        _ => "status-active"
+    };
+
+    private Color GetStatusColor(string status) => (status ?? "Active") switch
+    {
+        "Active" => Color.Success,
+        "Inactive" => Color.Error,
+        _ => Color.Success
+    };
 
     private async Task OpenAddStoreDialog()
     {

@@ -123,50 +123,62 @@
         border-radius: 12px !important;
     }
 
-    /* ROLE CHIPS */
-    .role-chip {
+    .clear-filters-button.mud-button-root {
         font-weight: 700 !important;
         border-radius: 12px !important;
     }
 
-    .role-chip-success {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(253, 212, 92) !important;
-        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    /* ROLE CHIPS */
+    .role-chip {
+        font-weight: 800 !important;
+        border-radius: 12px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        font-size: 0.7rem !important;
     }
 
-    .role-chip-info {
-        background-color: rgba(14, 165, 233, 0.15) !important;
-        color: rgb(14, 165, 233) !important;
-        border: 1px solid rgba(14, 165, 233, 0.3) !important;
+    /* CUSTOM ROLE COLORS (Grip Style) */
+    .chip-admin {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .role-chip-secondary {
-        background-color: rgba(167, 139, 250, 0.15) !important;
-        color: rgb(167, 139, 250) !important;
-        border: 1px solid rgba(167, 139, 250, 0.3) !important;
+    .chip-avp {
+        background-color: #8b5cf6 !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+
+    .chip-areahead {
+        background-color: #0ea5e9 !important;
+        color: #ffffff !important;
+        border: none !important;
+    }
+
+    .chip-storehead {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
     /* STATUS CHIPS */
-    .status-chip-active {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(253, 212, 92) !important;
-        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    .status-active {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .status-chip-inactive {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: rgb(239, 68, 68) !important;
-        border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    .status-inactive {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+        border: none !important;
     }
 
-    .lightest .status-chip-active {
-        background-color: rgb(0, 114, 207, 0.5) !important;
+    .lightest .role-chip {
+        /* High opacity for lighter theme */
     }
 
-    .lightest .role-chip-success {
-        background-color: rgb(0, 114, 207, 0.5) !important;
-    }
 
     .modern-button.lightest {
         /* Primary color for lightest */
@@ -338,144 +350,247 @@
         </div>
     </div>
 
-    <!-- Filter Section -->
-    <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")"
-              Elevation="0">
-        <MudButton Variant="Variant.Outlined"
-                   StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
-                   FullWidth="true"
-                   OnClick="@(() => _showFilters = !_showFilters)"
-                   Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
-                   Style="@GetFilterButtonStyle()">
-            @(_showFilters ? "Hide Filters" : "Show Filters")
-        </MudButton>
-
-        <MudGrid Spacing="3">
-            <MudItem xs="12" sm="4" md="8">
-                <MudTextField T="string"
-                              @bind-Value="_searchTerm"
-                              @bind-Value:after="ApplyFilters"
-                              Label="Search Users"
-                              Variant="Variant.Outlined"
-                              Adornment="Adornment.Start"
-                              AdornmentIcon="@Icons.Material.Filled.Search"
-                              Placeholder="Search name, designation..."
-                              Immediate="true"
-                              DebounceInterval="300"
-                              Margin="Margin.Dense"
-                              Class="rounded-lg" />
-            </MudItem>
-            <MudItem xs="12" sm="4" md="2">
-                <MudSelect T="string"
-                           @bind-Value="_roleFilter"
-                           @bind-Value:after="ApplyFilters"
-                           Label="Access Level"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Class="rounded-lg">
-                    <MudSelectItem Value="@("All")">All Levels</MudSelectItem>
-                    <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
-                    <MudSelectItem Value="@("AVP")">AVP</MudSelectItem>
-                    <MudSelectItem Value="@("Area Head")">Area Head</MudSelectItem>
-                    <MudSelectItem Value="@("Store Head")">Store Head</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-            <MudItem xs="12" sm="4" md="2">
-                <MudSelect T="string"
-                           @bind-Value="_statusFilter"
-                           @bind-Value:after="ApplyFilters"
-                           Label="Status"
-                           Variant="Variant.Outlined"
-                           Margin="Margin.Dense"
-                           Class="rounded-lg">
-                    <MudSelectItem Value="@("All")">All Status</MudSelectItem>
-                    <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                    <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                </MudSelect>
-            </MudItem>
-        </MudGrid>
-
-        <div class="d-flex align-center justify-space-between">
-            <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
-                Showing @_filteredUsers.Count of @_allUsers.Count users
-            </MudText>
-            @if (HasActiveFilters())
-            {
-                <MudButton Variant="Variant.Text"
-                           Color="Color.Error"
-                           Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.RestartAlt"
-                           OnClick="ClearFilters"
-                           Class="modern-button">
-                    Reset Filters
-                </MudButton>
-            }
+    @if (!_initialized)
+    {
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Users...</MudText>
         </div>
-    </MudPaper>
+    }
+    else
+    {
+        <!-- Filter Section -->
+        <MudPaper Class="@($"glass-panel filter-section {GetThemeClass()} {(_showFilters ? "filters-visible" : "")}")"
+                  Elevation="0">
+            <MudButton Variant="Variant.Outlined"
+                       StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
+                       FullWidth="true"
+                       OnClick="@(() => _showFilters = !_showFilters)"
+                       Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                       Style="@GetFilterButtonStyle()">
+                @(_showFilters ? "Hide Filters" : "Show Filters")
+            </MudButton>
 
-    <!-- Desktop Table View -->
-    <div class="desktop-view">
-        <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
-            <MudTable Items="_filteredUsers" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass">
-                <HeaderContent>
-                    <MudTh>No.</MudTh>
-                    <MudTh>Profile</MudTh>
-                    <MudTh>Emp. No.</MudTh>
-                    <MudTh>Full Name</MudTh>
-                    <MudTh>Designation</MudTh>
-                    <MudTh>Username</MudTh>
-                    <MudTh>Access Level</MudTh>
-                    <MudTh>Status</MudTh>
-                    <MudTh Style="text-align: center;">Action</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="No.">@(_filteredUsers.ToList().IndexOf(context) + 1)</MudTd>
-                    <MudTd DataLabel="Profile">
-                        <MudAvatar Size="Size.Small" Color="GetAvatarColor(context)">
-                            @if (!string.IsNullOrEmpty(GetUserImagePath(context)))
-                            {
-                                <MudImage Src="@GetUserImagePath(context)" />
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Person" />
-                            }
-                        </MudAvatar>
-                    </MudTd>
-                    <MudTd DataLabel="Emp. No.">@context.EmployeeNumber</MudTd>
-                    <MudTd DataLabel="Full Name" Style="font-weight: 600;">@context.Fullname</MudTd>
-                    <MudTd DataLabel="Designation">@context.Designation</MudTd>
-                    <MudTd DataLabel="Username">@context.Username</MudTd>
-                    <MudTd DataLabel="Access Level">
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Variant="Variant.Text"
-                                 Class="@($"role-chip {GetRoleChipClass(context.Role)}")">
-                            @context.Role
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Status">
-                        <MudChip T="string"
-                                 Size="Size.Small"
-                                 Variant="Variant.Text"
-                                 Class="@($"role-chip {GetStatusChipClass(context.Status ?? "Active")}")">
-                            @context.Status
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Action" Style="text-align: center;">
-                        <div class="d-flex justify-center gap-2">
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="4" md="8">
+                    <MudTextField T="string"
+                                  @bind-Value="_searchTerm"
+                                  @bind-Value:after="ApplyFilters"
+                                  Label="Search Users"
+                                  Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Placeholder="Search name, designation..."
+                                  Immediate="true"
+                                  DebounceInterval="300"
+                                  Margin="Margin.Dense"
+                                  Class="rounded-lg" />
+                </MudItem>
+                <MudItem xs="12" sm="4" md="2">
+                    <MudSelect T="string"
+                               @bind-Value="_roleFilter"
+                               @bind-Value:after="ApplyFilters"
+                               Label="Access Level"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="rounded-lg">
+                        <MudSelectItem Value="@("All")">All Levels</MudSelectItem>
+                        <MudSelectItem Value="@("Admin")">Admin</MudSelectItem>
+                        <MudSelectItem Value="@("AVP")">AVP</MudSelectItem>
+                        <MudSelectItem Value="@("Area Head")">Area Head</MudSelectItem>
+                        <MudSelectItem Value="@("Store Head")">Store Head</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="4" md="2">
+                    <MudSelect T="string"
+                               @bind-Value="_statusFilter"
+                               @bind-Value:after="ApplyFilters"
+                               Label="Status"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="rounded-lg">
+                        <MudSelectItem Value="@("All")">All Status</MudSelectItem>
+                        <MudSelectItem Value="@("Active")">Active</MudSelectItem>
+                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <div class="d-flex align-center justify-space-between">
+                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                    Showing @_filteredUsers.Count of @_allUsers.Count users
+                </MudText>
+                @if (HasActiveFilters())
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Secondary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Clear"
+                               OnClick="ClearFilters"
+                               Class="modern-button clear-filters-button">
+                        Clear Filters
+                    </MudButton>
+                }
+            </div>
+        </MudPaper>
+
+        <!-- Desktop Table View -->
+        <div class="desktop-view">
+            <MudPaper Class="@($"glass-panel {GetThemeClass()}")" Elevation="0">
+                <MudTable Items="_filteredUsers" Hover="true" Breakpoint="Breakpoint.None" Dense="true" Class="mud-table-glass">
+                    <HeaderContent>
+                        <MudTh>No.</MudTh>
+                        <MudTh>Profile</MudTh>
+                        <MudTh>Emp. No.</MudTh>
+                        <MudTh>Full Name</MudTh>
+                        <MudTh>Designation</MudTh>
+                        <MudTh>Username</MudTh>
+                        <MudTh>Access Level</MudTh>
+                        <MudTh>Status</MudTh>
+                        <MudTh Style="text-align: center;">Action</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="No.">@(_filteredUsers.ToList().IndexOf(context) + 1)</MudTd>
+                        <MudTd DataLabel="Profile">
+                            <MudAvatar Size="Size.Small" Color="GetAvatarColor(context)">
+                                @if (!string.IsNullOrEmpty(GetUserImagePath(context)))
+                                {
+                                    <MudImage Src="@GetUserImagePath(context)" />
+                                }
+                                else
+                                {
+                                    <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                }
+                            </MudAvatar>
+                        </MudTd>
+                        <MudTd DataLabel="Emp. No.">@context.EmployeeNumber</MudTd>
+                        <MudTd DataLabel="Full Name" Style="font-weight: 600;">@context.Fullname</MudTd>
+                        <MudTd DataLabel="Designation">@context.Designation</MudTd>
+                        <MudTd DataLabel="Username">@context.Username</MudTd>
+                        <MudTd DataLabel="Access Level">
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Variant="Variant.Filled"
+                                     Color="@GetRoleColor(context.Role)"
+                                     Class="@($"role-chip {GetRoleChipClass(context.Role)}")">
+                                @context.Role
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Variant="Variant.Filled"
+                                     Color="@GetStatusColor(context.Status ?? "Active")"
+                                     Class="@($"role-chip {GetStatusChipClass(context.Status ?? "Active")}")">
+                                @(context.Status ?? "Active")
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="Action" Style="text-align: center;">
+                            <div class="d-flex justify-center gap-2">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Color="Color.Info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenViewUserDialog(context))"
+                                               Title="View user details" />
+
+                                @if (UserState.Role == "Admin" || context.Username == UserState.Username)
+                                {
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Color="Color.Primary"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => EditUser(context))"
+                                                   Title="Edit user" />
+
+                                    @if (UserState.Role == "Admin")
+                                    {
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => DeleteUser(context))"
+                                                       Disabled="@(context.Username == UserState.Username)"
+                                                       Title="Delete user" />
+                                    }
+                                }
+                            </div>
+                        </MudTd>
+                    </RowTemplate>
+                    <PagerContent>
+                        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                    </PagerContent>
+                </MudTable>
+            </MudPaper>
+        </div>
+
+        <!-- Mobile View -->
+        <div class="mobile-view">
+            @if (_filteredUsers.Any())
+            {
+                @foreach (var user in _filteredUsers)
+                {
+                    <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                        <div class="mobile-card-header">
+                            <div class="d-flex align-center gap-3">
+                                <MudAvatar Size="Size.Medium" Color="GetAvatarColor(user)">
+                                    @if (!string.IsNullOrEmpty(GetUserImagePath(user)))
+                                    {
+                                        <MudImage Src="@GetUserImagePath(user)" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                                    }
+                                </MudAvatar>
+                                <div>
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@user.Fullname</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@user.Username</MudText>
+                                </div>
+                            </div>
+                            <MudChip T="string"
+                                     Size="Size.Small"
+                                     Variant="Variant.Filled"
+                                     Color="@GetRoleColor(user.Role)"
+                                     Class="@($"role-chip {GetRoleChipClass(user.Role)}")">
+                                @user.Role
+                            </MudChip>
+                        </div>
+
+                        <div class="mobile-card-content">
+                            <MudGrid Spacing="1">
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Emp. No.</MudText>
+                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Designation</MudText>
+                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Status</MudText>
+                                    <br />
+                                    <MudChip T="string"
+                                             Size="Size.Small"
+                                             Variant="Variant.Filled"
+                                             Color="@GetStatusColor(user.Status ?? "Active")"
+                                             Class="@($"role-chip {GetStatusChipClass(user.Status ?? "Active")}")">
+                                        @(user.Status ?? "Active")
+                                    </MudChip>
+                                </MudItem>
+                            </MudGrid>
+                        </div>
+
+                        <div class="mobile-card-actions">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Color="Color.Info"
                                            Size="Size.Small"
-                                           OnClick="@(() => OpenViewUserDialog(context))"
+                                           OnClick="@(() => OpenViewUserDialog(user))"
                                            Title="View user details" />
 
-                            @if (UserState.Role == "Admin" || context.Username == UserState.Username)
+                            @if (UserState.Role == "Admin" || user.Username == UserState.Username)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Color="Color.Primary"
                                                Size="Size.Small"
-                                               OnClick="@(() => EditUser(context))"
+                                               OnClick="@(() => EditUser(user))"
                                                Title="Edit user" />
 
                                 @if (UserState.Role == "Admin")
@@ -483,157 +598,71 @@
                                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                                    Color="Color.Error"
                                                    Size="Size.Small"
-                                                   OnClick="@(() => DeleteUser(context))"
-                                                   Disabled="@(context.Username == UserState.Username)"
+                                                   OnClick="@(() => DeleteUser(user))"
+                                                   Disabled="@(user.Username == UserState.Username)"
                                                    Title="Delete user" />
                                 }
                             }
                         </div>
-                    </MudTd>
-                </RowTemplate>
-                <PagerContent>
-                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
-                </PagerContent>
-            </MudTable>
-        </MudPaper>
-    </div>
-
-    <!-- Mobile View -->
-    <div class="mobile-view">
-        @if (_filteredUsers.Any())
-        {
-            @foreach (var user in _filteredUsers)
+                    </MudPaper>
+                }
+            }
+            else
             {
                 <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
-                    <div class="mobile-card-header">
-                        <div class="d-flex align-center gap-3">
-                            <MudAvatar Size="Size.Medium" Color="GetAvatarColor(user)">
-                                @if (!string.IsNullOrEmpty(GetUserImagePath(user)))
-                                {
-                                    <MudImage Src="@GetUserImagePath(user)" />
-                                }
-                                else
-                                {
-                                    <MudIcon Icon="@Icons.Material.Filled.Person" />
-                                }
-                            </MudAvatar>
-                            <div>
-                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@user.Fullname</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@user.Username</MudText>
-                            </div>
-                        </div>
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"role-chip {GetRoleChipClass(user.Role)}")">
-                            @user.Role
-                        </MudChip>
-                    </div>
+                    <div class="mobile-card-content" style="text-align: center; padding: 48px 24px;">
+                        <MudIcon Icon="@(HasActiveFilters() ? Icons.Material.Filled.PersonSearch : Icons.Material.Filled.PersonOff)"
+                                 Size="Size.Large"
+                                 Style="font-size: 4rem; opacity: 0.3; margin-bottom: 16px;" />
 
-                    <div class="mobile-card-content">
-                        <MudGrid Spacing="1">
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Emp. No.</MudText>
-                                <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Designation</MudText>
-                                <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
-                            </MudItem>
-                            <MudItem xs="6">
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Status</MudText>
-                                <br />
-                                <MudChip T="string"
-                                         Size="Size.Small"
-                                         Variant="Variant.Text"
-                                         Class="@($"role-chip {GetStatusChipClass(user.Status ?? "Active")}")">
-                                    @user.Status
-                                </MudChip>
-                            </MudItem>
-                        </MudGrid>
-                    </div>
-
-                    <div class="mobile-card-actions">
-                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                       Color="Color.Info"
-                                       Size="Size.Small"
-                                       OnClick="@(() => OpenViewUserDialog(user))"
-                                       Title="View user details" />
-
-                        @if (UserState.Role == "Admin" || user.Username == UserState.Username)
-                        {
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                           Color="Color.Primary"
-                                           Size="Size.Small"
-                                           OnClick="@(() => EditUser(user))"
-                                           Title="Edit user" />
-
-                            @if (UserState.Role == "Admin")
+                        <MudText Typo="Typo.h6" Style="font-weight: 700; margin-bottom: 8px;">
+                            @if (HasActiveFilters())
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                               Color="Color.Error"
-                                               Size="Size.Small"
-                                               OnClick="@(() => DeleteUser(user))"
-                                               Disabled="@(user.Username == UserState.Username)"
-                                               Title="Delete user" />
+                                <text>No Users Found</text>
                             }
+                            else
+                            {
+                                <text>No Users Available</text>
+                            }
+                        </MudText>
+
+                        <MudText Typo="Typo.body2" Style="opacity: 0.7; margin-bottom: 24px;">
+                            @if (HasActiveFilters())
+                            {
+                                <text>Try adjusting your search terms or filters to find the users you're looking for.</text>
+                            }
+                            else
+                            {
+                                <text>Start building your team by adding your first user to the system.</text>
+                            }
+                        </MudText>
+
+                        @if (HasActiveFilters())
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Secondary"
+                                       StartIcon="@Icons.Material.Filled.Clear"
+                                       OnClick="ClearFilters"
+                                       Class="modern-button clear-filters-button">
+                                Clear Filters
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                                       OnClick="OpenAddUserDialog"
+                                       Class="@($"modern-button {GetThemeClass()}")"
+                                       Style="@GetButtonStyle()">
+                                Add First User
+                            </MudButton>
                         }
                     </div>
                 </MudPaper>
             }
-        }
-        else
-        {
-            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
-                <div class="mobile-card-content" style="text-align: center; padding: 48px 24px;">
-                    <MudIcon Icon="@(HasActiveFilters() ? Icons.Material.Filled.PersonSearch : Icons.Material.Filled.PersonOff)"
-                             Size="Size.Large"
-                             Style="font-size: 4rem; opacity: 0.3; margin-bottom: 16px;" />
-
-                    <MudText Typo="Typo.h6" Style="font-weight: 700; margin-bottom: 8px;">
-                        @if (HasActiveFilters())
-                        {
-                            <text>No Users Found</text>
-                        }
-                        else
-                        {
-                            <text>No Users Available</text>
-                        }
-                    </MudText>
-
-                    <MudText Typo="Typo.body2" Style="opacity: 0.7; margin-bottom: 24px;">
-                        @if (HasActiveFilters())
-                        {
-                            <text>Try adjusting your search terms or filters to find the users you're looking for.</text>
-                        }
-                        else
-                        {
-                            <text>Start building your team by adding your first user to the system.</text>
-                        }
-                    </MudText>
-
-                    @if (HasActiveFilters())
-                    {
-                        <MudButton Variant="Variant.Outlined"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.RestartAlt"
-                                   OnClick="ClearFilters"
-                                   Class="modern-button">
-                            Clear Filters
-                        </MudButton>
-                    }
-                    else
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.PersonAdd"
-                                   OnClick="OpenAddUserDialog"
-                                   Class="@($"modern-button {GetThemeClass()}")"
-                                   Style="@GetButtonStyle()">
-                            Add First User
-                        </MudButton>
-                    }
-                </div>
-            </MudPaper>
-        }
-    </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -800,26 +829,33 @@
 
     private string GetRoleChipClass(string role) => role switch
     {
-        "Admin" => "role-chip-success",
-        "AVP" => "role-chip-success",
-        "Area Head" => "role-chip-success",
-        "Store Head" => "role-chip-success",
-        _ => "role-chip-success"
+        "Admin" => "chip-admin",
+        "AVP" => "chip-avp",
+        "Area Head" => "chip-areahead",
+        "Store Head" => "chip-storehead",
+        _ => "chip-storehead"
     };
 
-    private string GetStatusChipClass(string status) => status switch
+    private string GetStatusChipClass(string status) => (status ?? "Active") switch
     {
-        "Active" => "status-chip-active",
-        "Inactive" => "status-chip-inactive",
-        _ => "status-chip-active"
+        "Active" => "status-active",
+        "Inactive" => "status-inactive",
+        _ => "status-active"
     };
 
     private Color GetRoleColor(string role) => role switch
     {
-        "Admin" => Color.Success,
-        "AVP" => Color.Success,
-        "Area Head" => Color.Success,
+        "Admin" => Color.Warning,
+        "AVP" => Color.Secondary,
+        "Area Head" => Color.Info,
         "Store Head" => Color.Success,
+        _ => Color.Primary
+    };
+
+    private Color GetStatusColor(string status) => (status ?? "Active") switch
+    {
+        "Active" => Color.Success,
+        "Inactive" => Color.Error,
         _ => Color.Success
     };
 

@@ -12,34 +12,318 @@
 <PageTitle>Settings | SMR Activity Tracker</PageTitle>
 
 <style>
-    .v2-card {
-        border-radius: 12px;
-        border: 1px solid rgba(0,0,0,0.05);
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
+    .settings-container {
+        padding: 1rem;
     }
 
-    html.theme-dark .v2-card {
-        background: rgba(30, 41, 59, 0.7);
+    /* GLASS CONTAINER */
+    .glass-panel {
+        backdrop-filter: blur(15px);
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+        .glass-panel.lightest {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid #0072cf !important;
+        }
+
+        .glass-panel.light {
+            background-color: rgba(255, 255, 255, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .glass-panel.dark {
+            background-color: rgba(30, 41, 59, 0.15) !important;
+            border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        }
+
+    /* PAGE HEADER */
+    .page-header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        padding: 0;
+    }
+
+    .page-title {
+        font-weight: 800;
+        letter-spacing: -0.5px;
+    }
+
+        .page-title.lightest {
+            color: #0f172a;
+        }
+
+        .page-title.light {
+            color: #ffffff;
+        }
+
+        .page-title.dark {
+            color: #ffffff;
+        }
+
+    /* BUTTONS */
+    .modern-button {
+        text-transform: none !important;
+        font-weight: 600 !important;
+        border-radius: 12px !important;
+    }
+
+        .modern-button.lightest {
+            /* Primary color for lightest */
+        }
+
+        .modern-button.light {
+            background-color: #ffffff !important;
+            color: #0072cf !important;
+        }
+
+    /* TABLE STYLING */
+    .mud-table {
+        background: transparent !important;
+    }
+
+    .mud-table-head {
+        background: rgba(0, 114, 207, 0.1);
+    }
+
+        .mud-table-head.lightest {
+            background: rgba(0, 114, 207, 0.05);
+        }
+
+    .mud-table-cell {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+        padding: 12px 16px !important;
+    }
+
+    .lightest .mud-table-cell {
+        border-bottom: 1px solid rgba(0, 114, 207, 0.1) !important;
+    }
+
+    .mud-table-row:hover {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .lightest .mud-table-row:hover {
+        background-color: rgba(0, 114, 207, 0.05) !important;
+    }
+
+    /* SELECT FIXES */
+    .light .mud-input-label,
+    .light .mud-input-adornment-start,
+    .light .mud-select-input,
+    .light .mud-input-slot {
+        color: #ffffff !important;
+    }
+
+    .light .mud-input-outlined-border {
+        border-color: rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .light .mud-input-root:focus-within .mud-input-outlined-border {
+        border-color: #ffffff !important;
     }
 </style>
 
-<div class="mb-6">
-    <MudText Typo="Typo.h5" Style="font-weight: 700;">Settings</MudText>
-    <MudText Typo="Typo.body2" Color="Color.Secondary">Manage system configurations</MudText>
+<div class="settings-container">
+    <div class="page-header-row">
+        <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Settings Management</MudText>
+    </div>
+
+    <MudGrid>
+        <!-- Tag Management -->
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="0" Class="@($"pa-6 glass-panel h-100 {GetThemeClass()}")">
+                <div class="d-flex align-center justify-space-between mb-4">
+                    <div>
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Module Access Tags</MudText>
+                        <MudText Typo="Typo.body2" Style="opacity: 0.8;">Define system tags to grant module access</MudText>
+                    </div>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               OnClick="OpenAddTagDialog"
+                               StartIcon="@Icons.Material.Filled.Add"
+                               Class="@($"modern-button {GetThemeClass()}")"
+                               Style="@GetButtonStyle()">
+                        ADD TAG
+                    </MudButton>
+                </div>
+
+                @if (_isLoading)
+                {
+                    <div class="d-flex justify-center pa-4"><MudProgressCircular Color="Color.Primary" Indeterminate="true" /></div>
+                }
+                else if (!_accessTags.Any())
+                {
+                    <div class="text-center pa-6">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Large" Style="font-size: 3rem; opacity: 0.3; margin-bottom: 16px;" />
+                        <MudText Typo="Typo.body1" Style="font-weight: 600;">No access tags found</MudText>
+                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">Create one to get started granting module access.</MudText>
+                    </div>
+                }
+                else
+                {
+                    <MudTable Items="_accessTags" Hover="true" Dense="true" Elevation="0" Class="mt-4 mud-table-glass" Outlined="true">
+                        <HeaderContent>
+                            <MudTh>Module Name</MudTh>
+                            <MudTh>Features / Description</MudTh>
+                            <MudTh Style="width: 50px;"></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Module Name"><MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text" Style="font-weight: 700;">@context.Name</MudChip></MudTd>
+                            <MudTd DataLabel="Description">@context.Description</MudTd>
+                            <MudTd DataLabel="Actions">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteTag(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudPaper>
+        </MudItem>
+
+        <!-- User Assignment -->
+        <MudItem xs="12" md="6">
+            <MudPaper Elevation="0" Class="@($"pa-6 glass-panel h-100 {GetThemeClass()}")">
+                <div class="d-flex align-center justify-space-between mb-4">
+                    <div>
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">User Tag Assignment</MudText>
+                        <MudText Typo="Typo.body2" Style="opacity: 0.8;">Assign access tags to specific users</MudText>
+                    </div>
+                </div>
+
+                @if (_isLoading)
+                {
+                    <div class="d-flex justify-center pa-4"><MudProgressCircular Color="Color.Primary" Indeterminate="true" /></div>
+                }
+                else
+                {
+                    <MudSelect T="int" @bind-Value="_selectedUserId" Label="Select User" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4">
+                        @foreach (var u in _users)
+                        {
+                            <MudSelectItem Value="@u.Id">@u.Fullname (@u.Role)</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    @if (_selectedUserId > 0 && _selectedUser != null)
+                    {
+                        <div class="pa-4 rounded-lg mt-4" style="background: rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                            <MudText Typo="Typo.subtitle2" Class="mb-3">Assigned Tags for <b>@_selectedUser.Fullname</b></MudText>
+                            <div class="d-flex flex-wrap gap-2 mb-4">
+                                @if (string.IsNullOrEmpty(_selectedUser.Tags))
+                                {
+                                    <MudText Typo="Typo.body2" Style="opacity: 0.6; font-style: italic;">No tags assigned.</MudText>
+                                }
+                                else
+                                {
+                                    @foreach (var tag in _selectedUser.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()))
+                                    {
+                                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" OnClose="@(() => RemoveTagFromUser(tag))" CloseIcon="@Icons.Material.Filled.Close" Style="font-weight: 600;">@tag</MudChip>
+                                    }
+                                }
+                            </div>
+
+                            <MudDivider Class="my-4" />
+
+                            <div class="d-flex align-center gap-2">
+                                <MudSelect T="string" @bind-Value="_tagToAssign" Label="Add Tag" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="flex-grow: 1;">
+                                    @foreach (var t in _accessTags.Where(at => !(_selectedUser.Tags ?? "").Contains(at.Name)))
+                                    {
+                                        <MudSelectItem Value="@t.Name">@t.Name</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small" OnClick="AssignTagToUser" Disabled="@string.IsNullOrEmpty(_tagToAssign)" Class="modern-button" Style="height: 40px; margin-top: 4px;">Assign</MudButton>
+                            </div>
+                        </div>
+                    }
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
 </div>
 
-<MudGrid>
-    <MudItem xs="12" md="6">
-        <MudPaper Elevation="0" Class="pa-6 v2-card">
-            <MudText Typo="Typo.body1" Style="font-weight: 500;">General Settings</MudText>
-            <MudText Typo="Typo.caption" Color="Color.Secondary">System-wide configurations will appear here.</MudText>
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+<!-- Add Tag Dialog -->
+<MudDialog @bind-Visible="_isAddTagDialogOpen" Options="new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small, FullWidth = true }">
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight: 700;">Add New Module Tag</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudSelect T="string" @bind-Value="_newTagName" Label="Select Module" Variant="Variant.Outlined" Required="true" Class="mb-4">
+            @foreach (var mod in GetUnassignedModules())
+            {
+                <MudSelectItem Value="@mod.Name">@mod.Name</MudSelectItem>
+            }
+        </MudSelect>
+        <MudTextField Value="@GetSelectedModuleDescription()" Label="Description" Variant="Variant.Outlined" ReadOnly="true" Lines="2" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => _isAddTagDialogOpen = false)" Class="modern-button">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="SaveNewTag" Disabled="@(string.IsNullOrWhiteSpace(_newTagName))" Class="modern-button">Save Tag</MudButton>
+    </DialogActions>
+</MudDialog>
 
 @code {
     private bool _initialized = false;
+    private bool _isLoading = true;
+
+    private List<AccessTag> _accessTags = new();
+    private List<PDTActivityTracker.Components.Model.User> _users = new();
+
+    private int _selectedUserId;
+    private PDTActivityTracker.Components.Model.User? _selectedUser => _users.FirstOrDefault(u => u.Id == _selectedUserId);
+    private string _tagToAssign = "";
+
+    private bool _isAddTagDialogOpen = false;
+    private string _newTagName = "";
+    private string _newTagDesc = "";
+
+    public class ModuleDefinition
+    {
+        public string Name { get; set; } = "";
+        public string Description { get; set; } = "";
+    }
+
+    private readonly List<ModuleDefinition> _availableModules = new()
+    {
+        new ModuleDefinition { Name = "Reports & Monitoring", Description = "Access to system-wide reporting and compliance data." },
+        new ModuleDefinition { Name = "Manage Activity Planner", Description = "Access to modify checklist categories and task templates." },
+        new ModuleDefinition { Name = "Manage Stores", Description = "Access to store assignments and location data." },
+        new ModuleDefinition { Name = "User Management", Description = "Access to user administration and role assignment." },
+        new ModuleDefinition { Name = "Settings", Description = "Access to system configurations and access tags." }
+    };
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        ThemeService.OnThemeChanged += OnThemeChanged;
+    }
+
+    private void OnThemeChanged()
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ThemeService.OnThemeChanged -= OnThemeChanged;
+    }
+
+    private string GetThemeClass()
+    {
+        return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
+               ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string GetButtonStyle()
+    {
+        if (ThemeService == null) return "border-radius: 12px;";
+        return ThemeService.CurrentTheme == ThemeMode.Light
+            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
+            : "border-radius: 12px; font-weight: bold;";
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -53,6 +337,172 @@
                 NavigationManager.NavigateTo("/", forceLoad: true);
                 return;
             }
+
+            await LoadData();
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _accessTags = await db.AccessTags.AsNoTracking().OrderBy(t => t.Name).ToListAsync();
+        _users = await db.Users.AsNoTracking().OrderBy(u => u.Fullname).ToListAsync();
+    }
+
+    private void OpenAddTagDialog()
+    {
+        _newTagName = "";
+        _newTagDesc = "";
+        _isAddTagDialogOpen = true;
+    }
+
+    private IEnumerable<ModuleDefinition> GetUnassignedModules()
+    {
+        return _availableModules.Where(m => !_accessTags.Any(at => at.Name == m.Name));
+    }
+
+    private string GetSelectedModuleDescription()
+    {
+        if (string.IsNullOrEmpty(_newTagName)) return "";
+        var mod = _availableModules.FirstOrDefault(m => m.Name == _newTagName);
+        if (mod != null)
+        {
+            _newTagDesc = mod.Description;
+            return mod.Description;
+        }
+        return "";
+    }
+
+    private async Task SaveNewTag()
+    {
+        if (string.IsNullOrWhiteSpace(_newTagName)) return;
+
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            if (await db.AccessTags.AnyAsync(t => t.Name == _newTagName.Trim()))
+            {
+                Snackbar.Add("This module tag has already been created.", Severity.Warning);
+                return;
+            }
+
+            var newTag = new AccessTag
+            {
+                Name = _newTagName.Trim(),
+                Description = _newTagDesc.Trim()
+            };
+
+            db.AccessTags.Add(newTag);
+            await db.SaveChangesAsync();
+
+            Snackbar.Add("Tag created successfully.", Severity.Success);
+            _isAddTagDialogOpen = false;
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating tag: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task DeleteTag(AccessTag tag)
+    {
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var t = await db.AccessTags.FindAsync(tag.Id);
+            if (t != null)
+            {
+                db.AccessTags.Remove(t);
+
+                // Remove tag from all users who have it
+                var affectedUsers = await db.Users.Where(u => u.Tags != null && u.Tags.Contains(t.Name)).ToListAsync();
+                foreach (var user in affectedUsers)
+                {
+                    var userTags = user.Tags!.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+                    userTags.RemoveAll(x => x.Trim() == t.Name);
+                    user.Tags = userTags.Any() ? string.Join(", ", userTags) : null;
+                }
+
+                await db.SaveChangesAsync();
+                Snackbar.Add("Tag deleted.", Severity.Info);
+
+                // Clear selected states if the current user was affected
+                if (_selectedUser != null && affectedUsers.Any(u => u.Id == _selectedUser.Id))
+                {
+                    var u = affectedUsers.First(x => x.Id == _selectedUser.Id);
+                    _selectedUser.Tags = u.Tags;
+                }
+
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error deleting tag: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task AssignTagToUser()
+    {
+        if (_selectedUser == null || string.IsNullOrWhiteSpace(_tagToAssign)) return;
+
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var user = await db.Users.FindAsync(_selectedUser.Id);
+            if (user != null)
+            {
+                var currentTags = string.IsNullOrEmpty(user.Tags)
+                    ? new List<string>()
+                    : user.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList();
+
+                if (!currentTags.Contains(_tagToAssign))
+                {
+                    currentTags.Add(_tagToAssign);
+                    user.Tags = string.Join(", ", currentTags);
+                    await db.SaveChangesAsync();
+
+                    // Update local state perfectly
+                    _selectedUser.Tags = user.Tags;
+                    Snackbar.Add($"Assigned {_tagToAssign} to {user.Fullname}", Severity.Success);
+                    _tagToAssign = "";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error assigning tag: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task RemoveTagFromUser(string tagToRemove)
+    {
+        if (_selectedUser == null) return;
+
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var user = await db.Users.FindAsync(_selectedUser.Id);
+            if (user != null && !string.IsNullOrEmpty(user.Tags))
+            {
+                var currentTags = user.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(t => t.Trim()).ToList();
+                if (currentTags.Remove(tagToRemove))
+                {
+                    user.Tags = currentTags.Any() ? string.Join(", ", currentTags) : null;
+                    await db.SaveChangesAsync();
+
+                    // Update local state perfectly
+                    _selectedUser.Tags = user.Tags;
+                    Snackbar.Add($"Removed {tagToRemove} from {user.Fullname}", Severity.Info);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error removing tag: {ex.Message}", Severity.Error);
         }
     }
 }

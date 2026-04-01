@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
+@using System.Text.Json
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject UserStateService UserState
 @inject DashboardRefreshService DashboardRefresh
@@ -461,6 +462,15 @@
         <MudText Typo="Typo.h4" Class="@($"page-title {GetThemeClass()}")">Store Maps</MudText>
     </div>
 
+    @if (!_initialized)
+    {
+        <div class="d-flex flex-column align-center justify-center py-10" style="opacity: 0.5;">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Class="mb-3" />
+            <MudText Typo="Typo.h6">Loading Store Maps...</MudText>
+        </div>
+    }
+    else
+    {
     <!-- UNIFIED DASHBOARD LAYOUT -->
     <div class="@($"glass-panel dashboard-wrapper {GetThemeClass()}")">
         <!-- MAP SECTION -->
@@ -522,7 +532,7 @@
                            OnClick="NavigateToWeeklyReport"
                            Class="rounded-xl mb-6"
                            Style="@GetButtonStyle()">
-                    VIEW REPORT
+                    VIEW WEEKLY REPORT
                 </MudButton>
 
                 <!-- STATUS CARDS -->
@@ -598,9 +608,62 @@
                         <MudText Typo="Typo.caption" Style="opacity: 0.6;">Select a store to view timeline...</MudText>
                     }
                 </MudPaper>
+
+                <!-- NOTIFICATIONS -->
+                <MudText Typo="Typo.subtitle2" Class="mb-2 mt-2" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">NOTIFICATIONS</MudText>
+                @if (_notifications?.Any() == true)
+                {
+                    <div class="d-flex flex-column gap-2 mb-4">
+                        @foreach (var note in _notifications)
+                        {
+                            bool isAlert = note.Type == "Alert" || note.Type == "Urgent";
+                            <div style="@($"background: {(isAlert ? "rgba(244,67,54,0.12)" : "rgba(255,255,255,0.08)")}; border: 1px solid {(isAlert ? "rgba(244,67,54,0.35)" : "rgba(255,255,255,0.12)")}; border-radius: 10px; padding: 10px 14px;")">
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@(isAlert ? Icons.Material.Filled.Warning : Icons.Material.Filled.NotificationsActive)"
+                                             Size="Size.Small"
+                                             Color="@(isAlert ? Color.Error : Color.Info)" />
+                                    <div class="flex-grow-1">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; line-height: 1.3;">@note.Message</MudText>
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">@GetRelativeTime(note.CreatedAt)</MudText>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Class="mb-4" Style="opacity: 0.5;">No new notifications.</MudText>
+                }
+
+                <!-- ACTIVITY LOG -->
+                <MudText Typo="Typo.subtitle2" Class="mb-2" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">RECENT ACTIVITY</MudText>
+                @if (_activityLogs?.Any() == true)
+                {
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var log in _activityLogs)
+                        {
+                            bool isManpowerAlert = log.Action == "LowManpower";
+                            <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 12px;">
+                                <div class="d-flex align-center gap-2">
+                                    <MudIcon Icon="@GetLogIcon(log.Action)" Size="Size.Small" Color="@GetLogColor(log.Action)" />
+                                    <div class="flex-grow-1">
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; line-height: 1.3;">@log.Details</MudText>
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">@GetRelativeTime(log.Timestamp)</MudText>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <MudText Typo="Typo.caption" Style="opacity: 0.5;">No recent activity.</MudText>
+                }
             </div>
         </div>
     </div>
+
 
     <!-- Mobile Panel Card (same as Store Head) -->
     @if (_isPanelOpen && _selectedStoreId.HasValue && GetSelectedStore() != null)
@@ -696,13 +759,66 @@
                             </div>
                         }
                     </MudPaper>
+
+                    <!-- NOTIFICATIONS (Mobile) -->
+                    <MudText Typo="Typo.subtitle2" Class="mb-2 mt-2" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">NOTIFICATIONS</MudText>
+                    @if (_notifications?.Any() == true)
+                    {
+                        <div class="d-flex flex-column gap-2 mb-4">
+                            @foreach (var note in _notifications)
+                            {
+                                bool isAlertM = note.Type == "Alert" || note.Type == "Urgent";
+                                <div style="@($"background: {(isAlertM ? "rgba(244,67,54,0.12)" : "rgba(255,255,255,0.08)")}; border: 1px solid {(isAlertM ? "rgba(244,67,54,0.35)" : "rgba(255,255,255,0.12)")}; border-radius: 10px; padding: 10px 14px;")">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@(isAlertM ? Icons.Material.Filled.Warning : Icons.Material.Filled.NotificationsActive)"
+                                                 Size="Size.Small"
+                                                 Color="@(isAlertM ? Color.Error : Color.Info)" />
+                                        <div class="flex-grow-1">
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600; line-height: 1.3;">@note.Message</MudText>
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">@GetRelativeTime(note.CreatedAt)</MudText>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Class="mb-4" Style="opacity: 0.5;">No new notifications.</MudText>
+                    }
+
+                    <!-- ACTIVITY LOG (Mobile) -->
+                    <MudText Typo="Typo.subtitle2" Class="mb-2" Style="font-weight: 700; opacity: 0.8; letter-spacing: 1px;">RECENT ACTIVITY</MudText>
+                    @if (_activityLogs?.Any() == true)
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var log in _activityLogs)
+                            {
+                                <div style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 8px 12px;">
+                                    <div class="d-flex align-center gap-2">
+                                        <MudIcon Icon="@GetLogIcon(log.Action)" Size="Size.Small" Color="@GetLogColor(log.Action)" />
+                                        <div class="flex-grow-1">
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600; line-height: 1.3;">@log.Details</MudText>
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">@GetRelativeTime(log.Timestamp)</MudText>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Style="opacity: 0.5;">No recent activity.</MudText>
+                    }
                 </div>
             </div>
         </MudPaper>
     }
+    }
 </div>
 
 @code {
+    private bool _initialized = false;
     private bool _isPanelOpen = false;
     private List<Store> _stores = new();
     private DotNetObjectReference<AreaHeadMap>? _objRef;
@@ -711,11 +827,14 @@
     // DASHBOARD DATA
     private StoreDailyActivity? _selectedStoreActivity;
     private List<CategoryProgress> _categoryProgresses = new();
+    private List<Notification> _notifications = new();
+    private List<ActivityLog> _activityLogs = new();
     private double _completionPercentage = 0;
     private int _completedTasks = 0;
     private int _totalTasksCount = 0;
     private DateTime? _derivedCheckInTime;
     private bool _isFindingLocation = false;
+    private System.Timers.Timer? _refreshTimer;
 
     private class CategoryProgress
     {
@@ -732,6 +851,11 @@
         ThemeService.OnThemeChanged += OnThemeChanged;
         UserState.DashboardRefreshRequested += HandleDashboardChanged;
         DashboardRefresh.OnLocationUpdated += HandleLocationUpdate;
+
+        _refreshTimer = new System.Timers.Timer(60000);
+        _refreshTimer.Elapsed += (s, e) => InvokeAsync(StateHasChanged);
+        _refreshTimer.AutoReset = true;
+        _refreshTimer.Start();
     }
 
     private void HandleLocationUpdate(int userId, double lat, double lng, string name)
@@ -771,6 +895,7 @@
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= HandleDashboardChanged;
         DashboardRefresh.OnLocationUpdated -= HandleLocationUpdate;
+        _refreshTimer?.Dispose();
         _objRef?.Dispose();
         try
         {
@@ -795,6 +920,9 @@
             await UserState.SetLastValidPage(NavigationManager.Uri);
 
             await LoadData();
+            _initialized = true;
+            StateHasChanged();
+            
             await Task.Delay(100);
             await InitializeMap();
             StateHasChanged();
@@ -882,7 +1010,7 @@
 
         _selectedStoreActivity = await db.StoreDailyActivities
             .AsNoTracking()
-            .OrderBy(a => a.Id)
+            .OrderByDescending(a => a.Id)
             .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Date >= today && s.Date < today.AddDays(1));
 
         _derivedCheckInTime = null;
@@ -927,32 +1055,38 @@
                 .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
                 .ToListAsync();
 
-            _completedTasks = taskProgresses.Count(p => p.IsCompleted);
-            _totalTasksCount = await db.ChecklistItems
+            var todayItems = await db.ChecklistItems
                 .Where(i => i.Frequency == "Daily" ||
                             (i.Frequency == "Weekly" && isMonday) ||
                             (i.Frequency == "Monthly" && isFirstOfMonth))
-                .CountAsync();
+                .ToListAsync();
+
+            var assignedItems = todayItems.Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
+
+            _completedTasks = taskProgresses.Count(p => p.IsCompleted && assignedItems.Any(i => i.Id == p.ChecklistItemId));
+            _totalTasksCount = assignedItems.Count;
             _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
         }
         else
         {
             _completionPercentage = 0;
             _completedTasks = 0;
-            _totalTasksCount = await db.ChecklistItems
+            var todayItems = await db.ChecklistItems
                 .Where(i => i.Frequency == "Daily" ||
                             (i.Frequency == "Weekly" && isMonday) ||
                             (i.Frequency == "Monthly" && isFirstOfMonth))
-                .CountAsync();
+                .ToListAsync();
+            _totalTasksCount = todayItems.Count(i => IsTaskAssignedToStore(i, storeId));
         }
 
         var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var checklistItems = await db.ChecklistItems
+        var allChecklistItems = await db.ChecklistItems
             .AsNoTracking()
             .Where(i => i.Frequency == "Daily" ||
                         (i.Frequency == "Weekly" && isMonday) ||
                         (i.Frequency == "Monthly" && isFirstOfMonth))
             .ToListAsync();
+        var checklistItems = allChecklistItems.Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
         var currentProgresses = taskProgresses ?? new List<TaskProgress>();
 
         _categoryProgresses = categories
@@ -964,8 +1098,43 @@
                 CompletedTasks = currentProgresses.Count(tp =>
                     checklistItems.Any(i => i.Id == tp.ChecklistItemId && i.CategoryId == c.Id) && tp.IsCompleted)
             })
-            .Where(c => c.TotalTasks > 0) // Only show categories that have tasks today
+            .Where(c => c.TotalTasks > 0)
             .ToList();
+
+        // Notifications: unread for area head user — reset first so they don't accumulate across store selections
+        _notifications = new List<Notification>();
+        _activityLogs = new List<ActivityLog>();
+
+        try
+        {
+            var store = GetSelectedStore();
+            var storeName = store?.StoreName ?? "Store";
+            var storeCode = store?.StoreCode ?? "";
+            var twentyFourHoursAgo = DateTime.Now.AddHours(-24);
+
+            // First get unread notifications for the user from the last 24 hours
+            var allMyNotifs = await db.Notifications
+                .AsNoTracking()
+                .Where(n => n.UserId == UserState.UserId && !n.IsRead && n.CreatedAt >= twentyFourHoursAgo)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync();
+
+            // Filter to only this store's notifications based on message content
+            _notifications = allMyNotifs
+                .Where(n => (!string.IsNullOrEmpty(storeName) && n.Message.Contains(storeName)) || 
+                            (!string.IsNullOrEmpty(storeCode) && n.Message.Contains(storeCode)))
+                .Take(8)
+                .ToList();
+
+            // Recent activity log for this store (last 24 hours)
+            _activityLogs = await db.ActivityLogs
+                .AsNoTracking()
+                .Where(a => a.StoreId == storeId && a.Timestamp >= twentyFourHoursAgo)
+                .OrderByDescending(a => a.Timestamp)
+                .Take(8)
+                .ToListAsync();
+        }
+        catch { }
 
         StateHasChanged();
     }
@@ -1031,5 +1200,91 @@
     private string GetTimelineCardStyle() => "background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.15);";
     private string GetButtonStyle() => ThemeService.CurrentTheme == ThemeMode.Light ? "background-color: #ffffff !important; color: #0072cf !important;" : "";
 
+    private string GetRelativeTime(DateTime dateTime)
+    {
+        var diff = DateTime.Now - dateTime;
+        if (diff.TotalMinutes < 1) return "just now";
+        if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+        return dateTime.ToString("MMM dd");
+    }
+
+    private Color GetNotificationColor(string type) => type switch
+    {
+        "Urgent" or "Alert" => Color.Error,
+        "Warning" => Color.Warning,
+        _ => Color.Info
+    };
+
+    private Color GetLogColor(string action) => action switch
+    {
+        "SessionStarted" or "TaskCompleted" or "CategoryCompleted" => Color.Success,
+        "IssueReported" or "LowManpower" => Color.Error,
+        "PhotoUploaded" => Color.Primary,
+        "Login" => Color.Info,
+        _ => Color.Default
+    };
+
+    private string GetLogIcon(string action) => action switch
+    {
+        "TaskCompleted" => Icons.Material.Filled.TaskAlt,
+        "CategoryCompleted" => Icons.Material.Filled.CheckCircle,
+        "PhotoUploaded" => Icons.Material.Filled.PhotoCamera,
+        "IssueReported" => Icons.Material.Filled.BugReport,
+        "LowManpower" => Icons.Material.Filled.Warning,
+        "SessionStarted" => Icons.Material.Filled.PlayCircle,
+        "Login" => Icons.Material.Filled.Login,
+        _ => Icons.Material.Filled.Circle
+    };
+
     private class LocationCoords { public double Latitude { get; set; } public double Longitude { get; set; } }
+
+    private int? GetPositionExpectedValue(TaskProgress prog, ChecklistItem task, int index)
+    {
+        // If progress has its own expected values, use them
+        if (!string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            try
+            {
+                var expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected);
+                if (expecteds != null && index >= 0 && index < expecteds.Count)
+                {
+                    return expecteds[index];
+                }
+            }
+            catch { }
+        }
+
+        // Fallback to ChecklistItem default positions
+        var positions = GetManpowerPositions(task);
+        if (index >= 0 && index < positions.Count)
+        {
+            return positions[index].Count;
+        }
+
+        return null;
+    }
+
+    private List<ManpowerPosition> GetManpowerPositions(ChecklistItem task)
+    {
+        if (task.TaskType != "Manpower" || string.IsNullOrWhiteSpace(task.Position))
+            return new List<ManpowerPosition>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<ManpowerPosition>>(task.Position) ?? new List<ManpowerPosition>();
+        }
+        catch { return new List<ManpowerPosition>(); }
+    }
+
+    private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
+    {
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return true;
+        try
+        {
+            var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
+            return ids != null && ids.Contains(storeId);
+        }
+        catch { return true; }
+    }
 }

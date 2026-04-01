@@ -83,19 +83,25 @@
         border-radius: 12px !important;
     }
 
-    /* CATEGORY CHIPS */
-    .category-chip {
+    .clear-filters-button.mud-button-root {
         font-weight: 700 !important;
         border-radius: 12px !important;
-        background-color: rgba(253, 212, 92, 0.1) !important;
-        color: rgb(253, 212, 92) !important;
-        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+    }
+
+    /* CATEGORY CHIPS */
+    .category-chip {
+        font-weight: 800 !important;
+        border-radius: 12px !important;
+        background-color: #0072cf !important; /* Solid Admin Blue */
+        color: #ffffff !important;
+        border: none !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
     }
 
     .lightest .category-chip {
-        background-color: rgba(0, 114, 207, 0.5) !important;
-        color: rgb(253, 212, 92) !important;
-        border: 1px solid rgba(253, 212, 92, 0.3) !important;
+        background-color: #0072cf !important;
+        color: #ffffff !important;
     }
 
     .button-group .modern-button.light {
@@ -754,13 +760,13 @@
                 </MudText>
                 @if (HasActiveFilters())
                 {
-                    <MudButton Variant="Variant.Text"
-                               Color="Color.Error"
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Secondary"
                                Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.RestartAlt"
+                               StartIcon="@Icons.Material.Filled.Clear"
                                OnClick="ClearFilters"
-                               Class="modern-button">
-                        Reset Filters
+                               Class="modern-button clear-filters-button">
+                        Clear Filters
                     </MudButton>
                 }
             </div>
@@ -777,7 +783,7 @@
                             <MudIcon Icon="@category.Icon" Class="mr-2 category-icon" />
                             <MudText Typo="Typo.subtitle1" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">@category.Name</MudText>
                             <MudSpacer />
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {category.ColorClass}")">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {category.ColorClass}")">
                                 @_filteredTasks.Count(t => t.CategoryId == category.Id) Tasks
                             </MudChip>
                         </div>
@@ -816,7 +822,7 @@
                                         </div>
 
                                         <div class="desktop-only">
-                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {context.Category?.ColorClass}")">
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {context.Category?.ColorClass}")">
                                                 @context.Category?.Name
                                             </MudChip>
                                         </div>
@@ -931,7 +937,7 @@
                                 {
                                     <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Style="opacity: 0.5;" Class="mr-2" />
                                 }
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="@($"category-chip {category.ColorClass}")">
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {category.ColorClass}")">
                                     @itemsInCategory.Count() Tasks
                                 </MudChip>
                             </div>

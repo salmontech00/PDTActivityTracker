@@ -35,5 +35,9 @@ namespace PDTActivityTracker.Components.Model
         public int? ReviewedById { get; set; }
         [ForeignKey("ReviewedById")]
         public User? ReviewedBy { get; set; }
+
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+        public DateTime? CaptureTime { get; set; }
     }
 }

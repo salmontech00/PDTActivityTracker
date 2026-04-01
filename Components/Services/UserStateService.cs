@@ -129,6 +129,7 @@ namespace PDTActivityTracker.Components.Services
                 "Area Head" => "/area-head/map",
                 "AVP" => "/avp/dashboard",
                 "Admin" => "/",
+                "User" => "/user/request-role",
                 _ => "/login"
             };
         }

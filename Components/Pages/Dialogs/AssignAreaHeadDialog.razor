@@ -61,6 +61,59 @@
     .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
         border-color: #0072cf !important;
     }
+
+    /* MOBILE RESPONSIVE DIALOG */
+    @@media (max-width: 600px) {
+        .glass-dialog .mud-dialog-actions {
+            flex-direction: row;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px 12px 12px !important;
+        }
+
+            .glass-dialog .mud-dialog-actions .mud-button {
+                width: auto !important;
+                margin: 0 !important;
+                padding: 8px 12px !important;
+                font-size: 0.75rem !important;
+            }
+
+        .glass-dialog .mud-dialog-content {
+            padding: 12px 16px !important;
+        }
+    }
+
+    /* SPECIFIC FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .glass-dialog {
+            padding: 8px !important;
+        }
+
+            .glass-dialog .mud-dialog-title {
+                padding: 12px 40px 4px 12px !important;
+            }
+
+            .glass-dialog .mud-typography-h6 {
+                font-size: 1.05rem !important;
+                line-height: 1.2 !important;
+            }
+
+            .glass-dialog .mud-dialog-content {
+                padding: 8px 12px !important;
+            }
+
+            .glass-dialog .mud-dialog-actions {
+                padding: 8px 8px 12px 8px !important;
+                gap: 6px;
+            }
+
+                .glass-dialog .mud-dialog-actions .mud-button {
+                    min-height: 32px !important;
+                    font-size: 0.70rem !important;
+                    padding: 6px 10px !important;
+                }
+    }
 </style>
 
 <MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
@@ -107,8 +160,8 @@
                     <MudText Typo="Typo.caption" Class="mb-1" Style="@($"color: {GetTitleColor()}")">Available Stores to Add (Unassigned to Area Head):</MudText>
                     <MudTextField @bind-Value="_storeSearch" Placeholder="Search stores..." Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" TextChanged="FilterAvailableStores" />
                     <MudPaper @key="@(_selectedUser?.Id ?? 0)" Class="pa-2 mt-2 overflow-y-auto" Style="max-height: 200px; background: rgba(255,255,255,0.05);">
-                        <MudList @key="@(_selectedUser?.Id ?? 0)" T="Store" Dense="true" Clickable="true" 
-                                 SelectedValues="_selectedStoresToAdd" SelectedValuesChanged="OnSelectedStoresChanged" 
+                        <MudList @key="@(_selectedUser?.Id ?? 0)" T="Store" Dense="true" Clickable="true"
+                                 SelectedValues="_selectedStoresToAdd" SelectedValuesChanged="OnSelectedStoresChanged"
                                  SelectionMode="SelectionMode.MultiSelection" CheckBoxColor="Color.Primary">
                             @foreach (var s in _filteredAvailableStores)
                             {
@@ -144,7 +197,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_selectedUser == null)" Style="@GetButtonStyle()">Update Assignment</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@(_selectedUser == null)" Style="@GetButtonStyle()">Update</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -192,13 +245,13 @@
         _selectedUser = user;
         _remarks = null;
         _selectedStoresToAdd = new HashSet<Store>();
-        
+
         // Clear lists immediately to prevent stale data display while loading
         _currentStores = new List<Store>();
         _originalStores = new List<Store>();
         _allAvailableStores = new List<Store>();
         _filteredAvailableStores = new List<Store>();
-        
+
         if (_selectedUser != null)
         {
             await LoadStores();
@@ -215,7 +268,7 @@
             .Where(s => s.AreaHeadId == _selectedUser!.Id)
             .OrderBy(s => s.StoreCode)
             .ToListAsync();
-        
+
         _originalStores = new List<Store>(_currentStores);
 
         // Load all stores EXCEPT those already assigned to THIS Area Head
@@ -299,7 +352,7 @@
         // and reconcile with the user's manual selections in the MudList.
         var selectedStores = _selectedStoresToAdd?.ToList() ?? new List<Store>();
         var currentStoreIds = _currentStores.Select(s => s.Id).ToHashSet();
-        
+
         var newStoresToAdd = selectedStores.Where(s => !currentStoreIds.Contains(s.Id)).ToList();
 
         if (newStoresToAdd.Any())

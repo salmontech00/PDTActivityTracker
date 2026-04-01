@@ -222,6 +222,12 @@
             var (imageData, mimeType, lat, lng, timestamp) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp))result.Data;
             _imageData = imageData;
             _mimeType = mimeType;
+
+            // Store GPS metadata
+            _issue.Latitude = lat;
+            _issue.Longitude = lng;
+            _issue.CaptureTime = timestamp;
+
             Snackbar.Add("Evidence photo captured with GPS data.", Severity.Info);
             StateHasChanged();
         }
@@ -232,6 +238,10 @@
         _issue.StoreId = StoreId;
         _issue.ReportedById = UserId;
         _issue.ReportedAt = DateTime.Now;
+
+        // If capture time is missing, use reported at
+        if (!_issue.CaptureTime.HasValue)
+            _issue.CaptureTime = _issue.ReportedAt;
 
         // Pass back the issue and photo data
         MudDialog.Close(DialogResult.Ok((_issue, _imageData, _mimeType)));

@@ -22,7 +22,7 @@
 
     .detail-label {
         font-size: 0.75rem;
-        opacity: 0.6;
+        opacity: 0.8;
         text-transform: uppercase;
         letter-spacing: 1px;
         font-weight: 700;
@@ -32,31 +32,131 @@
     .detail-value {
         font-weight: 600;
     }
+
+    .status-select {
+        max-width: 200px;
+    }
+
+    /* DIALOG HEADER */
+    .dialog-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        gap: 16px;
+    }
+
+    .header-info {
+        flex-grow: 1;
+    }
+
+    .title-text {
+        font-weight: 800;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+    }
+
+    /* RESPONSIVE */
+    @@media (max-width: 600px) {
+        .glass-dialog .mud-dialog-actions
+
+    {
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 16px 16px 16px !important;
+    }
+
+    .glass-dialog .mud-dialog-actions .mud-button {
+        flex: 1;
+        margin: 0 !important;
+        padding: 4px !important;
+        font-size: 0.7rem !important;
+        min-height: 32px !important;
+        height: 36px !important;
+    }
+
+    .status-select {
+        max-width: 100% !important;
+    }
+
+    .issue-actions {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+    }
+
+        .issue-actions .mud-typography {
+            text-align: left;
+        }
+
+    .dialog-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    }
+
+    /* SPECIFIC FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .dialog-header
+
+    {
+        padding-right: 20px !important; /* Leave room for close button */
+        gap: 12px;
+    }
+
+    .title-text {
+        font-size: 0.95rem !important;
+        line-height: 1.2;
+    }
+
+    .header-info .mud-typography-caption {
+        font-size: 0.7rem !important;
+    }
+
+    .detail-label {
+        font-size: 0.65rem;
+    }
+
+    .glass-dialog {
+        padding: 12px !important;
+    }
+
+    .evidence-img {
+        max-height: 250px;
+    }
+
+    }
 </style>
 
-<MudDialog Class="@($"rounded-xl pa-4 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
-        <div class="d-flex align-center gap-3">
-            <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="@GetPriorityColor(_issue.Priority)" />
-            <div>
-                <MudText Typo="Typo.h6" Style="font-weight: 800;">@_issue.Title</MudText>
-                <MudText Typo="Typo.caption" Style="opacity: 0.7;">Reported on @_issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt")</MudText>
+        <div class="dialog-header">
+            <div class="d-flex align-start gap-3 w-100">
+                <MudIcon Icon="@Icons.Material.Filled.ReportProblem" Color="@GetPriorityColor(_issue.Priority)" Class="mt-1" />
+                <div class="header-info">
+                    <MudText Typo="Typo.h6" Class="title-text">@_issue.Title</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 4px;">Reported on @_issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt")</MudText>
+                </div>
             </div>
         </div>
     </TitleContent>
     <DialogContent>
         <MudGrid Spacing="3">
             <!-- Basic Info -->
-            <MudItem xs="12" sm="6">
+            <MudItem xs="6" sm="6">
                 <div class="d-flex flex-column">
                     <span class="detail-label">Status</span>
                     <MudChip T="string" Color="@GetStatusColor(_issue.Status)" Size="Size.Small" Variant="Variant.Filled">@_issue.Status</MudChip>
                 </div>
             </MudItem>
-            <MudItem xs="12" sm="6">
+            <MudItem xs="6" sm="6">
                 <div class="d-flex flex-column">
                     <span class="detail-label">Priority</span>
-                    <MudChip T="string" Color="@GetPriorityColor(_issue.Priority)" Size="Size.Small" Variant="Variant.Outlined">@_issue.Priority</MudChip>
+                    <MudChip T="string" Color="@GetPriorityColor(_issue.Priority)" Size="Size.Small" Variant="Variant.Filled">@_issue.Priority</MudChip>
                 </div>
             </MudItem>
 
@@ -95,8 +195,8 @@
                 <MudDivider Class="my-2" Style="opacity: 0.1;" />
                 <span class="detail-label">Area Head Resolution & Feedback</span>
 
-                @* Show reviewer info for everyone when the issue has already been reviewed *@
-                @if (_issue.ReviewedById.HasValue)
+                @* Show reviewer info for everyone when the issue has been completely resolved *@
+                @if (_issue.Status == "Resolved" && _issue.ReviewedById.HasValue)
                 {
                     <MudPaper Class="pa-3 rounded-lg mt-2 mb-3" Elevation="0" Style="background: rgba(34, 197, 94, 0.07); border-left: 4px solid #22c55e;">
                         <div class="d-flex align-center gap-2">
@@ -126,15 +226,15 @@
                                   Variant="Variant.Outlined"
                                   Class="mt-2" />
 
-                    <div class="d-flex align-center gap-4 mt-4">
-                        <MudSelect T="string" @bind-Value="_issue.Status" Label="Update Status" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="max-width: 200px;">
+                    <div class="d-flex align-center gap-4 mt-4 issue-actions">
+                        <MudSelect T="string" @bind-Value="_issue.Status" Label="Update Status" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Class="status-select" Required="true" RequiredError="Status is required.">
                             <MudSelectItem Value="@("Open")">Open</MudSelectItem>
                             <MudSelectItem Value="@("Resolved")">Resolved</MudSelectItem>
                         </MudSelect>
 
                         @if (_issue.ResolvedAt.HasValue)
                         {
-                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Resolved on @_issue.ResolvedAt.Value.ToString("MMM dd, yyyy")</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.6; display: block; margin-top: 4px;">Resolved on @_issue.ResolvedAt.Value.ToString("MMM dd, yyyy")</MudText>
                         }
                     </div>
                 }
@@ -148,7 +248,7 @@
                     }
                     else
                     {
-                        <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="mt-2 rounded-lg">
+                        <MudAlert Severity="Severity.Info" Variant="Variant.Filled" Class="mt-2 rounded-lg">
                             This issue is still pending review by the Area Head.
                         </MudAlert>
                     }
@@ -157,10 +257,10 @@
         </MudGrid>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel" Class="px-6">CLOSE</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined" Class="rounded-lg px-4" Size="Size.Small">CLOSE</MudButton>
         @if (IsAreaHead)
         {
-            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Class="rounded-lg px-8 ml-2">SAVE CHANGES</MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Save" Class="rounded-lg px-4" Size="Size.Small">SAVE CHANGES</MudButton>
         }
     </DialogActions>
 </MudDialog>
@@ -173,33 +273,59 @@
 
     private Issue _issue = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // Clone for editing
+        // Clone for initial editing
         _issue = Issue;
+
+        // Fetch fresh copy from DB to ensure all navigation properties (Reviewer, Reporter) are accurate
+        using var db = await DbFactory.CreateDbContextAsync();
+        var fullIssue = await db.Issues
+            .Include(i => i.ReportedBy)
+            .Include(i => i.ReviewedBy)
+            .Include(i => i.Store)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(i => i.Id == Issue.Id);
+
+        if (fullIssue != null)
+        {
+            _issue = fullIssue;
+        }
     }
 
     private void Cancel() => MudDialog.Cancel();
 
     private async Task Save()
     {
-        if (_issue.Status == "Resolved" && !_issue.ResolvedAt.HasValue)
+        if (string.IsNullOrWhiteSpace(_issue.Status))
         {
-            _issue.ResolvedAt = DateTime.Now;
+            Snackbar.Add("Please select an Update Status before saving.", Severity.Warning);
+            return;
         }
-        else if (_issue.Status != "Resolved")
-        {
-            _issue.ResolvedAt = null;
-        }
-
-        _issue.ReviewedById = CurrentUserId;
 
         using var db = await DbFactory.CreateDbContextAsync();
-        db.Issues.Update(_issue);
-        await db.SaveChangesAsync();
+        var entity = await db.Issues.FindAsync(_issue.Id);
 
-        Snackbar.Add("Issue updated successfully.", Severity.Success);
-        MudDialog.Close(DialogResult.Ok(true));
+        if (entity != null)
+        {
+            entity.Status = _issue.Status;
+            entity.AreaHeadRemark = _issue.AreaHeadRemark;
+
+            if (_issue.Status == "Resolved")
+            {
+                if (!entity.ResolvedAt.HasValue) entity.ResolvedAt = DateTime.Now;
+                entity.ReviewedById = CurrentUserId;
+            }
+            else
+            {
+                entity.ResolvedAt = null;
+                entity.ReviewedById = null;
+            }
+
+            await db.SaveChangesAsync();
+            Snackbar.Add("Issue updated successfully.", Severity.Success);
+            MudDialog.Close(DialogResult.Ok(true));
+        }
     }
 
     private string GetImageSource()
@@ -234,7 +360,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(20px); min-width: 320px; max-width: 700px; width: 100%;";
+        var baseStyle = "backdrop-filter: blur(20px); min-width: 320px;";
         return ThemeService.CurrentTheme switch
         {
             ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",

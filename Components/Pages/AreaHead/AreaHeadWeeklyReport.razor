@@ -155,6 +155,13 @@
         opacity: 0.8;
     }
 
+    .manpower-input-container {
+        margin-top: 8px;
+        padding-left: 32px;
+        width: 100%;
+        max-width: 500px;
+    }
+
     /* PHOTO GRID */
     .photo-grid {
         display: flex;
@@ -273,6 +280,31 @@
 
         .photo-grid {
             padding-left: 0;
+        }
+
+        .period-row {
+            flex-direction: column;
+            align-items: stretch !important;
+            gap: 12px !important;
+            padding: 16px !important;
+        }
+
+        .period-day-col, .period-checkin-col, .period-status-col {
+            min-width: 0 !important;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .period-row .flex-grow-1 {
+            width: 100% !important;
+            margin: 4px 0;
+            display: block !important;
+        }
+
+        .period-chevron {
+            display: none !important;
         }
 
         .planner-container {
@@ -513,137 +545,112 @@
                                         .Where(t => t.CategoryId == category.Id)
                                         .OrderBy(t => t.SortOrder)
                                         .ToList();
-
-                                        var groupedItems = new List<List<ChecklistItem>>();
-                                        if (itemsInCategory.Any())
-                                        {
-                                            var currentGroup = new List<ChecklistItem> { itemsInCategory[0] };
-                                            for (int k = 1; k < itemsInCategory.Count; k++)
-                                            {
-                                                var prev = itemsInCategory[k - 1];
-                                                var current = itemsInCategory[k];
-
-                                                bool isPrevGrid = prev.TaskType == "Manpower" || prev.TaskType == "Equipment";
-                                                bool isCurrentGrid = current.TaskType == "Manpower" || current.TaskType == "Equipment";
-
-                                                if (isPrevGrid && isCurrentGrid && prev.Section == current.Section)
-                                                {
-                                                    currentGroup.Add(current);
-                                                }
-                                                else
-                                                {
-                                                    groupedItems.Add(currentGroup);
-                                                    currentGroup = new List<ChecklistItem> { current };
-                                                }
-                                            }
-                                            groupedItems.Add(currentGroup);
-                                        }
-
-                                        int groupCounter = 1;
                                     }
 
-                                    @foreach (var group in groupedItems)
+                                    @for (int i = 0; i < itemsInCategory.Count; i++)
                                     {
-                                        var firstItem = group[0];
-                                        bool isGrid = firstItem.TaskType == "Manpower" || firstItem.TaskType == "Equipment";
+                                        var task = itemsInCategory[i];
+                                        var taskNumber = i + 1;
+                                        var progress = GetTaskProgress(task.Id);
 
-                                        if (!isGrid)
-                                        {
-                                            @foreach (var task in group)
-                                            {
-                                                var progress = GetTaskProgress(task.Id);
-                                                <div class="preview-task-card">
-                                                    <div class="preview-task-header">
-                                                        <div class="preview-header-content-group">
-                                                            <div class="preview-task-name-container">
-                                                                <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
-                                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">@groupCounter. @task.TaskName</MudText>
-                                                            </div>
-                                                            @if (!string.IsNullOrEmpty(task.Description))
-                                                            {
-                                                                <div class="preview-description-row">
-                                                                    <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
-                                                                </div>
-                                                            }
-                                                        </div>
+                                        <div class="preview-task-card">
+                                            <div class="preview-task-header">
+                                                <div class="preview-header-content-group">
+                                                    <div class="preview-task-name-container">
+                                                        <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
+                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">@taskNumber. @task.TaskName</MudText>
                                                     </div>
-
-                                                    @if (!string.IsNullOrEmpty(progress.Remarks))
+                                                    @if (!string.IsNullOrEmpty(task.Description))
                                                     {
-                                                        <div class="preview-remarks-container">
-                                                            <MudText Typo="Typo.body2"><b>Remarks:</b> @progress.Remarks</MudText>
-                                                        </div>
-                                                    }
-
-                                                    @if (GetStoredPhotos(task.Id).Any())
-                                                    {
-                                                        <div class="photo-grid">
-                                                            @foreach (var photo in GetStoredPhotos(task.Id))
-                                                            {
-                                                                <div class="photo-thumb-wrapper" @onclick="@(() => OpenPhotoDialog(photo))">
-                                                                    <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
-                                                                </div>
-                                                            }
+                                                        <div class="preview-description-row">
+                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
                                                         </div>
                                                     }
                                                 </div>
-                                                groupCounter++;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            var groupTitle = string.IsNullOrWhiteSpace(firstItem.Section) ? (firstItem.TaskType == "Manpower" ? "Manpower Tracking" : "Equipment Tracking") : firstItem.Section;
-                                            <div class="preview-task-card" style="padding: 12px;">
-                                                <div class="d-flex align-start mb-2">
-                                                    <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@groupCounter.</MudText>
-                                                    <div class="flex-grow-1">
-                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")">@groupTitle</MudText>
-                                                        @if (!string.IsNullOrWhiteSpace(firstItem.Description) && group.Count == 1)
-                                                        {
-                                                            <MudText Typo="Typo.caption" Style="opacity: 0.7;">@firstItem.Description</MudText>
-                                                        }
-                                                    </div>
-                                                </div>
-
-                                                <MudTable Items="@group" Breakpoint="Breakpoint.None" Dense="true" Elevation="0" Style="background: transparent;">
-                                                    <HeaderContent>
-                                                        <MudTh Style="width: 40px;"></MudTh>
-                                                        <MudTh><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">@(firstItem.TaskType == "Manpower" ? "POSITION" : "ITEM")</MudText></MudTh>
-                                                        <MudTh Style="width: 80px; text-align: center;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">EXPECTED</MudText></MudTh>
-                                                        <MudTh Style="width: 100px; text-align: center;"><MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.6;">ACTUAL</MudText></MudTh>
-                                                    </HeaderContent>
-                                                    <RowTemplate Context="task">
-                                                        <MudTd>
-                                                            <MudText Typo="Typo.caption" Style="opacity: 0.5; font-weight: 700;">@((char)('a' + group.IndexOf(task))).</MudText>
-                                                        </MudTd>
-                                                        <MudTd DataLabel="Position">
-                                                            <div class="d-flex align-start gap-1">
-                                                                @if (task.IsMandatory)
-                                                                {
-                                                                    <span style="color: var(--mud-palette-error); font-weight: bold; font-size: 1rem; line-height: 1;">*</span>
-                                                                }
-                                                                <div>
-                                                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@task.TaskName</MudText>
-                                                                    @if (!string.IsNullOrWhiteSpace(task.Description) && group.Count > 1)
-                                                                    {
-                                                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; font-size: 0.7rem;">@task.Description</MudText>
-                                                                    }
-                                                                </div>
-                                                            </div>
-                                                        </MudTd>
-                                                        <MudTd DataLabel="Expected" Style="text-align: center;">
-                                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@task.QuantityExpected</MudText>
-                                                        </MudTd>
-                                                        <MudTd DataLabel="Actual" Style="text-align: center;">
-                                                            <MudText Typo="Typo.body2" Style="@($"font-weight: 700; color: {(GetTaskProgress(task.Id).ActualQuantity < task.QuantityExpected ? "var(--mud-palette-error)" : "inherit")}")">
-                                                                @(GetTaskProgress(task.Id).ActualQuantity ?? 0)
-                                                            </MudText>
-                                                        </MudTd>
-                                                    </RowTemplate>
-                                                </MudTable>
                                             </div>
-                                            groupCounter++;
-                                        }
+
+                                            @if (task.TaskType == "Manpower" || task.TaskType == "Equipment")
+                                            {
+                                                <div class="manpower-input-container">
+                                                    @if (task.TaskType == "Manpower")
+                                                    {
+                                                        var positions = GetManpowerPositions(task);
+                                                        if (positions.Any())
+                                                        {
+                                                            <div class="mb-1">
+                                                                <MudText Typo="Typo.body2" Style="font-weight: 700; opacity: 0.9;">Manpower Breakdown:</MudText>
+                                                            </div>
+                                                            @for (int j = 0; j < positions.Count; j++)
+                                                            {
+                                                                var pos = positions[j];
+                                                                var posIndex = j;
+                                                                char label = (char)('a' + j);
+                                                                <div class="d-flex align-center gap-4 flex-wrap ml-2 mb-1">
+                                                                    <div style="min-width: 140px; flex-grow: 1;">
+                                                                        <MudText Typo="Typo.caption" Style="font-weight: 600; opacity: 0.8;">
+                                                                            @label. @pos.Name
+                                                                        </MudText>
+                                                                    </div>
+                                                                    <div class="d-flex align-center gap-2">
+                                                                        <div class="d-flex flex-column align-center" style="min-width: 60px;">
+                                                                            <MudText Typo="Typo.caption" Style="opacity: 0.5; font-size: 0.65rem;">EXPECTED</MudText>
+                                                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@(GetPositionExpectedValue(progress, task, posIndex) ?? 0)</MudText>
+                                                                        </div>
+                                                                        <div class="d-flex flex-column align-center" style="min-width: 60px;">
+                                                                            <MudText Typo="Typo.caption" Style="opacity: 0.5; font-size: 0.65rem;">ACTUAL</MudText>
+                                                                            <MudText Typo="Typo.body2" Style="@($"font-weight: 700; color: {((GetPositionActualValue(progress, posIndex) ?? 0) < (GetPositionExpectedValue(progress, task, posIndex) ?? 0) ? "var(--mud-palette-error)" : "inherit")}")">
+                                                                                @(GetPositionActualValue(progress, posIndex) ?? 0)
+                                                                            </MudText>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            <div class="mt-2 pt-2 d-flex align-center gap-6" style="border-top: 1px solid rgba(255,255,255,0.05);">
+                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL EXPECTED: <b style="color: var(--mud-palette-primary);">@GetTotalExpectedValue(progress, task)</b></MudText>
+                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL ACTUAL: <b style="@($"color: {((progress.ActualQuantity ?? 0) < GetTotalExpectedValue(progress, task) ? "var(--mud-palette-error)" : "var(--mud-palette-success)")}")">@(progress.ActualQuantity ?? 0)</b></MudText>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="d-flex align-center gap-4">
+                                                                <MudText Typo="Typo.body2">Expected: <b>@task.QuantityExpected</b></MudText>
+                                                                <MudText Typo="Typo.body2" Style="@($"font-weight: 700; color: {(progress.ActualQuantity < task.QuantityExpected ? "var(--mud-palette-error)" : "inherit")}")">
+                                                                    Actual: <b>@(progress.ActualQuantity ?? 0)</b>
+                                                                </MudText>
+                                                            </div>
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        <div class="d-flex align-center gap-4">
+                                                            <MudText Typo="Typo.body2">Expected: <b>@task.QuantityExpected</b></MudText>
+                                                            <MudText Typo="Typo.body2" Style="@($"font-weight: 700; color: {(progress.ActualQuantity < task.QuantityExpected ? "var(--mud-palette-error)" : "inherit")}")">
+                                                                Actual: <b>@(progress.ActualQuantity ?? 0)</b>
+                                                            </MudText>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+
+                                            @if (!string.IsNullOrEmpty(progress.Remarks))
+                                            {
+                                                <div class="preview-remarks-container">
+                                                    <MudText Typo="Typo.body2"><b>Remarks:</b> @progress.Remarks</MudText>
+                                                </div>
+                                            }
+
+                                            @if (GetStoredPhotos(task.Id).Any())
+                                            {
+                                                <div class="photo-grid">
+                                                    @foreach (var photo in GetStoredPhotos(task.Id))
+                                                    {
+                                                        <div class="photo-thumb-wrapper" @onclick="@(() => OpenPhotoDialog(photo))">
+                                                            <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
                                     }
                                 </ChildContent>
                             </MudExpansionPanel>
@@ -711,7 +718,7 @@
                               Style="@($"cursor: {(currentRow.HasSession ? "pointer" : "default")}; opacity: {(currentRow.HasSession ? "1" : "0.5")};")"
                               @onclick="@(async () => { if (currentRow.HasSession) await DrillDownToDay(currentRow.Date); })">
                         <!-- Day label -->
-                        <div style="min-width: 110px;">
+                        <div class="period-day-col">
                             <MudText Typo="Typo.body2" Style="font-weight: 800;">@row.DayLabel</MudText>
                             @if (row.Date == DateTime.Today)
                             {
@@ -720,7 +727,7 @@
                         </div>
 
                         <!-- Check-in time -->
-                        <div style="min-width: 80px;">
+                        <div class="period-checkin-col">
                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">CHECK IN</MudText>
                             <MudText Typo="Typo.body2" Style="font-weight: 700;">@(row.CheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
                         </div>
@@ -737,7 +744,7 @@
                         </div>
 
                         <!-- Status chip -->
-                        <div>
+                        <div class="period-status-col">
                             <MudChip T="string" Color="@row.StatusColor" Size="Size.Small" Variant="Variant.Filled">
                                 @row.StatusText
                             </MudChip>
@@ -745,7 +752,7 @@
 
                         @if (row.HasSession)
                         {
-                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Style="opacity: 0.4;" />
+                            <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Class="period-chevron" Style="opacity: 0.4;" />
                         }
                     </MudPaper>
                 }
@@ -797,8 +804,8 @@
                                         <div class="flex-grow-1">
                                             <div class="d-flex align-center gap-2 mb-1">
                                                 <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.2;">@issue.Title</MudText>
-                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
-                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Outlined">@issue.Status</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 70px;">@issue.Priority</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 70px;">@issue.Status</MudChip>
                                             </div>
                                             <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap;">@issue.Description</MudText>
                                             <div class="d-flex align-center gap-2 mt-3" style="opacity: 0.6;">
@@ -919,7 +926,7 @@
         _currentSession = await db.StoreDailyActivities
             .Include(s => s.CurrentCategory)
             .Include(s => s.AreaHead)
-            .OrderBy(s => s.Id)
+            .OrderByDescending(s => s.Id)
             .FirstOrDefaultAsync(s => s.StoreId == StoreId && s.Date >= date && s.Date < date.AddDays(1));
 
         _derivedCheckInTime = null;
@@ -1032,7 +1039,7 @@
                 (i.Frequency == "Monthly" && isFirstOfMonth)) &&
                 IsTaskAssignedToStore(i, StoreId)).ToList();
 
-            var session = sessions.FirstOrDefault(s => s.Date.Date == d.Date);
+            var session = sessions.OrderByDescending(s => s.Id).FirstOrDefault(s => s.Date.Date == d.Date);
             var progresses = session != null
                 ? allProgresses.Where(tp => tp.StoreDailyActivityId == session.Id).ToList()
                 : new List<TaskProgress>();
@@ -1089,6 +1096,7 @@
 
         var query = db.Issues.AsNoTracking()
             .Include(i => i.ReportedBy)
+            .Include(i => i.Store)
             .Where(i => i.StoreId == StoreId);
 
         if (_viewMode == "Issues")
@@ -1311,7 +1319,13 @@
             ImageData = issue.ImageData,
             ImageMimeType = issue.ImageMimeType,
             Description = $"Evidence for: {issue.Title}",
-            UploadedAt = issue.ReportedAt
+            UploadedAt = issue.ReportedAt,
+            CaptureTimestamp = issue.CaptureTime ?? issue.ReportedAt,
+            Latitude = issue.Latitude,
+            Longitude = issue.Longitude,
+            Store = issue.Store,
+            UploadedBy = issue.ReportedBy,
+            Issue = issue
         };
 
         var parameters = new DialogParameters { ["Photo"] = photo };
@@ -1320,15 +1334,72 @@
     }
     private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
     {
-        // Only Manpower tasks have store-specific visibility logic
-        if (task.TaskType != "Manpower") return true;
-
-        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return false;
+        if (string.IsNullOrWhiteSpace(task.SelectedStores)) return true;
         try
         {
             var ids = JsonSerializer.Deserialize<List<int>>(task.SelectedStores);
             return ids != null && ids.Contains(storeId);
         }
-        catch { return false; }
+        catch { return true; }
+    }
+
+    private List<ManpowerPosition> GetManpowerPositions(ChecklistItem task)
+    {
+        if (task.TaskType != "Manpower" || string.IsNullOrWhiteSpace(task.Position))
+            return new List<ManpowerPosition>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<ManpowerPosition>>(task.Position) ?? new List<ManpowerPosition>();
+        }
+        catch { return new List<ManpowerPosition>(); }
+    }
+
+    private int? GetPositionActualValue(TaskProgress prog, int index)
+    {
+        if (string.IsNullOrWhiteSpace(prog.PositionActuals)) return null;
+        try
+        {
+            var actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals);
+            if (actuals != null && index >= 0 && index < actuals.Count)
+                return actuals[index];
+        }
+        catch { }
+        return null;
+    }
+
+    private int? GetPositionExpectedValue(TaskProgress prog, ChecklistItem task, int index)
+    {
+        if (!string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            try
+            {
+                var expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected);
+                if (expecteds != null && index >= 0 && index < expecteds.Count)
+                    return expecteds[index];
+            }
+            catch { }
+        }
+
+        var positions = GetManpowerPositions(task);
+        if (index >= 0 && index < positions.Count)
+            return positions[index].Count;
+
+        return null;
+    }
+
+    private int GetTotalExpectedValue(TaskProgress prog, ChecklistItem task)
+    {
+        if (!string.IsNullOrWhiteSpace(prog.PositionExpected))
+        {
+            try
+            {
+                var expecteds = JsonSerializer.Deserialize<List<int?>>(prog.PositionExpected);
+                if (expecteds != null)
+                    return expecteds.Sum(a => a ?? 0);
+            }
+            catch { }
+        }
+        return task.QuantityExpected ?? 0;
     }
 }
