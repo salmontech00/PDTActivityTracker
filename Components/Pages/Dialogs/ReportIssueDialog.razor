@@ -39,9 +39,15 @@
         color: rgba(255, 255, 255, 0.7) !important;
     }
 
-    /* Force icon color on light theme submit button */
-    .glass-dialog.light .submit-report-btn .mud-button-icon-start {
+    /* Force color on light theme submit button */
+    .glass-dialog.light .submit-report-btn:not(:disabled) {
         color: #0072cf !important;
+        background-color: #ffffff !important;
+    }
+
+    .glass-dialog.light .submit-report-btn:disabled {
+        color: rgba(255, 255, 255, 0.4) !important;
+        background-color: rgba(255, 255, 255, 0.1) !important;
     }
 
     /* --- LIGHTEST MODE --- */
@@ -86,15 +92,50 @@
 
     /* RESPONSIVE */
     @@media (max-width: 600px) {
-        .glass-dialog .mud-dialog-actions {
-            flex-direction: column;
-            gap: 8px;
+        .glass-dialog .mud-dialog-content {
+            padding: 8px 16px !important;
         }
 
-            .glass-dialog .mud-dialog-actions .mud-button {
-                width: 100%;
-                margin: 0 !important;
+        .glass-dialog .mud-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 16px !important;
+        }
+    }
+
+    /* SPECIFIC FOR NARROW MOBILE (iPhone SE 375px) */
+    @@media (max-width: 375px) {
+        .glass-dialog {
+            padding: 4px !important;
+        }
+
+            .glass-dialog .mud-dialog-title {
+                padding: 12px 16px 4px 12px !important;
             }
+
+            .glass-dialog .mud-typography-h6 {
+                font-size: 1rem !important;
+                line-height: 1.2 !important;
+            }
+
+            .glass-dialog .mud-dialog-content {
+                padding: 8px 12px !important;
+            }
+
+            .glass-dialog .mud-dialog-actions {
+                padding: 12px !important;
+                display: flex;
+                flex-direction: row !important;
+                justify-content: flex-end;
+                gap: 8px;
+            }
+
+                .glass-dialog .mud-dialog-actions .mud-button {
+                    min-height: 36px !important;
+                    font-size: 0.75rem !important;
+                    padding: 6px 16px !important;
+                }
     }
 </style>
 
@@ -179,12 +220,11 @@
         <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">CANCEL</MudButton>
         <MudButton Color="Color.Error"
                    Variant="Variant.Filled"
-                   StartIcon="@Icons.Material.Filled.Send"
                    OnClick="Submit"
                    Disabled="@(string.IsNullOrEmpty(_issue.Title) || string.IsNullOrEmpty(_issue.Description) || _imageData == null)"
                    Style="@GetButtonStyle()"
                    Class="@($"rounded-lg px-6 ml-2 {(GetThemeClass() == "light" ? "submit-report-btn" : "")}")">
-            SUBMIT REPORT
+            SUBMIT
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -284,9 +324,13 @@
     {
         if (ThemeService == null) return "text-transform: none; font-weight: 600;";
         var baseStyle = "text-transform: none; font-weight: 600;";
-        return ThemeService.CurrentTheme == ThemeMode.Light
-            ? $"{baseStyle} color: #0072cf !important; background-color: #ffffff !important;"
-            : baseStyle;
+
+        if (ThemeService.CurrentTheme == ThemeMode.Light)
+        {
+            // Styling handled in CSS for disabled state to avoid !important conflicts
+            return baseStyle;
+        }
+        return baseStyle;
     }
 
     private string GetCameraButtonStyle()
