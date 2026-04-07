@@ -147,6 +147,39 @@
         color: #0072cf !important;
     }
 
+    /* Solid Action Buttons across all themes */
+    .action-icon-circle.mud-button-root {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: unset !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #ffffff !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+
+        .action-icon-circle.mud-button-root:hover {
+            transform: scale(1.15) !important;
+            filter: brightness(1.1) !important;
+        }
+
+    /* Specific Action Button Colors (Consistent in all themes) */
+    .action-btn-info {
+        background-color: #0072cf !important;
+    }
+
+    .action-btn-error {
+        background-color: #ef4444 !important;
+    }
+
+    .action-btn-default {
+        background-color: #94a3b8 !important;
+    }
+
     /* MOBILE CARDS */
     .mobile-card {
         margin-bottom: 16px;
@@ -673,9 +706,9 @@
                             </MudTd>
                             <MudTd DataLabel="Action" Style="text-align: center;">
                                 <div class="d-flex justify-center gap-1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Color="Color.Default" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
                                 </div>
                             </MudTd>
                         </RowTemplate>
@@ -807,8 +840,8 @@
                                     <MudIconButton Icon="@Icons.Material.Filled.Map" Color="Color.Default" Size="Size.Small" OnClick="@(() => ViewOnMap(store))" />
                                 </div>
                                 <div class="d-flex gap-1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(store))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteStore(store))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(store))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteStore(store))" />
                                 </div>
                             </div>
                         </div>
