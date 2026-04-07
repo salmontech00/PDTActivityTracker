@@ -189,6 +189,40 @@
         color: #0072cf !important;
     }
 
+    /* Solid Action Buttons across all themes */
+    .action-icon-circle.mud-button-root {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: unset !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: #ffffff !important;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+
+        .action-icon-circle.mud-button-root:hover {
+            transform: scale(1.15) !important;
+            filter: brightness(1.1) !important;
+        }
+
+    /* Specific Action Button Colors (Consistent in all themes) */
+    .action-btn-info {
+        background-color: #0072cf !important;
+    }
+
+    .action-btn-error {
+        background-color: #ef4444 !important;
+    }
+
+    .action-btn-default {
+        background-color: #94a3b8 !important;
+    }
+
+    /* MOBILE CARDS */
     /* Action Icon Buttons white in darker themes */
     .light .mud-icon-button.mud-info-text,
     .dark .mud-icon-button.mud-info-text,
@@ -488,7 +522,7 @@
                         <MudTd DataLabel="Action" Style="text-align: center;">
                             <div class="d-flex justify-center gap-2">
                                 <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                               Color="Color.Info"
+                                               Class="action-icon-circle action-btn-info"
                                                Size="Size.Small"
                                                OnClick="@(() => OpenViewUserDialog(context))"
                                                Title="View user details" />
@@ -496,7 +530,7 @@
                                 @if (UserState.Role == "Admin" || context.Username == UserState.Username)
                                 {
                                     <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                   Color="Color.Primary"
+                                                   Class="action-icon-circle action-btn-info"
                                                    Size="Size.Small"
                                                    OnClick="@(() => EditUser(context))"
                                                    Title="Edit user" />
@@ -504,7 +538,7 @@
                                     @if (UserState.Role == "Admin")
                                     {
                                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                       Color="Color.Error"
+                                                       Class="action-icon-circle action-btn-error"
                                                        Size="Size.Small"
                                                        OnClick="@(() => DeleteUser(context))"
                                                        Disabled="@(context.Username == UserState.Username)"
@@ -580,7 +614,7 @@
 
                         <div class="mobile-card-actions">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                           Color="Color.Info"
+                                           Class="action-icon-circle action-btn-info"
                                            Size="Size.Small"
                                            OnClick="@(() => OpenViewUserDialog(user))"
                                            Title="View user details" />
@@ -588,7 +622,7 @@
                             @if (UserState.Role == "Admin" || user.Username == UserState.Username)
                             {
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Color="Color.Primary"
+                                               Class="action-icon-circle action-btn-info"
                                                Size="Size.Small"
                                                OnClick="@(() => EditUser(user))"
                                                Title="Edit user" />
@@ -596,7 +630,7 @@
                                 @if (UserState.Role == "Admin")
                                 {
                                     <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                   Color="Color.Error"
+                                                   Class="action-icon-circle action-btn-error"
                                                    Size="Size.Small"
                                                    OnClick="@(() => DeleteUser(user))"
                                                    Disabled="@(user.Username == UserState.Username)"

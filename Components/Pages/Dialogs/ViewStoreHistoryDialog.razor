@@ -162,34 +162,41 @@
 
     <DialogContent>
         <div class="mt-4" style="padding: 4px;">
-            <MudTable Items="Logs" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" Elevation="0">
-                <HeaderContent>
-                    <MudTh>Date & Time</MudTh>
-                    <MudTh>Action</MudTh>
-                    <MudTh>User</MudTh>
-                    <MudTh>Role</MudTh>
-                    <MudTh>Remarks</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd DataLabel="Date & Time">@context.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudTd>
-                    <MudTd DataLabel="Action">
-                        <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
-                                 Color="@GetActionColor(context.Action)" Class="font-weight-bold">
-                            @context.Action
-                        </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="User">@(context.User?.Fullname ?? "Unknown")</MudTd>
-                    <MudTd DataLabel="Role">@context.Role</MudTd>
-                    <MudTd DataLabel="Remarks" Class="remarks-cell">
-                        <MudTooltip Text="@context.Remarks">
-                            @context.Remarks
-                        </MudTooltip>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText Typo="Typo.body2" Class="pa-4 text-center" Style="@($"color: {GetTitleColor()}; opacity: 0.5;")">No assignment history found.</MudText>
-                </NoRecordsContent>
-            </MudTable>
+            @if (Logs != null && Logs.Any())
+            {
+                <MudTable Items="Logs" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Date & Time</MudTh>
+                        <MudTh>Action</MudTh>
+                        <MudTh>User</MudTh>
+                        <MudTh>Role</MudTh>
+                        <MudTh>Remarks</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Date & Time">@context.Timestamp.ToString("MMM dd, yyyy HH:mm")</MudTd>
+                        <MudTd DataLabel="Action">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
+                                     Color="@GetActionColor(context.Action)" Class="font-weight-bold">
+                                @context.Action
+                            </MudChip>
+                        </MudTd>
+                        <MudTd DataLabel="User">@(context.User?.Fullname ?? "Unknown")</MudTd>
+                        <MudTd DataLabel="Role">@context.Role</MudTd>
+                        <MudTd DataLabel="Remarks" Class="remarks-cell">
+                            <MudTooltip Text="@context.Remarks">
+                                @context.Remarks
+                            </MudTooltip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <div class="pa-12 text-center" style="@($"color: {GetTitleColor()}; opacity: 0.5;")">
+                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Large" Class="mb-2" />
+                    <MudText Typo="Typo.body2">No assignment history found for this store.</MudText>
+                </div>
+            }
         </div>
     </DialogContent>
 
