@@ -362,28 +362,34 @@
             margin-top: 0px;
             margin-bottom: 6px;
         }
-        /* Mobile tab fixes */
-        .monitoring-tabs .mud-tabs-toolbar {
-            overflow: visible !important;
+        /* Mobile tab navigation scroll fix - native swipe */
+        .monitoring-tabs .mud-tabs-tabbar {
+            overflow: hidden !important;
         }
 
-        .monitoring-tabs .mud-tabs-toolbar-content {
+        .monitoring-tabs .mud-tabs-tab-container {
             overflow-x: auto !important;
             overflow-y: hidden !important;
+            display: flex !important;
+            flex-wrap: nowrap !important;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
+            -ms-overflow-style: none;
+            cursor: grab;
+            scroll-behavior: smooth;
         }
 
-            .monitoring-tabs .mud-tabs-toolbar-content::-webkit-scrollbar {
+            .monitoring-tabs .mud-tabs-tab-container::-webkit-scrollbar {
                 display: none;
             }
 
         .monitoring-tabs .mud-tab {
             flex: 0 0 auto !important;
             min-width: unset !important;
+            min-width: unset !important;
             max-width: none !important;
-            font-size: 0.60rem !important;
-            padding: 4px 8px !important;
+            font-size: 0.65rem !important;
+            padding: 8px 12px !important;
             white-space: nowrap !important;
         }
 
