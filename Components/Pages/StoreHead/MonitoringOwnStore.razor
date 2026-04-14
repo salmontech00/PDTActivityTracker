@@ -820,7 +820,26 @@
                         <MudPaper Class="@($"glass-panel pa-6 {GetThemeClass()} flex-grow-1")" Elevation="0" Style="border-radius: 16px !important; display: flex; flex-direction: column;">
                             <MudText Typo="Typo.h6" Class="mb-4" Style="font-weight: 700;">Recent Achievements</MudText>
                             <div class="flex-grow-1">
-                                <div class="d-flex flex-column gap-2"><div class="activity-item"><div class="activity-icon" style="background: #f59e0b; color: #fff;"><MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" /></div><MudText Typo="Typo.body2" Style="font-weight: 600;">Highest completion rate this week!</MudText></div><div class="activity-item"><div class="activity-icon" style="background: #22c55e; color: #fff;"><MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /></div><MudText Typo="Typo.body2" Style="font-weight: 600;">All opening tasks successfully completed today.</MudText></div><div class="activity-item"><div class="activity-icon" style="background: #0072cf; color: #fff;"><MudIcon Icon="@Icons.Material.Filled.Photo" Size="Size.Small" /></div><MudText Typo="Typo.body2" Style="font-weight: 600;">@_totalPhotos photos shared this month.</MudText></div></div>
+                                <div class="d-flex flex-column gap-2">
+                                    @if (_avgCompletionRate >= 90)
+                                    {
+                                        <div class="activity-item">
+                                            <div class="activity-icon" style="background: #f59e0b; color: #fff;"><MudIcon Icon="@Icons.Material.Filled.Star" Size="Size.Small" /></div>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Outstanding consistency this period!</MudText>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(_topCategoryName) && _topCategoryRate > 0)
+                                    {
+                                        <div class="activity-item">
+                                            <div class="activity-icon" style="background: #22c55e; color: #fff;"><MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" /></div>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Great job on @(_topCategoryName) tasks!</MudText>
+                                        </div>
+                                    }
+                                    <div class="activity-item">
+                                        <div class="activity-icon" style="background: #0072cf; color: #fff;"><MudIcon Icon="@Icons.Material.Filled.Photo" Size="Size.Small" /></div>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@_totalPhotos photos shared this period.</MudText>
+                                    </div>
+                                </div>
                             </div>
                         </MudPaper>
                     </MudItem>
@@ -1005,6 +1024,8 @@
     private int _pendingChecks = 0;
     private int _totalPhotos = 0;
     private List<CategoryPerformanceModel> _categoryPerformance = new();
+    private string _topCategoryName = "Opening";
+    private int _topCategoryRate = 0;
     private Dictionary<int, (double progress, DateTime? lastCompletedAt)> _activityProgressCache = new();
 
     protected override void OnInitialized()
@@ -1043,10 +1064,9 @@
 
         _categories = await db.Categories.OrderBy(c => c.SortOrder).ToListAsync();
 
-        await LoadReports();
         await LoadPhotos();
         await LoadMyIssues();
-        await CalculateStats();
+        await LoadReports();
     }
 
     private async Task LoadReports()
@@ -1063,17 +1083,17 @@
         _allDailyActivities = await query.OrderByDescending(a => a.Date).ToListAsync();
         _totalReports = _allDailyActivities.Count;
 
-        ApplyReportFilters();
-
-        // Cache progress for the list
+        // Cache progress for all loaded reports first so CalculateStats has data
         _activityProgressCache.Clear();
-        foreach (var activity in _dailyActivities)
+        foreach (var activity in _allDailyActivities)
         {
             _activityProgressCache[activity.Id] = await CalculateActivityProgress(activity.Id, db);
         }
+
+        await ApplyReportFilters();
     }
 
-    private void ApplyReportFilters()
+    private async Task ApplyReportFilters()
     {
         _dailyActivities = _allDailyActivities;
 
@@ -1087,13 +1107,14 @@
                 .ToList();
         }
 
+        await CalculateStats();
         StateHasChanged();
     }
 
-    private void ClearReportFilters()
+    private async Task ClearReportFilters()
     {
         _dateRange = null;
-        ApplyReportFilters();
+        await ApplyReportFilters();
     }
 
     private List<TaskPhoto> GetFilteredPhotos()
@@ -1149,38 +1170,68 @@
         if (_myStore == null) return;
         using var db = await DbFactory.CreateDbContextAsync();
 
-        // Avg Completion
-        if (_activityProgressCache.Any())
+        var localActivityProgress = new Dictionary<int, (double progress, DateTime? lastCompletedAt)>();
+
+        // Avg Completion based on filtered reports
+        if (_dailyActivities.Any())
         {
-            _avgCompletionRate = (int)_activityProgressCache.Values.Average(v => v.progress);
+            var filteredIds = _dailyActivities.Select(a => a.Id).ToList();
+            var filteredValues = _activityProgressCache
+                .Where(kvp => filteredIds.Contains(kvp.Key))
+                .Select(kvp => kvp.Value.progress)
+                .ToList();
+
+            _avgCompletionRate = filteredValues.Any() ? (int)filteredValues.Average() : 0;
+            _totalReports = _dailyActivities.Count;
+        }
+        else
+        {
+            _avgCompletionRate = 0;
+            _totalReports = 0;
         }
 
-        // Today's tasks
+        // Today's tasks (keep this anchored to today)
         var today = DateTime.Today;
         var todayActivity = await db.StoreDailyActivities
             .OrderByDescending(a => a.Id)
             .FirstOrDefaultAsync(a => a.StoreId == _myStore.Id && a.Date.Date == today);
+
+        int pending = 0;
         if (todayActivity != null)
         {
-            _pendingChecks = await db.TaskProgresses.CountAsync(p => p.StoreDailyActivityId == todayActivity.Id && p.IsCompleted);
+            pending = await db.TaskProgresses.CountAsync(p => p.StoreDailyActivityId == todayActivity.Id && p.IsCompleted);
         }
+        _pendingChecks = pending;
 
-        // Category Performance
-        _categoryPerformance.Clear();
+        // Photos based on filter
+        _totalPhotos = _filteredPhotos.Count;
+
+        // Category Performance (Scoped to filtered reports)
+        var filteredActivityIds = _dailyActivities.Select(a => a.Id).ToList();
+
         var allTaskProgress = await db.TaskProgresses
             .Include(p => p.ChecklistItem)
-            .Where(p => db.StoreDailyActivities.Any(a => a.Id == p.StoreDailyActivityId && a.StoreId == _myStore.Id))
+            .Where(p => filteredActivityIds.Contains(p.StoreDailyActivityId))
             .ToListAsync();
 
+        var newCategoryPerformance = new List<CategoryPerformanceModel>();
         foreach (var cat in _categories)
         {
             var catTasks = allTaskProgress.Where(p => p.ChecklistItem?.CategoryId == cat.Id).ToList();
             if (catTasks.Any())
             {
                 var rate = (double)catTasks.Count(p => p.IsCompleted) / catTasks.Count * 100;
-                _categoryPerformance.Add(new CategoryPerformanceModel { CategoryName = cat.Name, CompletionRate = (int)rate });
+                newCategoryPerformance.Add(new CategoryPerformanceModel { CategoryName = cat.Name, CompletionRate = (int)rate });
             }
         }
+
+        // Assign to fields at the end to prevent async duplication in UI
+        _categoryPerformance = newCategoryPerformance;
+
+        // Identify Top Category for Achievement
+        var topCat = _categoryPerformance.OrderByDescending(c => c.CompletionRate).FirstOrDefault();
+        _topCategoryName = topCat?.CategoryName ?? "Opening";
+        _topCategoryRate = topCat?.CompletionRate ?? 0;
     }
 
     private double GetCompletionProgress(int activityId)

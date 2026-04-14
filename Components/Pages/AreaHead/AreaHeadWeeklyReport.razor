@@ -835,6 +835,7 @@
 
 @code {
     [Parameter] public int StoreId { get; set; }
+    [Parameter][SupplyParameterFromQuery] public string? view { get; set; }
 
     private bool _initialized = false;
     private bool _isLoadingPeriod = false;
@@ -887,8 +888,24 @@
             await UserState.SetLastValidPage(NavigationManager.Uri);
 
             await LoadStoreAndMeta();
-            await LoadDailyData(DateTime.Today);
-            // Initialization is handled inside LoadDailyData
+
+            if (!string.IsNullOrEmpty(view))
+            {
+                _viewMode = view;
+            }
+
+            if (_viewMode == "Daily")
+            {
+                await LoadDailyData(_selectedDate ?? DateTime.Today);
+            }
+            else if (_viewMode == "Issues")
+            {
+                await LoadIssues();
+            }
+            else
+            {
+                await LoadPeriodData();
+            }
         }
     }
 

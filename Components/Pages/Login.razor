@@ -549,6 +549,12 @@
 
             if (user != null)
             {
+                if (user.Status == "Inactive")
+                {
+                    ErrorMessage = "Account currently inactive.";
+                    return;
+                }
+
                 await UserState.Login(user.Username);
                 await UserState.SetFullname(user.Fullname);
                 await UserState.SetRole(user.Role);
