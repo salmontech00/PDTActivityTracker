@@ -93,7 +93,7 @@
             Store Maps
         </MudNavLink>
         <MudNavLink Href="/store-head/monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Analytics">
-            Monitoring
+            Reports & Monitoring
         </MudNavLink>
     }
 
@@ -103,17 +103,17 @@
             Store Maps
         </MudNavLink>
         <MudNavLink Href="/area-head/monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Assessment">
-            Monitoring
+            Reports & Monitoring
         </MudNavLink>
     }
 
     @if (UserState.Role == "AVP")
     {
         <MudNavLink Href="/avp/dashboard" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Dashboard">
-            Dashboard
+            Dashboard Overview
         </MudNavLink>
         <MudNavLink Href="/avp/monitoring" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Outlined.Assessment">
-            Monitoring
+            Reports & Monitoring
         </MudNavLink>
     }
 </MudNavMenu>

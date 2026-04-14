@@ -1169,7 +1169,7 @@
         if (_selectedStoreId.HasValue)
         {
             await UserState.SetSelectedStoreId(_selectedStoreId.Value);
-            NavigationManager.NavigateTo($"/area-head/weekly-report/{_selectedStoreId.Value}");
+            NavigationManager.NavigateTo($"/area-head/weekly-report/{_selectedStoreId.Value}?view=Weekly");
         }
     }
 

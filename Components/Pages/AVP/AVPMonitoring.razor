@@ -560,19 +560,32 @@
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="12" sm="4">
                             <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange"
                                                 @bind-DateRange:after="FilterData"
                                                 Variant="Variant.Outlined"
                                                 Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="12" sm="4">
                             <MudAutocomplete T="Store" Label="Search Store"
                                              Value="@_selectedStore" ValueChanged="OnStoreSelected"
                                              SearchFunc="@SearchStores"
                                              ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
                                              Variant="Variant.Outlined" Margin="Margin.Dense"
                                              Clearable="true" Placeholder="Store Name or Code" />
+                        </MudItem>
+                        <MudItem xs="6" sm="2">
+                            <MudSelect T="string" Label="Status" @bind-Value="_selectedStatus" @bind-Value:after="FilterData" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                <MudSelectItem Value="@("Completed")" />
+                                <MudSelectItem Value="@("In Progress")" />
+                                <MudSelectItem Value="@("Incomplete")" />
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" sm="2">
+                            <MudSelect T="string" Label="Review" @bind-Value="_selectedReviewStatus" @bind-Value:after="FilterData" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                                <MudSelectItem Value="@("Reviewed")" />
+                                <MudSelectItem Value="@("Pending")" />
+                            </MudSelect>
                         </MudItem>
                     </MudGrid>
                 </MudPaper>
@@ -680,7 +693,7 @@
                 </MudButton>
 
                 <MudGrid Spacing="2">
-                    <MudItem xs="12" sm="4" md="3">
+                    <MudItem xs="12" sm="4" md="4">
                         <MudTextField T="string"
                                       @bind-Value="_photoSearchTerm"
                                       @bind-Value:after="FilterPhotos"
@@ -691,7 +704,7 @@
                                       Adornment="Adornment.Start"
                                       AdornmentIcon="@Icons.Material.Filled.Search" />
                     </MudItem>
-                    <MudItem xs="12" sm="4" md="3">
+                    <MudItem xs="12" sm="4" md="4">
                         <MudAutocomplete T="Store" Label="Store"
                                          Value="@_photoStore" ValueChanged="OnPhotoStoreSelected"
                                          SearchFunc="@SearchStores"
@@ -699,7 +712,7 @@
                                          Variant="Variant.Outlined" Margin="Margin.Dense"
                                          Clearable="true" />
                     </MudItem>
-                    <MudItem xs="12" sm="4" md="3">
+                    <MudItem xs="12" sm="4" md="4">
                         <MudDateRangePicker Label="Date Range"
                                             @bind-DateRange="_photoDateRange"
                                             @bind-DateRange:after="FilterPhotos"
@@ -885,9 +898,11 @@
     private Store? _photoStore;
     private string _photoSearchTerm = "";
     private string _storeSearchString = "";
+    private string? _selectedStatus;
+    private string? _selectedReviewStatus;
 
-    private DateRange _dateRange = new DateRange(DateTime.Today.AddDays(-7), DateTime.Today);
-    private DateRange _photoDateRange = new DateRange(DateTime.Today.AddDays(-7), DateTime.Today);
+    private DateRange _dateRange = new DateRange();
+    private DateRange _photoDateRange = new DateRange();
     private Dictionary<int, (double progress, DateTime? lastCompletedAt)> _progressCache = new();
 
     protected override void OnInitialized()
@@ -1013,6 +1028,18 @@
         if (_selectedStore != null)
         {
             _filteredActivities = _filteredActivities.Where(a => a.StoreId == _selectedStore.Id).ToList();
+        }
+
+        if (!string.IsNullOrEmpty(_selectedStatus))
+        {
+            _filteredActivities = _filteredActivities.Where(a => GetStatusLabel(a) == _selectedStatus).ToList();
+        }
+
+        if (!string.IsNullOrEmpty(_selectedReviewStatus))
+        {
+            _filteredActivities = _filteredActivities.Where(a => 
+                (_selectedReviewStatus == "Reviewed" && a.AreaHeadReviewedAt.HasValue) ||
+                (_selectedReviewStatus == "Pending" && !a.AreaHeadReviewedAt.HasValue)).ToList();
         }
     }
 

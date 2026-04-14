@@ -18,14 +18,44 @@
         backdrop-filter: blur(25px);
         border-radius: 16px;
     }
+
+    .responsive-title {
+        font-size: 1.75rem;
+    }
+
+    @@media (max-width: 600px) {
+        .responsive-title {
+            font-size: 1.5rem;
+        }
+
+        .submit-btn-text {
+            font-size: 0.875rem !important;
+        }
+    }
+
+    @@media (max-width: 375px) {
+        .responsive-title {
+            font-size: 1.25rem !important;
+        }
+
+        .submit-btn-text {
+            font-size: 0.75rem !important;
+        }
+
+        .glass-request-card {
+            padding: 16px !important;
+            border-radius: 12px;
+            margin: 0 !important;
+        }
+    }
 </style>
 
-<div class="@ThemeService.CurrentTheme.ToString().ToLower()">
-    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-16">
-        <MudText Typo="Typo.h4" Align="Align.Center" Class="mb-6 fw-bold" Style="@GetTitleStyle()">Request Elevated Role</MudText>
+<div class="@ThemeService.CurrentTheme.ToString().ToLower() min-vh-100 d-flex flex-column justify-center pb-8">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="mt-4 mt-sm-16 px-2 px-sm-4">
+        <MudText Align="Align.Center" Class="mb-4 mb-sm-6 fw-bold responsive-title" Style="@GetTitleStyle()">Request Elevated Role</MudText>
 
-        <MudPaper Class="glass-request-card pa-8" Elevation="0" Style="@GetCardStyle()">
-            <MudText Typo="Typo.body1" Align="Align.Center" Class="mb-6" Style="@($"opacity: 0.9; {GetTextStyle()}")">
+        <MudPaper Class="glass-request-card pa-4 pa-sm-8 mt-2 mt-sm-0 mx-2 mx-sm-0" Elevation="0" Style="@GetCardStyle()">
+            <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-4 mb-sm-6 px-1 px-sm-0" Style="@($"opacity: 0.9; {GetTextStyle()}")">
                 Your current role is basic <b>User</b>. Please select the role you require and provide a justification. The admin will be notified via email.
             </MudText>
 
@@ -36,10 +66,10 @@
                     <MudSelectItem Value="@("AVP")">AVP</MudSelectItem>
                 </MudSelect>
 
-                <MudTextField T="string" @bind-Value="_remarks" Label="Remarks / Justification (Optional)" Variant="Variant.Outlined" Lines="4" Class="mb-8" />
+                <MudTextField T="string" @bind-Value="_remarks" Label="Remarks / Justification (Optional)" Variant="Variant.Outlined" Lines="4" Class="mb-6 mb-sm-8" />
 
-                <div class="d-flex justify-center">
-                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="SubmitRequest" Disabled="_isSubmitting" Class="rounded-lg px-8 py-3" Style="width: 100%; font-weight: 800;">
+                <div class="d-flex justify-center mt-2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="SubmitRequest" Disabled="_isSubmitting" Class="rounded-lg px-4 py-3 submit-btn-text" Style="width: 100%; font-weight: 800;">
                         @if (_isSubmitting)
                         {
                             <MudProgressCircular Class="ms-n1 mr-2" Size="Size.Small" Indeterminate="true" />

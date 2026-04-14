@@ -666,9 +666,10 @@
                                                         <MudText Typo="Typo.body2" Class="opacity-50 mt-1" Style="min-width: 20px; font-weight: 700;">@taskNumber.</MudText>
                                                         <MudCheckBox T="bool"
                                                                      Value="@progress.IsCompleted"
+                                                                     ValueChanged="@((bool val) => ToggleManualTask(task, progress, val))"
                                                                      Color="Color.Primary"
                                                                      Dense="true"
-                                                                     Disabled="true"
+                                                                     Disabled="@(task.IsPhotoRequired || task.TaskType == "Manpower")"
                                                                      Class="pa-0" />
 
                                                         <div class="d-flex align-center flex-wrap gap-2">
@@ -1056,8 +1057,7 @@
                 if (photoCount == 0) isNowCompleted = false;
             }
         }
-
-        if (isNowCompleted && task.TaskType == "Manpower")
+        else if (task.TaskType == "Manpower")
         {
             var positions = GetManpowerPositions(task);
             if (positions.Any())
@@ -1084,6 +1084,12 @@
             {
                 isNowCompleted = false;
             }
+        }
+        else
+        {
+            // Regular task with no automated completion triggers
+            // Preserves the manual check state
+            isNowCompleted = prog.IsCompleted;
         }
 
         if (prog.IsCompleted && prog.CompletedAt.HasValue && prog.CompletedAt.Value.Date < DateTime.Today && task.Frequency != "Daily")
@@ -1378,6 +1384,24 @@
             Snackbar.Add($"Photo captured and saved ({imageData.Length / 1024}KB)", Severity.Success);
             StateHasChanged();
         }
+    }
+
+    private async Task ToggleManualTask(ChecklistItem task, TaskProgress prog, bool newVal)
+    {
+        prog.IsCompleted = newVal;
+        if (newVal)
+        {
+            prog.CompletedAt = DateTime.Now;
+        }
+        else
+        {
+            prog.CompletedAt = null;
+        }
+
+        await CheckAndSyncTaskCompletion(task);
+        await SaveCurrentProgress();
+        await CheckAndAutoProgress();
+        StateHasChanged();
     }
 
     private async Task RemovePhoto(TaskPhoto photo)
