@@ -9,8 +9,71 @@
 @inject AppDbContext Db
 @inject ISnackbar Snackbar
 @inject IEmailService EmailService
+@inject IJSRuntime JS
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
+
+<style>
+    .otp-container {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin: 1.5rem 0;
+        width: 100%;
+    }
+
+    .otp-input-wrapper {
+        width: 64px;
+        height: 64px;
+    }
+
+        .otp-input-wrapper .mud-input {
+            background-color: rgba(255, 255, 255, 0.05) !important;
+            border-radius: 12px !important;
+            transition: all 0.3s ease;
+        }
+
+            .otp-input-wrapper .mud-input:focus-within {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+            }
+
+        .otp-input-wrapper .mud-input-outlined-border {
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            border-width: 1px !important;
+        }
+
+        .otp-input-wrapper .mud-input-slot {
+            font-size: 28px !important;
+            font-weight: 700 !important;
+            color: #ffffff !important;
+            text-align: center !important;
+            padding: 0 !important;
+            height: 64px !important;
+        }
+
+    .glass-dialog.lightest .otp-input-wrapper .mud-input-slot {
+        color: #0f172a !important;
+    }
+
+    .glass-dialog.lightest .otp-input-wrapper .mud-input {
+        background-color: rgba(0, 0, 0, 0.03) !important;
+    }
+
+    .body-text {
+        color: rgba(255, 255, 255, 0.85);
+        line-height: 1.6;
+    }
+
+    .glass-dialog.lightest .body-text {
+        color: #475569;
+    }
+
+    .fw-bold {
+        font-weight: 700 !important;
+    }
+</style>
 
 <MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
@@ -75,20 +138,22 @@
                         Please enter the code below:
                     </MudText>
 
-                    <div class="otp-container">
+                    <div class="otp-container" @onpaste="HandlePaste">
                         @for (int i = 0; i < 4; i++)
                         {
                             int index = i;
                             <div class="otp-input-wrapper">
                                 <MudTextField T="string"
-                                              @bind-Value="_otpDigits[index]"
+                                              Value="@_otpDigits[index]"
+                                              ValueChanged="@((s) => HandleDigitChange(s, index))"
                                               MaxLength="1"
                                               Variant="Variant.Outlined"
                                               Margin="Margin.Dense"
-                                              Style="font-size: 24px; text-align: center;"
                                               OnKeyUp="@((KeyboardEventArgs e) => HandleKeyUp(e, index))"
                                               @ref="_otpInputs[index]"
-                                              AdornmentColor="@GetAdornmentColor()" />
+                                              AdornmentColor="@GetAdornmentColor()"
+                                              Immediate="true"
+                                              Class="otp-field" />
                             </div>
                         }
                     </div>
@@ -260,6 +325,26 @@
         if (ThemeService != null)
         {
             ThemeService.OnThemeChanged += OnThemeChanged;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _step == DialogStep.EnterOtp)
+        {
+            await SetupPasteHandling();
+        }
+    }
+
+    private async Task SetupPasteHandling()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("cameraInterop.setupOtpPaste", DotNetObjectReference.Create(this));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error setting up paste handling: {ex.Message}");
         }
     }
 
@@ -591,16 +676,58 @@
         }
     }
 
+    private async Task HandleDigitChange(string val, int index)
+    {
+        if (string.IsNullOrEmpty(val))
+        {
+            _otpDigits[index] = string.Empty;
+            return;
+        }
+
+        // Take only the last character if for some reason multiple characters are input
+        var character = val.Substring(val.Length - 1);
+        if (int.TryParse(character, out _))
+        {
+            _otpDigits[index] = character;
+            if (index < 3)
+            {
+                await _otpInputs[index + 1].FocusAsync();
+            }
+        }
+        else
+        {
+            _otpDigits[index] = string.Empty;
+        }
+    }
+
     private async Task HandleKeyUp(KeyboardEventArgs e, int index)
     {
-        if (!string.IsNullOrEmpty(_otpDigits[index]) && index < 3)
+        if (e.Key == "Backspace")
         {
-            await _otpInputs[index + 1].FocusAsync();
+            if (string.IsNullOrEmpty(_otpDigits[index]) && index > 0)
+            {
+                await _otpInputs[index - 1].FocusAsync();
+            }
         }
-        else if (e.Key == "Backspace" && index > 0 && string.IsNullOrEmpty(_otpDigits[index]))
+    }
+
+    [JSInvokable]
+    public void HandlePasteJS(string text)
+    {
+        if (text.Length == 4)
         {
-            await _otpInputs[index - 1].FocusAsync();
+            for (int i = 0; i < 4; i++)
+            {
+                _otpDigits[i] = text[i].ToString();
+            }
+            StateHasChanged();
         }
+    }
+
+    private void HandlePaste(ClipboardEventArgs e)
+    {
+        // This is a placeholder for the Blazor event,
+        // but the actual handling is done via HandlePasteJS for better browser compatibility.
     }
 
     private void Cancel() => MudDialog.Cancel();

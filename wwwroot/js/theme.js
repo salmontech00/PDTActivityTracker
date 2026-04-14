@@ -186,5 +186,25 @@ window.cameraInterop = {
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         });
+    },
+    // OTP Helpers
+    setupOtpPaste: function (dotNetHelper) {
+        const container = document.querySelector('.otp-container');
+        if (!container) return;
+
+        const pasteHandler = (e) => {
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            if (text && text.length === 4 && /^\d+$/.test(text)) {
+                e.preventDefault();
+                dotNetHelper.invokeMethodAsync('HandlePasteJS', text);
+            }
+        };
+
+        container.addEventListener('paste', pasteHandler);
+
+        // Return a way to cleanup if needed (though not strictly necessary for this use case)
+        return {
+            dispose: () => container.removeEventListener('paste', pasteHandler)
+        };
     }
 };
