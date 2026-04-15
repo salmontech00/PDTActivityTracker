@@ -20,6 +20,23 @@
 <PageTitle>Login | SMR Activity Tracker</PageTitle>
 
 <style>
+    .login-instructions {
+        display: none;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 2.5rem;
+        padding: 1.5rem;
+        max-width: 400px;
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .instruction-item {
+        display: flex;
+        align-items: flex-start;
+    }
+
     .login-wrapper {
         display: flex;
         flex-direction: column;
@@ -103,6 +120,10 @@
 
         .login-card-container {
             margin-right: 50px;
+        }
+
+        .login-instructions {
+            display: flex;
         }
     }
 
@@ -202,6 +223,37 @@
     <div class="css-logo">
         <span class="logo-main" style="@GetLogoMainStyle()">SMR</span>
         <span class="logo-sub" style="@GetLogoSubStyle()">ACTIVITY TRACKER</span>
+
+        <div class="login-instructions" style="@GetInstructionStyle()">
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">Standard Login</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">Use your assigned local Username and Password.</MudText>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.Source" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">LDAP Auth (Company)</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">Use your corporate credentials (e.g. <b>user@lccgroup.com</b>).</MudText>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">Role Access</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">Need more access? Request it in <b>Request Role</b> after login.</MudText>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.CameraEnhance" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">Device Access</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">The system requires **Camera** and **Location** access. Please "Allow" when prompted.</MudText>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="login-card-container">
@@ -395,6 +447,17 @@
             ThemeMode.Light => "Switch to Dark Mode",
             ThemeMode.Dark => "Switch to Light Mode",
             _ => "Switch to Default"
+        };
+    }
+
+    private string GetInstructionStyle()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "background-color: rgba(0, 114, 207, 0.05); border: 1px solid rgba(0,114,207,0.2); color: #0f172a;",
+            ThemeMode.Light => "background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.15); color: #ffffff;",
+            ThemeMode.Dark => "background-color: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.1); color: #ffffff;",
+            _ => "background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.15); color: #ffffff;"
         };
     }
 
