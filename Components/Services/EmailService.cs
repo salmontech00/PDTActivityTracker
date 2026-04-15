@@ -8,7 +8,7 @@ namespace PDTActivityTracker.Components.Services
     public interface IEmailService
     {
         Task SendOtpEmailAsync(string toEmail, string otpCode);
-        Task SendRoleRequestEmailAsync(string adminEmail, string userName, string userEmail, string requestedRole, string remarks);
+        Task SendRoleRequestEmailAsync(IEnumerable<string> adminEmails, string userName, string userEmail, string requestedRole, string remarks);
     }
 
     public class EmailService : IEmailService
@@ -26,8 +26,8 @@ namespace PDTActivityTracker.Components.Services
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(
-                emailSettings["SenderName"],
-                emailSettings["SenderEmail"]
+                emailSettings["FromName"] ?? "SMR Activity Tracker",
+                emailSettings["FromEmail"]!
             ));
             message.To.Add(new MailboxAddress("", toEmail));
             message.Subject = "Password Reset - Verification Code";
@@ -51,16 +51,22 @@ namespace PDTActivityTracker.Components.Services
 
             try
             {
+                bool.TryParse(emailSettings["EnableSsl"], out var enableSsl);
+                var options = enableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None;
+
                 await client.ConnectAsync(
-                    emailSettings["SmtpServer"],
-                    int.Parse(emailSettings["SmtpPort"]!),
-                    SecureSocketOptions.StartTls
+                    emailSettings["Host"] ?? "localhost",
+                    int.Parse(emailSettings["Port"] ?? "25"),
+                    options
                 );
 
-                await client.AuthenticateAsync(
-                    emailSettings["Username"],
-                    emailSettings["Password"]
-                );
+                if (!string.IsNullOrWhiteSpace(emailSettings["Password"]))
+                {
+                    await client.AuthenticateAsync(
+                        emailSettings["Username"],
+                        emailSettings["Password"]
+                    );
+                }
 
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
@@ -71,16 +77,21 @@ namespace PDTActivityTracker.Components.Services
             }
         }
 
-        public async Task SendRoleRequestEmailAsync(string adminEmail, string userName, string userEmail, string requestedRole, string remarks)
+        public async Task SendRoleRequestEmailAsync(IEnumerable<string> adminEmails, string userName, string userEmail, string requestedRole, string remarks)
         {
             var emailSettings = _configuration.GetSection("EmailSettings");
 
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(
-                emailSettings["SenderName"],
-                emailSettings["SenderEmail"]
+                emailSettings["FromName"] ?? "SMR Activity Tracker",
+                emailSettings["FromEmail"]!
             ));
-            message.To.Add(new MailboxAddress("", adminEmail));
+
+            foreach (var adminEmail in adminEmails)
+            {
+                message.To.Add(new MailboxAddress("", adminEmail));
+            }
+
             message.Subject = $"Role Request: {requestedRole} for {userName}";
 
             var bodyBuilder = new BodyBuilder
@@ -118,16 +129,22 @@ namespace PDTActivityTracker.Components.Services
 
             try
             {
+                bool.TryParse(emailSettings["EnableSsl"], out var enableSsl);
+                var options = enableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None;
+
                 await client.ConnectAsync(
-                    emailSettings["SmtpServer"],
-                    int.Parse(emailSettings["SmtpPort"]!),
-                    SecureSocketOptions.StartTls
+                    emailSettings["Host"] ?? "localhost",
+                    int.Parse(emailSettings["Port"] ?? "25"),
+                    options
                 );
 
-                await client.AuthenticateAsync(
-                    emailSettings["Username"],
-                    emailSettings["Password"]
-                );
+                if (!string.IsNullOrWhiteSpace(emailSettings["Password"]))
+                {
+                    await client.AuthenticateAsync(
+                        emailSettings["Username"],
+                        emailSettings["Password"]
+                    );
+                }
 
                 await client.SendAsync(message);
                 await client.DisconnectAsync(true);
