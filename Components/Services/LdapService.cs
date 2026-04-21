@@ -36,17 +36,25 @@ namespace PDTActivityTracker.Components.Services
             try
             {
                 using var connection = CreateConnection();
+
+                // For AuthType.Basic, we try to use the full email as the bind DN/UPN
                 connection.Bind(new NetworkCredential(email, password));
+
+                _logger.LogInformation("LDAP Authentication successful for {Email}", email);
                 return true;
             }
             catch (LdapException ex)
             {
-                _logger.LogError(ex, "LDAP Authentication failed for user {Email}", email);
+                // Capture detailed LDAP Error Codes (e.g., 49 for Invalid Credentials)
+                // In AD, Error 49 with sub-code 52e means invalid credentials.
+                // Other sub-codes: 773 (must change password), 533 (account disabled).
+                _logger.LogError("LDAP Error: {ErrorCode} - {Message}. Details: {ServerErrorMessage}",
+                    ex.ErrorCode, ex.Message, ex.ServerErrorMessage);
                 return false;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred during LDAP authentication.");
+                _logger.LogError(ex, "An unexpected error occurred during LDAP authentication.");
                 return false;
             }
         }
@@ -55,11 +63,17 @@ namespace PDTActivityTracker.Components.Services
         {
             var connection = new LdapConnection(new LdapDirectoryIdentifier(_settings.Server, _settings.Port));
             connection.SessionOptions.ProtocolVersion = 3;
+
             if (_settings.UseSsl)
             {
                 connection.SessionOptions.SecureSocketLayer = true;
+                // On Linux, you might need to ignore certificate errors for internal CAs
+                connection.SessionOptions.VerifyServerCertificate = (conn, cert) => true;
             }
-            connection.AuthType = AuthType.Negotiate;
+
+            // Linux compatibility: Use Basic instead of Negotiate
+            connection.AuthType = AuthType.Basic;
+
             return connection;
         }
 
