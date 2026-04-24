@@ -81,50 +81,6 @@ namespace PDTActivityTracker.Components.Services
         {
             var emailSettings = _configuration.GetSection("EmailSettings");
 
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(
-                emailSettings["FromName"] ?? "SMR Activity Tracker",
-                emailSettings["FromEmail"]!
-            ));
-
-            foreach (var adminEmail in adminEmails)
-            {
-                message.To.Add(new MailboxAddress("", adminEmail));
-            }
-
-            message.Subject = $"Role Request: {requestedRole} for {userName}";
-
-            var bodyBuilder = new BodyBuilder
-            {
-                HtmlBody = $@"
-                <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
-                    <h2 style='color: #0072cf;'>User Role Request</h2>
-                    <p>A user has requested an elevated role. Please review their details below:</p>
-                    <table style='width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 20px;'>
-                        <tr>
-                            <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; width: 30%;'>User Fullname:</td>
-                            <td style='padding: 10px; border-bottom: 1px solid #eee;'>{userName}</td>
-                        </tr>
-                        <tr>
-                            <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;'>User Email:</td>
-                            <td style='padding: 10px; border-bottom: 1px solid #eee;'><a href='mailto:{userEmail}'>{userEmail}</a></td>
-                        </tr>
-                        <tr>
-                            <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;'>Requested Role:</td>
-                            <td style='padding: 10px; border-bottom: 1px solid #eee;'><span style='background-color: #0072cf; color: white; padding: 4px 8px; border-radius: 12px; font-weight: bold;'>{requestedRole}</span></td>
-                        </tr>
-                        <tr>
-                            <td style='padding: 10px; font-weight: bold; vertical-align: top;'>Remarks:</td>
-                            <td style='padding: 10px;'>{(string.IsNullOrWhiteSpace(remarks) ? "<i>No remarks provided.</i>" : remarks)}</td>
-                        </tr>
-                    </table>
-                    <p style='margin-top: 30px; font-size: 14px; color: #666;'>Log in to the <b>SMR Activity Tracker</b> User Management Page to update this user's role.</p>
-                </div>
-            "
-            };
-
-            message.Body = bodyBuilder.ToMessageBody();
-
             using var client = new SmtpClient();
 
             try
@@ -146,12 +102,79 @@ namespace PDTActivityTracker.Components.Services
                     );
                 }
 
-                await client.SendAsync(message);
+                int successCount = 0;
+                var errors = new List<string>();
+
+                foreach (var adminEmail in adminEmails.Distinct())
+                {
+                    try
+                    {
+                        var message = new MimeMessage();
+                        message.From.Add(new MailboxAddress(
+                            emailSettings["FromName"] ?? "SMR Activity Tracker",
+                            emailSettings["FromEmail"]!
+                        ));
+                        message.To.Add(new MailboxAddress("", adminEmail));
+                        message.Subject = $"Role Request: {requestedRole} for {userName}";
+
+                        var bodyBuilder = new BodyBuilder
+                        {
+                            HtmlBody = $@"
+                            <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                                <h2 style='color: #0072cf;'>User Role Request</h2>
+                                <p>A user has requested an elevated role. Please review their details below:</p>
+                                <table style='width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 20px;'>
+                                    <tr>
+                                        <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold; width: 30%;'>User Fullname:</td>
+                                        <td style='padding: 10px; border-bottom: 1px solid #eee;'>{userName}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;'>User Email:</td>
+                                        <td style='padding: 10px; border-bottom: 1px solid #eee;'><a href='mailto:{userEmail}'>{userEmail}</a></td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 10px; border-bottom: 1px solid #eee; font-weight: bold;'>Requested Role:</td>
+                                        <td style='padding: 10px; border-bottom: 1px solid #eee;'><span style='background-color: #0072cf; color: white; padding: 4px 8px; border-radius: 12px; font-weight: bold;'>{requestedRole}</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td style='padding: 10px; font-weight: bold; vertical-align: top;'>Remarks:</td>
+                                        <td style='padding: 10px;'>{(string.IsNullOrWhiteSpace(remarks) ? "<i>No remarks provided.</i>" : remarks)}</td>
+                                    </tr>
+                                </table>
+                                <p style='margin-top: 30px; font-size: 14px; color: #666;'>Log in to the <b>SMR Activity Tracker</b> User Management Page to update this user's role.</p>
+                            </div>
+                        "
+                        };
+
+                        message.Body = bodyBuilder.ToMessageBody();
+                        await client.SendAsync(message);
+                        successCount++;
+                    }
+                    catch (SmtpCommandException ex)
+                    {
+                        // Specifically catch recipient errors (like 5.1.1) and continue
+                        errors.Add($"{adminEmail}: {ex.Message}");
+                        Console.WriteLine($"Mail delivery failed for {adminEmail}: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add($"{adminEmail}: {ex.Message}");
+                        Console.WriteLine($"Unexpected error sending to {adminEmail}: {ex.Message}");
+                    }
+                }
+
                 await client.DisconnectAsync(true);
+
+                // If we failed to send to ANYONE, throw an exception
+                if (successCount == 0 && adminEmails.Any())
+                {
+                    throw new Exception($"Failed to send to all recipients. Errors: {string.Join("; ", errors)}");
+                }
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is Exception && ex.Message.StartsWith("Failed to send")))
             {
-                throw new Exception($"Error sending email: {ex.Message}", ex);
+                // Catch connection/auth errors
+                throw new Exception($"SMTP Connection Error: {ex.Message}", ex);
             }
         }
     }

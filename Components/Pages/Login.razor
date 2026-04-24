@@ -528,7 +528,7 @@
                 bool ldapSuccess = false;
                 try
                 {
-                    ldapSuccess = LdapService.Authenticate(Username, Password);
+                    ldapSuccess = await LdapService.AuthenticateAsync(Username, Password);
                 }
                 catch (Exception ex)
                 {
@@ -537,7 +537,7 @@
 
                 if (ldapSuccess)
                 {
-                    var ldapDetails = LdapService.GetUserDetails(Username, Password);
+                    var ldapDetails = await LdapService.GetUserDetailsAsync(Username, Password);
                     user = await db.Users.FirstOrDefaultAsync(u => u.Email == Username);
 
                     if (user == null && ldapDetails != null)

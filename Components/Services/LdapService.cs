@@ -25,7 +25,7 @@ namespace PDTActivityTracker.Components.Services
         private readonly LdapSettings _settings = settings.Value;
         private readonly ILogger<LdapService> _logger = logger;
 
-        public bool Authenticate(string email, string password)
+        public async Task<bool> AuthenticateAsync(string email, string password)
         {
             if (string.IsNullOrWhiteSpace(_settings.Server))
             {
@@ -35,19 +35,18 @@ namespace PDTActivityTracker.Components.Services
 
             try
             {
-                using var connection = CreateConnection();
-
-                // For AuthType.Basic, we try to use the full email as the bind DN/UPN
-                connection.Bind(new NetworkCredential(email, password));
-
-                _logger.LogInformation("LDAP Authentication successful for {Email}", email);
-                return true;
+                // Offload synchronous LDAP call to a background thread to avoid blocking Blazor's UI thread
+                return await Task.Run(() =>
+                {
+                    using var connection = CreateConnection();
+                    // For AuthType.Basic, we try to use the full email as the bind DN/UPN
+                    connection.Bind(new NetworkCredential(email, password));
+                    _logger.LogInformation("LDAP Authentication successful for {Email}", email);
+                    return true;
+                });
             }
             catch (LdapException ex)
             {
-                // Capture detailed LDAP Error Codes (e.g., 49 for Invalid Credentials)
-                // In AD, Error 49 with sub-code 52e means invalid credentials.
-                // Other sub-codes: 773 (must change password), 533 (account disabled).
                 _logger.LogError("LDAP Error: {ErrorCode} - {Message}. Details: {ServerErrorMessage}",
                     ex.ErrorCode, ex.Message, ex.ServerErrorMessage);
                 return false;
@@ -77,45 +76,48 @@ namespace PDTActivityTracker.Components.Services
             return connection;
         }
 
-        public LdapUser? GetUserDetails(string email, string password)
+        public async Task<LdapUser?> GetUserDetailsAsync(string email, string password)
         {
             try
             {
-                using var connection = CreateConnection();
-                connection.Bind(new NetworkCredential(email, password));
-
-                var filter = $"(mail={email})";
-                var searchRequest = new SearchRequest(
-                    _settings.SearchBase,
-                    filter,
-                    SearchScope.Subtree,
-                    "displayName", "sAMAccountName", "mail", "givenName", "sn"
-                );
-
-                var response = (SearchResponse)connection.SendRequest(searchRequest);
-
-                if (response.Entries.Count > 0)
+                return await Task.Run(() =>
                 {
-                    var entry = response.Entries[0];
-                    var displayName = entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty;
-                    var samAccountName = entry.Attributes["sAMAccountName"]?[0]?.ToString() ?? email.Split('@')[0];
-                    var mail = entry.Attributes["mail"]?[0]?.ToString() ?? email;
+                    using var connection = CreateConnection();
+                    connection.Bind(new NetworkCredential(email, password));
 
-                    // If displayName is empty, fallback to givenName + sn
-                    if (string.IsNullOrEmpty(displayName))
+                    var filter = $"(mail={email})";
+                    var searchRequest = new SearchRequest(
+                        _settings.SearchBase,
+                        filter,
+                        SearchScope.Subtree,
+                        "displayName", "sAMAccountName", "mail", "givenName", "sn"
+                    );
+
+                    var response = (SearchResponse)connection.SendRequest(searchRequest);
+
+                    if (response.Entries.Count > 0)
                     {
-                        var gn = entry.Attributes["givenName"]?[0]?.ToString() ?? string.Empty;
-                        var sn = entry.Attributes["sn"]?[0]?.ToString() ?? string.Empty;
-                        displayName = $"{gn} {sn}".Trim();
+                        var entry = response.Entries[0];
+                        var displayName = entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty;
+                        var samAccountName = entry.Attributes["sAMAccountName"]?[0]?.ToString() ?? email.Split('@')[0];
+                        var mail = entry.Attributes["mail"]?[0]?.ToString() ?? email;
+
+                        if (string.IsNullOrEmpty(displayName))
+                        {
+                            var gn = entry.Attributes["givenName"]?[0]?.ToString() ?? string.Empty;
+                            var sn = entry.Attributes["sn"]?[0]?.ToString() ?? string.Empty;
+                            displayName = $"{gn} {sn}".Trim();
+                        }
+
+                        return new LdapUser
+                        {
+                            Username = samAccountName,
+                            Email = mail,
+                            DisplayName = string.IsNullOrEmpty(displayName) ? samAccountName : displayName
+                        };
                     }
-
-                    return new LdapUser
-                    {
-                        Username = samAccountName,
-                        Email = mail,
-                        DisplayName = string.IsNullOrEmpty(displayName) ? samAccountName : displayName
-                    };
-                }
+                    return null;
+                });
             }
             catch (Exception ex)
             {
