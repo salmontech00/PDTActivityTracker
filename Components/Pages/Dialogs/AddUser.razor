@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Model
 @using PDTActivityTracker.Components.Services
 @using System.Security.Cryptography
@@ -162,6 +162,7 @@
                                   @bind-Value="_newUser.Password"
                                   Required="true"
                                   RequiredError="Password is required"
+                                  Validation="@(new Func<string, string?>(ValidatePassword))"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="TogglePasswordVisibility"
@@ -277,6 +278,31 @@
         return ThemeService.CurrentTheme == ThemeMode.Light ? Color.Surface : Color.Primary;
     }
 
+
+    private string? ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return "Password is required";
+
+        var errors = new List<string>();
+        if (password.Length < 8)
+            errors.Add("at least 8 characters");
+        if (!Regex.IsMatch(password, @"[A-Z]"))
+            errors.Add("an uppercase letter");
+        if (!Regex.IsMatch(password, @"[a-z]"))
+            errors.Add("a lowercase letter");
+        if (!Regex.IsMatch(password, @"[0-9]"))
+            errors.Add("a number");
+        if (!Regex.IsMatch(password, @"[^a-zA-Z0-9]"))
+            errors.Add("a special character");
+
+        if (errors.Any())
+        {
+            return $"Password requires: {string.Join(", ", errors)}";
+        }
+
+        return null;
+    }
 
     private string? ValidateConfirmPassword(string confirmPassword)
     {

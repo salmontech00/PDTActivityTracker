@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using PDTActivityTracker.Model
@@ -149,36 +149,59 @@
                                   Margin="Margin.Dense" />
                 </MudItem>
 
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Password"
-                                  InputType="@(_showPassword ? InputType.Text : InputType.Password)"
-                                  Adornment="Adornment.End"
-                                  AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                                  OnAdornmentClick="@TogglePasswordVisibility"
-                                  AdornmentColor="@GetAdornmentColor()"
-                                  @bind-Value="_password"
-                                  Immediate="true"
-                                  Validation="@(new Func<string, string?>(ValidatePassword))"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense"
-                                  Placeholder="Leave blank to keep current password" />
-                </MudItem>
+                @if (_editingUser.Password == "LDAP_AUTHENTICATED")
+                {
+                    <MudItem xs="12">
+                        <MudPaper Class="pa-4 rounded-xl" Style="background: rgba(234, 88, 12, 0.12); border: 1px solid rgba(234, 88, 12, 0.5);">
+                            <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="3">
+                                <MudIcon Icon="@Icons.Material.Filled.LockPerson" Style="color: #ea580c; margin-top: 2px;" />
+                                <MudStack Spacing="1">
+                                    <MudText Typo="Typo.subtitle2" Style="color: #ea580c; font-weight: 700;">Company Account – Password Managed by IT</MudText>
+                                    <MudText Typo="Typo.body2" Style="color: #f1f5f9; opacity: 0.9;">
+                                        Your password is managed by the <strong>Company Directory (LDAP)</strong>. To change your password, please submit a helpdesk ticket.
+                                    </MudText>
+                                    <a href="https://helpdesk.lccgroup.com/" target="_blank"
+                                       style="color: #f1f5f9; font-weight: 600; font-size: 0.85rem; text-decoration: none;">
+                                        Submit a Helpdesk Ticket &rarr;
+                                    </a>
+                                </MudStack>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
+                }
+                else
+                {
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Password"
+                                      InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                      OnAdornmentClick="@TogglePasswordVisibility"
+                                      AdornmentColor="@GetAdornmentColor()"
+                                      @bind-Value="_password"
+                                      Immediate="true"
+                                      Validation="@(new Func<string, string?>(ValidatePassword))"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Placeholder="Leave blank to keep current password" />
+                    </MudItem>
 
-                <MudItem xs="12" sm="6">
-                    <MudTextField T="string"
-                                  Label="Confirm Password"
-                                  InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
-                                  Adornment="Adornment.End"
-                                  AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                                  OnAdornmentClick="@ToggleConfirmPasswordVisibility"
-                                  AdornmentColor="@GetAdornmentColor()"
-                                  @bind-Value="_confirmPassword"
-                                  Immediate="true"
-                                  Validation="@(new Func<string, string?>(ValidateConfirmPassword))"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
-                </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField T="string"
+                                      Label="Confirm Password"
+                                      InputType="@(_showConfirmPassword ? InputType.Text : InputType.Password)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@(_showConfirmPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                      OnAdornmentClick="@ToggleConfirmPasswordVisibility"
+                                      AdornmentColor="@GetAdornmentColor()"
+                                      @bind-Value="_confirmPassword"
+                                      Immediate="true"
+                                      Validation="@(new Func<string, string?>(ValidateConfirmPassword))"
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense" />
+                    </MudItem>
+                }
             </MudGrid>
         </MudForm>
     </DialogContent>
@@ -315,8 +338,26 @@
 
     private string? ValidatePassword(string password)
     {
-        if (!string.IsNullOrEmpty(password) && password.Length < 6)
-            return "Password must be at least 6 characters";
+        if (string.IsNullOrEmpty(password))
+            return null;
+
+        var errors = new List<string>();
+        if (password.Length < 8)
+            errors.Add("at least 8 characters");
+        if (!Regex.IsMatch(password, @"[A-Z]"))
+            errors.Add("an uppercase letter");
+        if (!Regex.IsMatch(password, @"[a-z]"))
+            errors.Add("a lowercase letter");
+        if (!Regex.IsMatch(password, @"[0-9]"))
+            errors.Add("a number");
+        if (!Regex.IsMatch(password, @"[^a-zA-Z0-9]"))
+            errors.Add("a special character");
+
+        if (errors.Any())
+        {
+            return $"Password requires: {string.Join(", ", errors)}";
+        }
+
         return null;
     }
 

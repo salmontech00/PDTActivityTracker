@@ -1,4 +1,4 @@
-﻿@page "/login"
+@page "/login"
 @layout PDTActivityTracker.Components.Layout.LoginLayout
 
 @using PDTActivityTracker.Components.Services
@@ -663,8 +663,8 @@
             MaxWidth = MaxWidth.Small,
             FullWidth = true,
             BackdropClick = false,
-            NoHeader = false,
-            CloseButton = true
+            NoHeader = true,
+            CloseButton = false
         };
         var dialog = await DialogService.ShowAsync<OTPVerify>("Reset Password", options);
         await dialog.Result;
