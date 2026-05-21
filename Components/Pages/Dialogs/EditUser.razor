@@ -14,6 +14,7 @@
 @inject AppDbContext Db
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @inject PDTActivityTracker.Components.Services.UserStateService UserState
+@inject PDTActivityTracker.Components.Services.IEmailService EmailService
 
 <style>
     /* SHARED GLASS DIALOG STYLES */
@@ -123,8 +124,6 @@
                     <MudTextField T="string"
                                   Label="Employee Number"
                                   @bind-Value="_editingUser.EmployeeNumber"
-                                  Required="true"
-                                  RequiredError="Employee number is required"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -133,8 +132,6 @@
                     <MudTextField T="string"
                                   Label="Designation"
                                   @bind-Value="_editingUser.Designation"
-                                  Required="true"
-                                  RequiredError="Designation is required"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -266,6 +263,7 @@
 @code {
     private MudForm _form = default!;
     private bool _isSaving = false;
+    private string _originalRole = string.Empty;
 
     private User _editingUser = new();
     private string _password = string.Empty;
@@ -361,6 +359,8 @@
             ImageData = UserToEdit.ImageData,
             ImageMimeType = UserToEdit.ImageMimeType
         };
+
+        _originalRole = UserToEdit.Role;
 
         if (_editingUser.ImageData != null && !string.IsNullOrEmpty(_editingUser.ImageMimeType))
         {
@@ -480,6 +480,25 @@
 
                 await Db.SaveChangesAsync();
                 Snackbar.Add("User updated successfully!", Severity.Success);
+
+                // Notify user by email if their role changed
+                if (_originalRole != _editingUser.Role
+                    && !string.IsNullOrWhiteSpace(userInDb.Email))
+                {
+                    try
+                    {
+                        await EmailService.SendRoleApprovedEmailAsync(
+                            toEmail: userInDb.Email,
+                            userName: userInDb.Fullname ?? userInDb.Username,
+                            newRole: userInDb.Role
+                        );
+                    }
+                    catch (Exception emailEx)
+                    {
+                        // Non-critical — log but don't block the save
+                        Console.WriteLine($"Role notification email failed: {emailEx.Message}");
+                    }
+                }
             }
 
             MudDialog.Close(DialogResult.Ok(true));

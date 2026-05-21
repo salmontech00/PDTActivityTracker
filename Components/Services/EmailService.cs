@@ -1,4 +1,4 @@
-﻿using MailKit.Net.Smtp;
+using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Configuration;
@@ -9,6 +9,7 @@ namespace PDTActivityTracker.Components.Services
     {
         Task SendOtpEmailAsync(string toEmail, string otpCode);
         Task SendRoleRequestEmailAsync(IEnumerable<string> adminEmails, string userName, string userEmail, string requestedRole, string remarks);
+        Task SendRoleApprovedEmailAsync(string toEmail, string userName, string newRole);
     }
 
     public class EmailService : IEmailService
@@ -41,6 +42,64 @@ namespace PDTActivityTracker.Components.Services
                     <h1 style='color: #7e6fff; font-size: 36px; letter-spacing: 8px;'>{otpCode}</h1>
                     <p>This code will expire in 5 minutes.</p>
                     <p style='color: #666;'>If you didn't request this, please ignore this email.</p>
+                </div>
+            "
+            };
+
+            message.Body = bodyBuilder.ToMessageBody();
+
+            using var client = new SmtpClient();
+
+            try
+            {
+                bool.TryParse(emailSettings["EnableSsl"], out var enableSsl);
+                var options = enableSsl ? SecureSocketOptions.Auto : SecureSocketOptions.None;
+
+                await client.ConnectAsync(
+                    emailSettings["Host"] ?? "localhost",
+                    int.Parse(emailSettings["Port"] ?? "25"),
+                    options
+                );
+
+                if (!string.IsNullOrWhiteSpace(emailSettings["Password"]))
+                {
+                    await client.AuthenticateAsync(
+                        emailSettings["Username"],
+                        emailSettings["Password"]
+                    );
+                }
+
+                await client.SendAsync(message);
+                await client.DisconnectAsync(true);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error sending email: {ex.Message}", ex);
+            }
+        }
+
+        public async Task SendRoleApprovedEmailAsync(string toEmail, string userName, string newRole)
+        {
+            var emailSettings = _configuration.GetSection("EmailSettings");
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(
+                emailSettings["FromName"] ?? "SMR Activity Tracker",
+                emailSettings["FromEmail"]!
+            ));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = "Role Upgrade Approved";
+
+            var bodyBuilder = new BodyBuilder
+            {
+                HtmlBody = $@"
+                <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
+                    <h2 style='color: #2e7d32;'>Role Request Approved</h2>
+                    <p>Dear {userName},</p>
+                    <p>Your request for a role upgrade has been approved. Your account has been promoted to:</p>
+                    <h2 style='color: #0072cf;'>{newRole}</h2>
+                    <p>Please log out and log back in to your account to apply the new permissions.</p>
+                    <p style='color: #666; margin-top: 30px;'>Thank you,<br/>SMR Activity Tracker Team</p>
                 </div>
             "
             };

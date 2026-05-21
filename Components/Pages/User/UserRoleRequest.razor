@@ -1,4 +1,4 @@
-﻿@page "/user/request-role"
+@page "/user/request-role"
 @using PDTActivityTracker.Components.Services
 @using MudBlazor
 @inject IEmailService EmailService
@@ -191,8 +191,9 @@
                 }
             }
 
-            var userName = UserState.Fullname ?? UserState.Username;
-            var userEmail = UserState.Username ?? "Unknown Email";
+            var currentUser = await db.Users.FirstOrDefaultAsync(u => u.Id == UserState.UserId);
+            var userName = currentUser?.Fullname ?? UserState.Fullname ?? UserState.Username;
+            var userEmail = currentUser?.Email ?? "Unknown Email";
 
             await EmailService.SendRoleRequestEmailAsync(
                 adminEmails: adminEmails,

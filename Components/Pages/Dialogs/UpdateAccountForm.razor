@@ -138,6 +138,26 @@
                                   Margin="Margin.Dense" />
                 </MudItem>
 
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Employee Number"
+                                  @bind-Value="_editingUser.EmployeeNumber"
+                                  Required="true"
+                                  RequiredError="Employee number is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudTextField T="string"
+                                  Label="Designation"
+                                  @bind-Value="_editingUser.Designation"
+                                  Required="true"
+                                  RequiredError="Designation is required"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense" />
+                </MudItem>
+
                 <MudItem xs="12">
                     <MudTextField T="string"
                                   Label="Email"
@@ -314,6 +334,8 @@
             Password = UserToEdit.Password,
             Fullname = UserToEdit.Fullname,
             Role = UserToEdit.Role,
+            EmployeeNumber = UserToEdit.EmployeeNumber,
+            Designation = UserToEdit.Designation,
             ImageData = UserToEdit.ImageData,
             ImageMimeType = UserToEdit.ImageMimeType
         };
@@ -422,6 +444,8 @@
                 userInDb.Email = _editingUser.Email;
                 userInDb.Password = _editingUser.Password;
                 userInDb.Fullname = _editingUser.Fullname;
+                userInDb.EmployeeNumber = _editingUser.EmployeeNumber;
+                userInDb.Designation = _editingUser.Designation;
 
                 if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
                 {
