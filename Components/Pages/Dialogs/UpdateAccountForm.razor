@@ -142,6 +142,8 @@
                     <MudTextField T="string"
                                   Label="Employee Number"
                                   @bind-Value="_editingUser.EmployeeNumber"
+                                  Validation="@(new Func<string?, string?>(ValidateEmployeeNumber))"
+                                  Immediate="true"
                                   Required="true"
                                   RequiredError="Employee number is required"
                                   Variant="Variant.Outlined"
@@ -358,6 +360,15 @@
         return null;
     }
 
+    private string? ValidateEmployeeNumber(string? employeeNumber)
+    {
+        if (!string.IsNullOrEmpty(employeeNumber) && !Regex.IsMatch(employeeNumber, "^[0-9]*$"))
+        {
+            return "Employee number must contain only numerical values.";
+        }
+        return null;
+    }
+
     private string? ValidatePassword(string password)
     {
         if (string.IsNullOrEmpty(password))
@@ -418,6 +429,21 @@
                 Snackbar.Add("Username already exists.", Severity.Warning);
                 _isSaving = false;
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_editingUser.EmployeeNumber))
+            {
+                var existingEmployeeNumber = Db.Users
+                    .FirstOrDefault(u => u.Id != _editingUser.Id &&
+                                       u.EmployeeNumber != null &&
+                                       u.EmployeeNumber == _editingUser.EmployeeNumber);
+
+                if (existingEmployeeNumber != null)
+                {
+                    Snackbar.Add("Employee number already exists.", Severity.Warning);
+                    _isSaving = false;
+                    return;
+                }
             }
 
             var existingEmail = Db.Users

@@ -1,4 +1,4 @@
-﻿@page "/admin/users"
+@page "/admin/users"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -783,11 +783,22 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
 
-        // Load all users
-        _allUsers = await db.Users
-            .OrderBy(u => u.Fullname)
-            .AsNoTracking()
-            .ToListAsync();
+        // Load all users from the database
+        var rawUsers = await db.Users.AsNoTracking().ToListAsync();
+
+        // Sort in memory:
+        // 1. Users without employee number (null, empty, or whitespace) first (top)
+        // 2. Users with employee number sorted numerically ascending by their EmployeeNumber
+        // 3. For users with the same employee number (or both empty), sort alphabetically by Fullname
+        _allUsers = rawUsers
+            .OrderBy(u => string.IsNullOrWhiteSpace(u.EmployeeNumber) ? 0 : 1)
+            .ThenBy(u => {
+                if (string.IsNullOrWhiteSpace(u.EmployeeNumber))
+                    return 0L;
+                return long.TryParse(u.EmployeeNumber, out var val) ? val : long.MaxValue;
+            })
+            .ThenBy(u => u.Fullname)
+            .ToList();
 
         ApplyFilters();
     }

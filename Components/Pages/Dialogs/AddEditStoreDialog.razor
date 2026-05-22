@@ -1,4 +1,4 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
@@ -75,7 +75,7 @@
         <MudForm @ref="form" @bind-IsValid="@success">
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Store.StoreCode" Label="Store Code" Required="true" RequiredError="Store Code is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="Store.StoreCode" Label="Store Code" Required="true" RequiredError="Store Code is required" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudSelect T="string" @bind-Value="Store.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
@@ -86,10 +86,10 @@
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="Store.StoreName" Label="Store Name" Required="true" RequiredError="Store Name is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="Store.StoreName" Label="Store Name" Required="true" RequiredError="Store Name is required" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="Store.Location" Label="Location / Region" Required="true" RequiredError="Location is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="Store.Location" Label="Location / Region" Required="true" RequiredError="Location is required" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12">

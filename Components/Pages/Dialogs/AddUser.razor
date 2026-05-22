@@ -89,8 +89,8 @@
                     <MudTextField T="string"
                                   Label="Employee Number"
                                   @bind-Value="_newUser.EmployeeNumber"
-                                  Required="true"
-                                  RequiredError="Employee number is required"
+                                  Validation="@(new Func<string?, string?>(ValidateEmployeeNumber))"
+                                  Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -99,8 +99,6 @@
                     <MudTextField T="string"
                                   Label="Designation"
                                   @bind-Value="_newUser.Designation"
-                                  Required="true"
-                                  RequiredError="Designation is required"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -323,6 +321,15 @@
         return null;
     }
 
+    private string? ValidateEmployeeNumber(string? employeeNumber)
+    {
+        if (!string.IsNullOrEmpty(employeeNumber) && !Regex.IsMatch(employeeNumber, "^[0-9]*$"))
+        {
+            return "Employee number must contain only numerical values.";
+        }
+        return null;
+    }
+
     private static string HashPassword(string password)
     {
         using var sha256 = SHA256.Create();
@@ -350,6 +357,19 @@
                 Snackbar.Add("Username already exists.", Severity.Warning);
                 _isSaving = false;
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_newUser.EmployeeNumber))
+            {
+                var existingEmployeeNumber = Db.Users
+                    .FirstOrDefault(u => u.EmployeeNumber != null && u.EmployeeNumber == _newUser.EmployeeNumber);
+
+                if (existingEmployeeNumber != null)
+                {
+                    Snackbar.Add("Employee number already exists.", Severity.Warning);
+                    _isSaving = false;
+                    return;
+                }
             }
 
             var existingEmail = Db.Users
