@@ -1,4 +1,4 @@
-﻿@page "/admin/store-assignment"
+@page "/admin/store-assignment"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -1120,7 +1120,11 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store Head assigned!", Severity.Success);
+            var action = result.Data as string;
+            var message = action == "Unassigned"
+                ? "Store Head unassigned!"
+                : "Store Head assigned!";
+            Snackbar.Add(message, Severity.Success);
             await LoadData();
         }
     }
@@ -1208,7 +1212,8 @@
             ["Color"] = Color.Error
         };
 
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Store", parameters);
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Store", parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)

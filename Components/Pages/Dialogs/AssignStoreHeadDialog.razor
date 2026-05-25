@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
@@ -182,15 +182,24 @@
     private async Task<IEnumerable<User>> SearchEmployees(string value, CancellationToken token)
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        // Strictly filter by Role = "Store Head"
-        var query = db.Users.AsNoTracking().Where(u => u.Status == "Active" && u.Role == "Store Head");
+
+        // Get all StoreHeadIds already assigned to OTHER stores (not this one)
+        var alreadyAssignedIds = await db.Stores
+            .AsNoTracking()
+            .Where(s => s.StoreHeadId != null && s.Id != Store.Id)
+            .Select(s => s.StoreHeadId!.Value)
+            .ToListAsync(token);
+
+        // Strictly filter by Role = "Store Head", exclude those already assigned elsewhere
+        var query = db.Users.AsNoTracking()
+            .Where(u => u.Status == "Active" && u.Role == "Store Head" && !alreadyAssignedIds.Contains(u.Id));
 
         if (!string.IsNullOrEmpty(value))
         {
             query = query.Where(u => u.Fullname.Contains(value) || (u.EmployeeNumber != null && u.EmployeeNumber.Contains(value)));
         }
 
-        return await query.ToListAsync();
+        return await query.ToListAsync(token);
     }
 
     private async Task Submit()
@@ -214,7 +223,7 @@
             });
 
             await db.SaveChangesAsync();
-            MudDialog.Close(DialogResult.Ok(true));
+            MudDialog.Close(DialogResult.Ok("Assigned"));
         }
     }
 
@@ -239,7 +248,7 @@
                 Remarks = string.IsNullOrEmpty(_remarks) ? "Manual unassignment by admin." : _remarks
             });
             await db.SaveChangesAsync();
-            MudDialog.Close(DialogResult.Ok(true));
+            MudDialog.Close(DialogResult.Ok("Unassigned"));
         }
     }
 
