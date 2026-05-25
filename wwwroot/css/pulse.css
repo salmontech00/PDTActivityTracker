@@ -1,4 +1,4 @@
-﻿/* PULSE ANIMATION */
+/* PULSE ANIMATION */
 .pin-pulse {
     position: absolute;
     top: 50%;
@@ -43,11 +43,37 @@
     }
 }
 
-@media (max-width: 375px) {
-    .glass-dialog {
-        margin-left: 12px !important;
-        margin-right: 12px !important;
-        min-width: unset !important;
-        width: auto !important;
+@media (max-width: 480px) {
+    /* Bulletproof locked width on mobile: cannot expand under any circumstances */
+    .glass-dialog, 
+    .mud-dialog.glass-dialog {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        min-width: calc(100vw - 24px) !important;
+        margin: 12px !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    .mud-dialog-content {
+        overflow-x: hidden !important;
+        max-width: 100% !important;
+    }
+
+    /* Global override for popover list items on mobile to force word-wrap and prevent layout reflows */
+    .mud-popover {
+        max-width: calc(100vw - 40px) !important;
+        box-sizing: border-box !important;
+    }
+
+    .mud-popover .mud-list-item {
+        padding: 4px 8px !important;
+    }
+
+    .mud-popover .mud-list-item-text {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        font-size: 0.85rem !important;
     }
 }
