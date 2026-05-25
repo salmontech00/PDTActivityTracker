@@ -616,7 +616,8 @@
                     }
                     <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
                                          Icon="@Icons.Material.Filled.Map" Color="Color.Default" Title="@(_isMapView ? "List View" : "Map View")" Size="Size.Small"
-                                         ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Primary" />
+                                         ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Default"
+                                         Style="background: #1565C0; color: #ffffff; border-radius: 10px; padding: 6px;" />
                 </div>
             </div>
         </MudPaper>
@@ -878,6 +879,8 @@
     private string _assignmentFilter = "All";
     private string _statusFilter = "All";
     private bool _isMapView = false;
+    private Store? _focusedStoreOnMap = null;
+    private bool _mapShouldFitBounds = true;
     private bool _showFilters = false;
 
     // ... existing initialization ...
@@ -922,7 +925,7 @@
         }
         else
         {
-            // Map will be initialized in OnAfterRenderAsync
+            _mapShouldFitBounds = true;
         }
     }
 
@@ -940,7 +943,8 @@
             areaHeadName = s.AreaHead?.Fullname
         }).ToList();
 
-        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true });
+        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = _mapShouldFitBounds });
+        _mapShouldFitBounds = false;
     }
 
     private async Task LoadData()
@@ -998,6 +1002,7 @@
 
         if (_isMapView)
         {
+            _mapShouldFitBounds = true;
             await UpdateMap();
         }
     }
@@ -1080,9 +1085,67 @@
         _ => Color.Success
     };
 
+    private async Task<List<string>> ValidateDuplicateStore(string code, string name, int excludeId)
+    {
+        var errors = new List<string>();
+        var codeMatch = code?.Trim() ?? string.Empty;
+        var nameMatch = name?.Trim() ?? string.Empty;
+
+        // Perform memory-safe validation against the locally loaded stores
+        var codeDuplicate = _allStores.FirstOrDefault(s => s.Id != excludeId &&
+            string.Equals(s.StoreCode?.Trim(), codeMatch, StringComparison.OrdinalIgnoreCase));
+        
+        var nameDuplicate = _allStores.FirstOrDefault(s => s.Id != excludeId &&
+            string.Equals(s.StoreName?.Trim(), nameMatch, StringComparison.OrdinalIgnoreCase));
+
+        if (codeDuplicate != null)
+        {
+            errors.Add($"Store Code '{codeMatch}' already exists.");
+        }
+        if (nameDuplicate != null)
+        {
+            errors.Add($"Store Name '{nameMatch}' already exists.");
+        }
+
+        // If local matches already found both errors, return early
+        if (errors.Count == 2)
+        {
+            return errors;
+        }
+
+        // Secondary database check to prevent bypass in case local list is stale
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        if (codeDuplicate == null)
+        {
+            var dbCodeDuplicate = await db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.Id != excludeId &&
+                s.StoreCode.ToLower() == codeMatch.ToLower());
+            if (dbCodeDuplicate != null)
+            {
+                errors.Add($"Store Code '{codeMatch}' already exists in database.");
+            }
+        }
+
+        if (nameDuplicate == null)
+        {
+            var dbNameDuplicate = await db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.Id != excludeId &&
+                s.StoreName.ToLower() == nameMatch.ToLower());
+            if (dbNameDuplicate != null)
+            {
+                errors.Add($"Store Name '{nameMatch}' already exists in database.");
+            }
+        }
+
+        return errors;
+    }
+
     private async Task OpenAddStoreDialog()
     {
-        var parameters = new DialogParameters { ["Store"] = new Store() };
+        var parameters = new DialogParameters 
+        { 
+            ["Store"] = new Store(),
+            ["ValidateDuplicate"] = new Func<string, string, int, Task<List<string>>>(ValidateDuplicateStore)
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<AddEditStoreDialog>("Add Store", parameters, options);
@@ -1090,14 +1153,18 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store created successfully!", Severity.Success);
+            Snackbar.Add("Store created", Severity.Success);
             await LoadData();
         }
     }
 
     private async Task OpenEditStoreDialog(Store store)
     {
-        var parameters = new DialogParameters { ["Store"] = store };
+        var parameters = new DialogParameters 
+        { 
+            ["Store"] = store,
+            ["ValidateDuplicate"] = new Func<string, string, int, Task<List<string>>>(ValidateDuplicateStore)
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<AddEditStoreDialog>("Edit Store", parameters, options);
@@ -1105,7 +1172,7 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store updated successfully!", Severity.Success);
+            Snackbar.Add("Store updated", Severity.Success);
             await LoadData();
         }
     }
@@ -1122,8 +1189,8 @@
         {
             var action = result.Data as string;
             var message = action == "Unassigned"
-                ? "Store Head unassigned!"
-                : "Store Head assigned!";
+                ? "Store Head unassigned"
+                : "Store Head assigned";
             Snackbar.Add(message, Severity.Success);
             await LoadData();
         }
@@ -1137,9 +1204,17 @@
         var dialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", parameters, options);
         var result = await dialog.Result;
 
-        if (result != null && !result.Canceled)
+        if (result != null && !result.Canceled && result.Data is AssignAreaHeadDialog.AreaHeadAssignmentResult assignmentResult)
         {
-            Snackbar.Add("Area Head assigned!", Severity.Success);
+            var msg = "Area Head assignment updated";
+            if (assignmentResult.HasAssigned && !assignmentResult.HasUnassigned)
+                msg = "Area Head assigned";
+            else if (!assignmentResult.HasAssigned && assignmentResult.HasUnassigned)
+                msg = "Area Head unassigned";
+            else if (!assignmentResult.HasAssigned && !assignmentResult.HasUnassigned)
+                msg = "No changes made";
+
+            Snackbar.Add(msg, Severity.Success);
             await LoadData();
         }
     }
@@ -1163,22 +1238,30 @@
                 var areaDialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", areaParams, areaOptions);
 
                 var areaResult = await areaDialog.Result;
-                if (areaResult != null && !areaResult.Canceled)
+                if (areaResult != null && !areaResult.Canceled && areaResult.Data is AssignAreaHeadDialog.AreaHeadAssignmentResult bulkResult)
                 {
-                    Snackbar.Add("Area Head assigned to selected stores!", Severity.Success);
+                    var msg = "Area Head assignment updated for selected stores";
+                    if (bulkResult.HasAssigned && !bulkResult.HasUnassigned)
+                        msg = "Area Head assigned to selected stores";
+                    else if (!bulkResult.HasAssigned && bulkResult.HasUnassigned)
+                        msg = "Area Head unassigned from selected stores";
+                    else if (!bulkResult.HasAssigned && !bulkResult.HasUnassigned)
+                        msg = "No changes made";
+
+                    Snackbar.Add(msg, Severity.Success);
                     await LoadData();
                     _selectedStores.Clear();
                 }
             }
             else if (actionResult.Action == "StatusChanged")
             {
-                Snackbar.Add("Status updated for selected stores!", Severity.Success);
+                Snackbar.Add("Status updated for selected stores", Severity.Success);
                 await LoadData();
                 _selectedStores.Clear();
             }
             else if (actionResult.Action == "Export")
             {
-                Snackbar.Add("Export feature coming soon!", Severity.Info);
+                Snackbar.Add("Export feature coming soon", Severity.Info);
             }
         }
     }
@@ -1224,7 +1307,7 @@
             {
                 db.Stores.Remove(s);
                 await db.SaveChangesAsync();
-                Snackbar.Add("Store deleted successfully!", Severity.Success);
+                Snackbar.Add("Store deleted", Severity.Success);
                 await LoadData();
             }
         }
@@ -1238,12 +1321,20 @@
             return;
         }
 
+        // Start zoomed out to show all stores first
+        _mapShouldFitBounds = true;
         _isMapView = true;
         StateHasChanged();
 
-        // Wait a bit for map to render
-        await Task.Delay(300);
-        await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", store.GPSLatitude, store.GPSLongitude, 18);
+        // Wait for map to fully initialize at zoomed-out view
+        await Task.Delay(400);
+
+        // Now smoothly fly into the target store (animated zoom-in effect)
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", store.GPSLatitude, store.GPSLongitude, 19);
+        }
+        catch { }
     }
 
     private async Task ViewFullHistory(Store store)

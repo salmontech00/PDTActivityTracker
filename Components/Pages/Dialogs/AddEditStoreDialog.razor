@@ -70,12 +70,12 @@
     .status-dropdown-popover {
         max-width: 280px !important;
     }
-    
-    .status-dropdown-popover .mud-list-item-text {
-        white-space: normal !important;
-        word-wrap: break-word !important;
-        word-break: break-word !important;
-    }
+
+        .status-dropdown-popover .mud-list-item-text {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+        }
 </style>
 
 <MudDialog Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
@@ -152,6 +152,7 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public Store Store { get; set; } = new();
+    [Parameter] public Func<string, string, int, Task<List<string>>>? ValidateDuplicate { get; set; }
 
     private Store _storeModel = new();
     private bool success;
@@ -168,7 +169,7 @@
             var location = await JSRuntime.InvokeAsync<LocationCoords>("cameraInterop.getCurrentLocation");
             _storeModel.GPSLatitude = location.Latitude;
             _storeModel.GPSLongitude = location.Longitude;
-            Snackbar.Add("Location captured successfully!", Severity.Success);
+            Snackbar.Add("Location captured", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -191,7 +192,7 @@
     protected override void OnInitialized()
     {
         _isEdit = Store.Id != 0;
-        
+
         // Clone properties to keep the form isolated from parent's model reference in real-time
         _storeModel = new Store
         {
@@ -207,7 +208,7 @@
             StoreHeadId = Store.StoreHeadId,
             AreaHeadId = Store.AreaHeadId
         };
-        
+
         ThemeService.OnThemeChanged += OnThemeChanged;
     }
 
@@ -215,49 +216,99 @@
 
     public void Dispose() => ThemeService.OnThemeChanged -= OnThemeChanged;
 
+    private bool _isSubmitting = false;
+
     private async Task Submit()
     {
-        await form.Validate();
+        if (_isSubmitting) return; // Prevent double-submission
+        _isSubmitting = true;
 
-        if (form.IsValid)
+        try
         {
-            using var db = await DbFactory.CreateDbContextAsync();
+            await form.Validate();
 
-            if (_isEdit)
+            if (form.IsValid)
             {
-                var dbStore = await db.Stores.FindAsync(Store.Id);
-                if (dbStore != null)
+                using var db = await DbFactory.CreateDbContextAsync();
+
+                // Trim inputs before saving so we don't save trailing spaces
+                _storeModel.StoreCode = _storeModel.StoreCode?.Trim();
+                _storeModel.StoreName = _storeModel.StoreName?.Trim();
+
+                var codeToMatch = _storeModel.StoreCode ?? string.Empty;
+                var nameToMatch = _storeModel.StoreName ?? string.Empty;
+
+                if (ValidateDuplicate != null)
                 {
-                    dbStore.StoreCode = _storeModel.StoreCode;
-                    dbStore.StoreName = _storeModel.StoreName;
-                    dbStore.Location = _storeModel.Location;
-                    dbStore.Status = _storeModel.Status;
-                    dbStore.GPSLatitude = _storeModel.GPSLatitude;
-                    dbStore.GPSLongitude = _storeModel.GPSLongitude;
-                    dbStore.ContactPhone = _storeModel.ContactPhone;
-                    dbStore.ContactEmail = _storeModel.ContactEmail;
-                    
-                    db.Stores.Update(dbStore);
+                    var errors = await ValidateDuplicate(codeToMatch, nameToMatch, Store.Id);
+                    if (errors != null && errors.Any())
+                    {
+                        foreach (var error in errors)
+                        {
+                            Snackbar.Add(error, Severity.Warning);
+                        }
+                        return;
+                    }
                 }
-            }
-            else
-            {
-                db.Stores.Add(_storeModel);
-            }
 
-            await db.SaveChangesAsync();
-            
-            // Sync values back to original parameter reference for caller
-            Store.StoreCode = _storeModel.StoreCode;
-            Store.StoreName = _storeModel.StoreName;
-            Store.Location = _storeModel.Location;
-            Store.Status = _storeModel.Status;
-            Store.GPSLatitude = _storeModel.GPSLatitude;
-            Store.GPSLongitude = _storeModel.GPSLongitude;
-            Store.ContactPhone = _storeModel.ContactPhone;
-            Store.ContactEmail = _storeModel.ContactEmail;
-            
-            MudDialog.Close(DialogResult.Ok(Store.Id));
+                // Fetch all to memory for foolproof string matching in C# as a secondary local fallback check
+                var allStores = await db.Stores.AsNoTracking().ToListAsync();
+                var codeDuplicateLocal = allStores.FirstOrDefault(s => s.Id != Store.Id && string.Equals(s.StoreCode?.Trim(), codeToMatch, StringComparison.OrdinalIgnoreCase));
+                var nameDuplicateLocal = allStores.FirstOrDefault(s => s.Id != Store.Id && string.Equals(s.StoreName?.Trim(), nameToMatch, StringComparison.OrdinalIgnoreCase));
+
+                if (codeDuplicateLocal != null || nameDuplicateLocal != null)
+                {
+                    if (codeDuplicateLocal != null)
+                    {
+                        Snackbar.Add($"Store Code '{codeToMatch}' already exists.", Severity.Warning);
+                    }
+                    if (nameDuplicateLocal != null)
+                    {
+                        Snackbar.Add($"Store Name '{nameToMatch}' already exists.", Severity.Warning);
+                    }
+                    return;
+                }
+
+                if (_isEdit)
+                {
+                    var dbStore = await db.Stores.FindAsync(Store.Id);
+                    if (dbStore != null)
+                    {
+                        dbStore.StoreCode = _storeModel.StoreCode;
+                        dbStore.StoreName = _storeModel.StoreName;
+                        dbStore.Location = _storeModel.Location;
+                        dbStore.Status = _storeModel.Status;
+                        dbStore.GPSLatitude = _storeModel.GPSLatitude;
+                        dbStore.GPSLongitude = _storeModel.GPSLongitude;
+                        dbStore.ContactPhone = _storeModel.ContactPhone;
+                        dbStore.ContactEmail = _storeModel.ContactEmail;
+
+                        db.Stores.Update(dbStore);
+                    }
+                }
+                else
+                {
+                    db.Stores.Add(_storeModel);
+                }
+
+                await db.SaveChangesAsync();
+
+                // Sync values back to original parameter reference for caller
+                Store.StoreCode = _storeModel.StoreCode;
+                Store.StoreName = _storeModel.StoreName;
+                Store.Location = _storeModel.Location;
+                Store.Status = _storeModel.Status;
+                Store.GPSLatitude = _storeModel.GPSLatitude;
+                Store.GPSLongitude = _storeModel.GPSLongitude;
+                Store.ContactPhone = _storeModel.ContactPhone;
+                Store.ContactEmail = _storeModel.ContactEmail;
+
+                MudDialog.Close(DialogResult.Ok(Store.Id));
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
         }
     }
 
@@ -271,7 +322,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px);";
+        var baseStyle = "backdrop-filter: blur(15px);";
 
         return ThemeService.CurrentTheme switch
         {

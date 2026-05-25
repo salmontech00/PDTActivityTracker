@@ -1,4 +1,4 @@
-﻿var mapInstance = null;
+var mapInstance = null;
 var markersLayer = null;
 var userLocationMarker = null;
 
@@ -15,12 +15,22 @@ window.leafletMap = {
         // If map is already initialized and valid, just update data
         if (mapInstance) {
             this.updateMarkers(stores, options);
+            if (options && options.focusOn) {
+                this.focusMarker(options.focusOn.lat, options.focusOn.lng, options.focusOn.zoom);
+            }
             return;
         }
 
-        // Initialize map centered on a default location (e.g., Philippines mostly central)
-        // Adjust center and zoom based on your actual data or preference
-        mapInstance = L.map(elementId).setView([12.8797, 121.7740], 6);
+        // Determine initial view center and zoom
+        var initialCenter = [12.8797, 121.7740];
+        var initialZoom = 6;
+        if (options && options.focusOn) {
+            initialCenter = [options.focusOn.lat, options.focusOn.lng];
+            initialZoom = options.focusOn.zoom || 18;
+        }
+
+        // Initialize map centered on the determined location
+        mapInstance = L.map(elementId).setView(initialCenter, initialZoom);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,9 +42,16 @@ window.leafletMap = {
 
         this.updateMarkers(stores, options);
 
+        if (options && options.focusOn) {
+            // Open popup and trigger flash animation
+            this.focusMarker(options.focusOn.lat, options.focusOn.lng, options.focusOn.zoom);
+        }
+
         // Force a resize calculation after a short delay to ensure correct rendering if container was hidden
         setTimeout(() => {
-            mapInstance.invalidateSize();
+            if (mapInstance) {
+                mapInstance.invalidateSize();
+            }
         }, 100);
     },
 
@@ -166,14 +183,31 @@ window.leafletMap = {
 
     focusMarker: function (lat, lng, zoom) {
         if (!mapInstance) return;
-        mapInstance.setView([lat, lng], zoom || 15);
+        mapInstance.flyTo([lat, lng], zoom || 15, { animate: true, duration: 1.8 });
 
         if (markersLayer) {
             markersLayer.eachLayer(function (layer) {
                 if (layer instanceof L.Marker) {
                     var pos = layer.getLatLng();
-                    if (pos.lat === lat && pos.lng === lng) {
+                    if (Math.abs(pos.lat - lat) < 0.00001 && Math.abs(pos.lng - lng) < 0.00001) {
                         layer.openPopup();
+                        if (layer._icon) {
+                            var pinElement = layer._icon.querySelector('svg');
+                            layer._icon.style.zIndex = 99999;
+                            if (pinElement) {
+                                pinElement.classList.remove('focused-marker-flash');
+                                void pinElement.offsetWidth; // force reflow
+                                pinElement.classList.add('focused-marker-flash');
+                                setTimeout(() => {
+                                    if (pinElement) {
+                                        pinElement.classList.remove('focused-marker-flash');
+                                    }
+                                    if (layer._icon) {
+                                        layer._icon.style.zIndex = '';
+                                    }
+                                }, 1500);
+                            }
+                        }
                     }
                 }
             });

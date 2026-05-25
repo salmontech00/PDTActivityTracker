@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
@@ -376,7 +376,17 @@
         }
 
         await db.SaveChangesAsync();
-        MudDialog.Close(DialogResult.Ok(true));
+        MudDialog.Close(DialogResult.Ok(new AreaHeadAssignmentResult
+        {
+            HasAssigned = newStoresToAdd.Any(),
+            HasUnassigned = removedStoreIds.Any()
+        }));
+    }
+
+    public class AreaHeadAssignmentResult
+    {
+        public bool HasAssigned { get; set; }
+        public bool HasUnassigned { get; set; }
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -395,7 +405,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {

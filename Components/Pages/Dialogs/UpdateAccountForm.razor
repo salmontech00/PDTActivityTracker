@@ -269,7 +269,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
@@ -480,7 +480,7 @@
                 }
 
                 await Db.SaveChangesAsync();
-                Snackbar.Add("Account updated successfully!", Severity.Success);
+                Snackbar.Add("Account updated", Severity.Success);
             }
 
             MudDialog.Close(DialogResult.Ok(true));

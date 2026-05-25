@@ -213,7 +213,7 @@
             <MudForm @ref="_passwordForm">
                 <MudStack Spacing="4">
                     <MudText Typo="Typo.body2" Color="Color.Success">
-                        Verification successful! Please enter your new password.
+                        Verification complete. Please enter your new password.
                     </MudText>
 
                     <MudTextField T="string"
@@ -392,7 +392,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
@@ -622,7 +622,7 @@
 
             await EmailService.SendOtpEmailAsync(_email, _generatedOtp);
             StartCountdown();
-            Snackbar.Add("Verification code resent!", Severity.Info);
+            Snackbar.Add("Verification code resent", Severity.Info);
         }
         catch (Exception ex)
         {
@@ -707,7 +707,7 @@
             userInDb.Password = HashPassword(_password);
             await Db.SaveChangesAsync();
 
-            Snackbar.Add("Password changed successfully!", Severity.Success);
+            Snackbar.Add("Password changed", Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)

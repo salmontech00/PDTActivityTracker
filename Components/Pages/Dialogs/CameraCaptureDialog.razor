@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Services
 @inject IJSRuntime JSRuntime
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
@@ -408,7 +408,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px);";
+        var baseStyle = "backdrop-filter: blur(15px);";
 
         return ThemeService.CurrentTheme switch
         {

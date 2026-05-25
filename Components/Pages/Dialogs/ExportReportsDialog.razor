@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Model
 @using PDTActivityTracker.Components.Services
@@ -264,7 +264,7 @@
             var base64 = Convert.ToBase64String(fileBytes);
             await JSRuntime.InvokeVoidAsync("downloadFile", fileName, contentType, base64);
 
-            Snackbar.Add($"{_exportFormat} report exported successfully", Severity.Success);
+            Snackbar.Add($"{_exportFormat} report exported", Severity.Success);
             MudDialog.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
@@ -280,7 +280,7 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 350px; max-width: 500px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 350px; max-width: 500px;";
 
         return ThemeService.CurrentTheme switch
         {

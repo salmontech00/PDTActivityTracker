@@ -77,3 +77,24 @@
         font-size: 0.85rem !important;
     }
 }
+
+/* FOCUSED MARKER FLASH ANIMATION */
+@keyframes marker-glow-flash {
+    0%, 100% {
+        filter: drop-shadow(0 0 0px rgba(33, 150, 243, 0));
+        opacity: 1;
+    }
+    30% {
+        filter: drop-shadow(0 0 15px rgba(33, 150, 243, 1));
+        opacity: 0.8;
+    }
+    70% {
+        filter: drop-shadow(0 0 8px rgba(33, 150, 243, 0.6));
+        opacity: 0.9;
+    }
+}
+
+.focused-marker-flash {
+    animation: marker-glow-flash 1.2s ease-in-out !important;
+}
+
