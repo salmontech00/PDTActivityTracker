@@ -247,23 +247,68 @@
 
     private async Task DeleteCategory(Category cat)
     {
-        using var db = await DbFactory.CreateDbContextAsync();
-
-        // Check if any tasks use this category
-        var hasTasks = await db.ChecklistItems.AnyAsync(t => t.CategoryId == cat.Id);
-        if (hasTasks)
+        try
         {
-            Snackbar.Add("Cannot delete category that is in use by tasks", Severity.Error);
-            return;
+            using var db = await DbFactory.CreateDbContextAsync();
+
+            // Check if any tasks use this category
+            var hasTasks = await db.ChecklistItems.AnyAsync(t => t.CategoryId == cat.Id);
+            if (hasTasks)
+            {
+                Snackbar.Add("Cannot delete category that is in use by tasks", Severity.Error);
+                return;
+            }
+
+            var catInDb = await db.Categories.FindAsync(cat.Id);
+            if (catInDb != null)
+            {
+                // Check if any daily activities reference this category
+                var referencingActivities = await db.StoreDailyActivities
+                    .Where(sda => sda.CurrentCategoryId == cat.Id)
+                    .ToListAsync();
+
+                if (referencingActivities.Any())
+                {
+                    // Find a fallback category to point them to
+                    var fallbackCategory = await db.Categories
+                        .Where(c => c.Id != cat.Id)
+                        .OrderBy(c => c.SortOrder)
+                        .FirstOrDefaultAsync();
+
+                    if (fallbackCategory == null)
+                    {
+                        Snackbar.Add("Cannot delete the only remaining category while daily activity records exist.", Severity.Error);
+                        return;
+                    }
+
+                    // Update referencing activities to point to the fallback category
+                    foreach (var activity in referencingActivities)
+                    {
+                        activity.CurrentCategoryId = fallbackCategory.Id;
+                    }
+                }
+
+                // Nullify CategoryId on referencing TaskPhotos
+                var referencingPhotos = await db.TaskPhotos
+                    .Where(tp => tp.CategoryId == cat.Id)
+                    .ToListAsync();
+
+                foreach (var photo in referencingPhotos)
+                {
+                    photo.CategoryId = null;
+                }
+
+                // Now it is safe to delete
+                db.Categories.Remove(catInDb);
+                await db.SaveChangesAsync();
+
+                Snackbar.Add("Category deleted successfully!", Severity.Success);
+                await LoadCategories();
+            }
         }
-
-        var catInDb = await db.Categories.FindAsync(cat.Id);
-        if (catInDb != null)
+        catch (Exception ex)
         {
-            db.Categories.Remove(catInDb);
-            await db.SaveChangesAsync();
-            Snackbar.Add("Category deleted successfully!", Severity.Success);
-            await LoadCategories();
+            Snackbar.Add($"Error deleting category: {ex.Message}", Severity.Error);
         }
     }
 

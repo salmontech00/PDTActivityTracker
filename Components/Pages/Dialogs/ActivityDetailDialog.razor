@@ -318,10 +318,10 @@
                     </GroupHeaderTemplate>
                     <RowTemplate>
                         <MudTd DataLabel="Task Details">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.ChecklistItem?.TaskName</MudText>
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@FormatLongWords(context.ChecklistItem?.TaskName)</MudText>
                             @if (!string.IsNullOrEmpty(context.ChecklistItem?.Description))
                             {
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2;">@context.ChecklistItem.Description</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2;">@FormatLongWords(context.ChecklistItem.Description)</MudText>
                             }
                         </MudTd>
                         <MudTd DataLabel="Freq.">
@@ -363,10 +363,10 @@
                         <MudPaper Class="@($"glass-panel mobile-detail-card pa-3 mb-3 {GetThemeClass()}")" Elevation="0">
                             <div class="d-flex justify-space-between align-start mb-2">
                                 <div style="flex-grow: 1;">
-                                    <MudText Typo="Typo.body2" Style="font-weight: 700; line-height: 1.2;">@task.ChecklistItem?.TaskName</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700; line-height: 1.2;">@FormatLongWords(task.ChecklistItem?.TaskName)</MudText>
                                     @if (!string.IsNullOrEmpty(task.ChecklistItem?.Description))
                                     {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 2px;">@task.ChecklistItem.Description</MudText>
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 2px;">@FormatLongWords(task.ChecklistItem.Description)</MudText>
                                     }
                                 </div>
                                 @if (task.IsCompleted)
@@ -480,6 +480,30 @@
     private string _frequencyFilter = "All";
     private bool _isLoading = true;
     private string? _feedbackText;
+
+    private string FormatLongWords(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var words = text.Split(' ');
+        for (int i = 0; i < words.Length; i++)
+        {
+            var word = words[i];
+            if (word.Length > 12)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int j = 0; j < word.Length; j++)
+                {
+                    sb.Append(word[j]);
+                    if ((j + 1) % 10 == 0 && j < word.Length - 1)
+                    {
+                        sb.Append("\u200B");
+                    }
+                }
+                words[i] = sb.ToString();
+            }
+        }
+        return string.Join(" ", words);
+    }
     private bool _isSubmitting = false;
 
     private TableGroupDefinition<TaskProgress> _groupDefinition = new()

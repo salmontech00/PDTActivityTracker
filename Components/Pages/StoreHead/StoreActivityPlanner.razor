@@ -1,4 +1,4 @@
-﻿@page "/store-head/planner"
+@page "/store-head/planner"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using System.Text.Json
@@ -608,7 +608,7 @@
                         .OrderBy(t => t.SortOrder)
                         .ToList();
 
-                        if (!itemsInCategory.Any() && _frequencyFilter != "All") continue;
+                        if (!itemsInCategory.Any()) continue;
 
                         <MudExpansionPanel Class="@($"modern-expansion-panel {(isActive ? "active" : "")} {(isLocked ? "locked" : "")}")"
                                            MaxHeight="600"
@@ -679,7 +679,7 @@
                                                             }
                                                             <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
                                                             <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                                @task.TaskName
+                                                                @FormatLongWords(task.TaskName)
                                                             </MudText>
                                                         </div>
                                                     </div>
@@ -687,7 +687,7 @@
                                                     @if (!string.IsNullOrEmpty(task.Description))
                                                     {
                                                         <div class="preview-description-row">
-                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@FormatLongWords(task.Description)</MudText>
                                                         </div>
                                                     }
                                                 </div>
@@ -974,6 +974,16 @@
 
         _currentCategoryId = _currentSession.CurrentCategoryId;
         var currentCat = _categories.FirstOrDefault(c => c.Id == _currentCategoryId);
+
+        while (currentCat != null && !_checklistItems.Any(t => t.CategoryId == currentCat.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)))
+        {
+            currentCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > currentCat.SortOrder && _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)));
+            if (currentCat != null)
+            {
+                _currentCategoryId = currentCat.Id;
+            }
+        }
+
         _currentCategoryOrder = currentCat?.SortOrder ?? 0;
 
         _taskProgresses = await db.TaskProgresses
@@ -1262,14 +1272,15 @@
 
     private string GetCategoryCompletionStatus(int categoryId)
     {
-        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId).ToList();
+        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)).ToList();
         var completed = _taskProgresses.Where(p => categoryTasks.Any(t => t.Id == p.ChecklistItemId) && p.IsCompleted).Count();
         return $"{completed}/{categoryTasks.Count} tasks completed";
     }
 
     private bool CanCompleteCategory(int categoryId)
     {
-        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId).ToList();
+        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)).ToList();
+        if (!categoryTasks.Any()) return true;
         return categoryTasks.All(t => GetTaskProgress(t.Id).IsCompleted);
     }
 
@@ -1280,7 +1291,7 @@
         using var db = await DbFactory.CreateDbContextAsync();
         await SaveCurrentProgress();
 
-        var nextCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > currentCat.SortOrder);
+        var nextCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > currentCat.SortOrder && _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)));
 
         if (nextCat != null)
         {
@@ -1493,6 +1504,30 @@
     private int GetPhotoCount(int taskId) => _loadedPhotos.Count(p => p.ChecklistItemId == taskId);
 
     private List<TaskPhoto> GetStoredPhotos(int taskId) => _loadedPhotos.Where(p => p.ChecklistItemId == taskId).ToList();
+
+    private string FormatLongWords(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var words = text.Split(' ');
+        for (int i = 0; i < words.Length; i++)
+        {
+            var word = words[i];
+            if (word.Length > 12)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int j = 0; j < word.Length; j++)
+                {
+                    sb.Append(word[j]);
+                    if ((j + 1) % 10 == 0 && j < word.Length - 1)
+                    {
+                        sb.Append("\u200B");
+                    }
+                }
+                words[i] = sb.ToString();
+            }
+        }
+        return string.Join(" ", words);
+    }
 
     private async Task OnManpowerChanged(ChecklistItem task, TaskProgress prog, int? positionIndex = null)
     {

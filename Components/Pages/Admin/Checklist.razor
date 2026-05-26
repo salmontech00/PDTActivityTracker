@@ -285,6 +285,8 @@
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .lightest .task-name {
@@ -660,11 +662,13 @@
             display: none !important;
         }
 
-        /* Allow task name to wrap on mobile (not clip) */
+        /* Allow task name to wrap on mobile — long words break instead of being clipped */
         .task-name {
             white-space: normal !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            word-break: break-word !important;
+            overflow-wrap: anywhere !important;
         }
     }
 
@@ -875,10 +879,10 @@
                                             {
                                                 <MudText Typo="Typo.caption" Color="Color.Primary" Class="desktop-only" Style="font-weight: 600; line-height: 1;">@context.Section</MudText>
                                             }
-                                            <MudText Typo="Typo.body1" Class="task-name">@context.TaskName</MudText>
+                                            <MudText Typo="Typo.body1" Class="task-name">@FormatLongWords(context.TaskName)</MudText>
                                             @if (!string.IsNullOrEmpty(context.Description))
                                             {
-                                                <MudText Typo="Typo.caption" Class="task-description">@context.Description</MudText>
+                                                <MudText Typo="Typo.caption" Class="task-description">@FormatLongWords(context.Description)</MudText>
                                             }
                                         </div>
 
@@ -1041,7 +1045,7 @@
                                                         }
                                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
                                                         <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                            @task.TaskName
+                                                            @FormatLongWords(task.TaskName)
                                                         </MudText>
                                                     </div>
                                                 </div>
@@ -1049,7 +1053,7 @@
                                                 @if (!string.IsNullOrEmpty(task.Description))
                                                 {
                                                     <div class="preview-description-row">
-                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@FormatLongWords(task.Description)</MudText>
                                                     </div>
                                                 }
                                             </div>
@@ -1244,6 +1248,30 @@
     {
         return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
                ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private string FormatLongWords(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var words = text.Split(' ');
+        for (int i = 0; i < words.Length; i++)
+        {
+            var word = words[i];
+            if (word.Length > 12)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int j = 0; j < word.Length; j++)
+                {
+                    sb.Append(word[j]);
+                    if ((j + 1) % 10 == 0 && j < word.Length - 1)
+                    {
+                        sb.Append("\u200B");
+                    }
+                }
+                words[i] = sb.ToString();
+            }
+        }
+        return string.Join(" ", words);
     }
 
     private string GetButtonStyle()
