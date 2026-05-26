@@ -1,4 +1,4 @@
-﻿@page "/admin/settings"
+@page "/admin/settings"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -397,7 +397,7 @@
             db.AccessTags.Add(newTag);
             await db.SaveChangesAsync();
 
-            Snackbar.Add("Tag created successfully.", Severity.Success);
+            Snackbar.Add("Tag created successfully!", Severity.Success);
             _isAddTagDialogOpen = false;
             await LoadData();
         }
@@ -427,7 +427,7 @@
                 }
 
                 await db.SaveChangesAsync();
-                Snackbar.Add("Tag deleted.", Severity.Info);
+                Snackbar.Add("Tag deleted successfully!", Severity.Success);
 
                 // Clear selected states if the current user was affected
                 if (_selectedUser != null && affectedUsers.Any(u => u.Id == _selectedUser.Id))
@@ -467,7 +467,7 @@
 
                     // Update local state perfectly
                     _selectedUser.Tags = user.Tags;
-                    Snackbar.Add($"Assigned {_tagToAssign} to {user.Fullname}", Severity.Success);
+                    Snackbar.Add($"Assigned {_tagToAssign} to {user.Fullname} successfully!", Severity.Success);
                     _tagToAssign = "";
                 }
             }
@@ -496,7 +496,7 @@
 
                     // Update local state perfectly
                     _selectedUser.Tags = user.Tags;
-                    Snackbar.Add($"Removed {tagToRemove} from {user.Fullname}", Severity.Info);
+                    Snackbar.Add($"Removed {tagToRemove} from {user.Fullname} successfully!", Severity.Success);
                 }
             }
         }

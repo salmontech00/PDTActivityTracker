@@ -1,4 +1,4 @@
-﻿@page "/admin/checklist"
+@page "/admin/checklist"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -17,7 +17,7 @@
 
 <style>
     .checklist-container {
-        padding: 1rem;
+        padding: 1rem 1.25rem;
     }
 
     /* GLASS CONTAINER */
@@ -275,11 +275,16 @@
     .task-info {
         display: flex;
         flex-direction: column;
+        min-width: 0; /* Critical: prevents 1fr column from overflowing grid */
+        overflow: hidden;
     }
 
     .task-name {
         font-weight: 700;
         color: rgb(253, 212, 92);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .lightest .task-name {
@@ -654,6 +659,13 @@
         .desktop-only {
             display: none !important;
         }
+
+        /* Allow task name to wrap on mobile (not clip) */
+        .task-name {
+            white-space: normal !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+        }
     }
 
     @@media (min-width: 961px) {
@@ -665,8 +677,8 @@
     @@media (max-width: 375px) {
         .mud-main-content {
             padding-bottom: 0px !important;
-            padding-left: 0px !important;
-            padding-right: 0px !important;
+            padding-left: 8px !important;
+            padding-right: 8px !important;
         }
 
         .button-group {
@@ -1293,7 +1305,7 @@
             }
         }
         await db.SaveChangesAsync();
-        Snackbar.Add("Order updated", Severity.Success);
+        Snackbar.Add("Order updated successfully!", Severity.Success);
     }
 
     private async Task LoadData()

@@ -303,6 +303,12 @@
                 Store.ContactPhone = _storeModel.ContactPhone;
                 Store.ContactEmail = _storeModel.ContactEmail;
 
+                if (_isEdit) {
+                    Snackbar.Add("Store updated successfully!", Severity.Success);
+                } else {
+                    Snackbar.Add("Store added successfully!", Severity.Success);
+                }
+
                 MudDialog.Close(DialogResult.Ok(Store.Id));
             }
         }

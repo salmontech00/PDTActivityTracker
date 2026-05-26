@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @page "/admin/reports-monitoring"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
@@ -1567,7 +1567,7 @@
             {
                 db.Issues.Remove(entity);
                 await db.SaveChangesAsync();
-                Snackbar.Add("Issue report deleted.", Severity.Success);
+                Snackbar.Add("Issue report deleted successfully!", Severity.Success);
                 await LoadData();
                 StateHasChanged();
             }
@@ -1666,7 +1666,7 @@
 
                 await db.SaveChangesAsync();
 
-                Snackbar.Add("Report and related data deleted successfully", Severity.Success);
+                Snackbar.Add("Report and related data deleted successfully!", Severity.Success);
                 await LoadData(); // Refresh all data and stats
             }
             catch (Exception ex)
@@ -1708,7 +1708,7 @@
                 {
                     db.ActivityLogs.RemoveRange(logsToDelete);
                     await db.SaveChangesAsync();
-                    Snackbar.Add("Activity logs cleared successfully", Severity.Success);
+                    Snackbar.Add("Activity logs cleared successfully!", Severity.Success);
                     await LoadData();
                 }
                 else

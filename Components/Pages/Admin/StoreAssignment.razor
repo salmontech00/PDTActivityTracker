@@ -1153,7 +1153,6 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store created", Severity.Success);
             await LoadData();
         }
     }
@@ -1172,7 +1171,6 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store updated", Severity.Success);
             await LoadData();
         }
     }
@@ -1189,8 +1187,8 @@
         {
             var action = result.Data as string;
             var message = action == "Unassigned"
-                ? "Store Head unassigned"
-                : "Store Head assigned";
+                ? "Store Head unassigned successfully!"
+                : "Store Head assigned successfully!";
             Snackbar.Add(message, Severity.Success);
             await LoadData();
         }
@@ -1206,15 +1204,18 @@
 
         if (result != null && !result.Canceled && result.Data is AssignAreaHeadDialog.AreaHeadAssignmentResult assignmentResult)
         {
-            var msg = "Area Head assignment updated";
+            var msg = "Area Head assignment updated successfully!";
             if (assignmentResult.HasAssigned && !assignmentResult.HasUnassigned)
-                msg = "Area Head assigned";
+                msg = "Area Head assigned successfully!";
             else if (!assignmentResult.HasAssigned && assignmentResult.HasUnassigned)
-                msg = "Area Head unassigned";
+                msg = "Area Head unassigned successfully!";
             else if (!assignmentResult.HasAssigned && !assignmentResult.HasUnassigned)
                 msg = "No changes made";
 
-            Snackbar.Add(msg, Severity.Success);
+            if (msg != "No changes made")
+            {
+                Snackbar.Add(msg, Severity.Success);
+            }
             await LoadData();
         }
     }
@@ -1255,7 +1256,7 @@
             }
             else if (actionResult.Action == "StatusChanged")
             {
-                Snackbar.Add("Status updated for selected stores", Severity.Success);
+                Snackbar.Add("Status updated successfully!", Severity.Success);
                 await LoadData();
                 _selectedStores.Clear();
             }
@@ -1307,7 +1308,7 @@
             {
                 db.Stores.Remove(s);
                 await db.SaveChangesAsync();
-                Snackbar.Add("Store deleted", Severity.Success);
+                Snackbar.Add("Store deleted successfully!", Severity.Success);
                 await LoadData();
             }
         }

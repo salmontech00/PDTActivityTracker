@@ -154,7 +154,7 @@
             UpdateIconAndColor(_newCategory);
             _newCategory.SortOrder = _categories.Count;
             db.Categories.Add(_newCategory);
-            Snackbar.Add("Category added", Severity.Success);
+            Snackbar.Add("Category added successfully!", Severity.Success);
         }
         else
         {
@@ -174,7 +174,7 @@
                 catInDb.Icon = _newCategory.Icon;
                 catInDb.ColorClass = _newCategory.ColorClass;
                 db.Categories.Update(catInDb);
-                Snackbar.Add("Category updated", Severity.Success);
+                Snackbar.Add("Category updated successfully!", Severity.Success);
             }
         }
 
@@ -262,7 +262,7 @@
         {
             db.Categories.Remove(catInDb);
             await db.SaveChangesAsync();
-            Snackbar.Add("Category deleted", Severity.Success);
+            Snackbar.Add("Category deleted successfully!", Severity.Success);
             await LoadCategories();
         }
     }

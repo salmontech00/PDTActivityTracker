@@ -407,7 +407,7 @@
             {
                 db.Entry(taskInDb).CurrentValues.SetValues(_model);
                 await db.SaveChangesAsync();
-                Snackbar.Add("Task updated", Severity.Success);
+                Snackbar.Add("Task updated successfully!", Severity.Success);
 
                 if (OnTaskSaved.HasDelegate)
                 {
@@ -424,7 +424,7 @@
                 .MaxAsync(t => (int?)t.SortOrder) ?? -1) + 1;
             db.ChecklistItems.Add(_model);
             await db.SaveChangesAsync();
-            Snackbar.Add("Task added", Severity.Success);
+            Snackbar.Add("Task added successfully!", Severity.Success);
 
             if (OnTaskSaved.HasDelegate)
             {
