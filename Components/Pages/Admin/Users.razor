@@ -360,6 +360,31 @@
     }
 
     @@media (max-width: 375px) {
+        .clear-filters-button.mud-button-root {
+            border-radius: 4px !important;
+            height: 22px !important;
+            font-size: 0.6rem !important;
+            padding: 0 6px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.8rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -2px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+        }
+
         .mud-main-content {
             padding-bottom: 0px !important;
             padding-left: 0px !important;
@@ -451,7 +476,7 @@
             </MudGrid>
 
             <div class="d-flex align-center justify-space-between">
-                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold filter-info-text")" Style="opacity: 0.8;">
                     Showing @_filteredUsers.Count of @_allUsers.Count users
                 </MudText>
                 @if (HasActiveFilters())

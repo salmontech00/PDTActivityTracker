@@ -117,6 +117,11 @@
         border-radius: 12px !important;
     }
 
+    .clear-filters-button.mud-button-root {
+        font-weight: 700 !important;
+        border-radius: 12px !important;
+    }
+
     /* ROLE CHIPS */
     .role-chip {
         font-weight: 800 !important;
@@ -449,6 +454,49 @@
     }
 
     @@media (max-width: 375px) {
+        .clear-filters-button.mud-button-root {
+            border-radius: 4px !important;
+            height: 22px !important;
+            font-size: 0.6rem !important;
+            padding: 0 6px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.8rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -2px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+        }
+
+        .filters-summary-row {
+            align-items: flex-start !important;
+        }
+
+        .action-buttons-container {
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 4px !important;
+        }
+
+        .action-buttons-container .clear-filters-button {
+            order: 1 !important;
+        }
+
+        .action-buttons-container .mud-icon-button {
+            order: 2 !important;
+        }
+
         .button-group .modern-button {
             flex: 1;
             font-size: 0.55rem !important;
@@ -589,7 +637,7 @@
                 </MudItem>
             </MudGrid>
 
-            <div class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center justify-space-between filters-summary-row">
                 <div class="d-flex align-center">
                     <div class="mobile-view mr-3">
                         <div class="d-flex align-center">
@@ -598,20 +646,20 @@
                                          Style="@($"color: {GetTitleColor()} !important;")" />
                         </div>
                     </div>
-                    <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                    <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold filter-info-text")" Style="opacity: 0.8;">
                         Showing @_filteredStores.Count of @_allStores.Count stores
                     </MudText>
                 </div>
-                <div class="d-flex align-center gap-2">
+                <div class="d-flex align-center gap-2 action-buttons-container">
                     @if (HasActiveFilters())
                     {
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Error"
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Secondary"
                                    Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.RestartAlt"
+                                   StartIcon="@Icons.Material.Filled.Clear"
                                    OnClick="ClearFilters"
-                                   Class="modern-button">
-                            Reset Filters
+                                   Class="modern-button clear-filters-button">
+                            Clear Filters
                         </MudButton>
                     }
                     <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
