@@ -669,7 +669,7 @@
                                                                      ValueChanged="@((bool val) => ToggleManualTask(task, progress, val))"
                                                                      Color="Color.Primary"
                                                                      Dense="true"
-                                                                     Disabled="@(task.IsPhotoRequired || task.TaskType == "Manpower")"
+                                                                     Disabled="@(task.IsPhotoRequired || task.TaskType == "Manpower" || IsAutoCompletedPreviousDay(progress, task))"
                                                                      Class="pa-0" />
 
                                                         <div class="d-flex align-center flex-wrap gap-2">
@@ -694,16 +694,38 @@
 
                                                 @if (task.IsPhotoRequired)
                                                 {
-                                                    <MudButton Variant="Variant.Filled"
-                                                               StartIcon="@Icons.Material.Filled.PhotoCamera"
-                                                               Size="Size.Small"
-                                                               Color="Color.Primary"
-                                                               OnClick="@(() => CapturePhoto(task))"
-                                                               Class="preview-upload-btn"
-                                                               Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
-                                                               Style="border-radius: 8px; font-weight: bold;">
-                                                        CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
-                                                    </MudButton>
+                                                    @if (IsAutoCompletedPreviousDay(progress, task))
+                                                    {
+                                                        <div class="d-flex align-center gap-1">
+                                                            <MudButton Variant="Variant.Filled"
+                                                                       Size="Size.Small"
+                                                                       Color="Color.Success"
+                                                                       Disabled="true"
+                                                                       Style="border-radius: 8px; font-weight: bold; opacity: 0.8;">
+                                                                @GetRemainingDaysText(task, progress)
+                                                            </MudButton>
+                                                            <MudTooltip Text="Force manual task refresh">
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                                                                               Variant="Variant.Filled"
+                                                                               Color="Color.Error" 
+                                                                               Size="Size.Small" 
+                                                                               OnClick="@(() => ForceManualCompletion(task, progress))" />
+                                                            </MudTooltip>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudButton Variant="Variant.Filled"
+                                                                   StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Primary"
+                                                                   OnClick="@(() => CapturePhoto(task))"
+                                                                   Class="preview-upload-btn"
+                                                                   Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
+                                                                   Style="border-radius: 8px; font-weight: bold;">
+                                                            CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                        </MudButton>
+                                                    }
                                                 }
                                             </div>
 
@@ -738,6 +760,7 @@
                                                                                                  ValueChanged="@((int? val) => UpdatePositionExpected(task, progress, index, val))"
                                                                                                  Variant="Variant.Outlined"
                                                                                                  Margin="Margin.Dense"
+                                                                                                 Disabled="@(IsAutoCompletedPreviousDay(progress, task))"
                                                                                                  HideSpinButtons="true"
                                                                                                  Class="manpower-input center-input" />
                                                                             </div>
@@ -748,6 +771,7 @@
                                                                                                  ValueChanged="@((int? val) => UpdatePositionActual(task, progress, index, val))"
                                                                                                  Variant="Variant.Outlined"
                                                                                                  Margin="Margin.Dense"
+                                                                                                 Disabled="@(IsAutoCompletedPreviousDay(progress, task))"
                                                                                                  HideSpinButtons="true"
                                                                                                  Class="manpower-input center-input" />
                                                                             </div>
@@ -770,6 +794,7 @@
                                                                                          ValueChanged="@((int? val) => { progress.ActualQuantity = val; _ = OnManpowerChanged(task, progress); })"
                                                                                          Variant="Variant.Outlined"
                                                                                          Margin="Margin.Dense"
+                                                                                         Disabled="@(IsAutoCompletedPreviousDay(progress, task))"
                                                                                          HideSpinButtons="true"
                                                                                          Class="manpower-input center-input" />
                                                                     </div>
@@ -806,6 +831,7 @@
                                                                   Margin="Margin.Dense"
                                                                   Dense="true"
                                                                   Placeholder="Enter remarks here..."
+                                                                  Disabled="@(IsAutoCompletedPreviousDay(progress, task))"
                                                                   Class="rounded-lg"
                                                                   @bind-Value:after="@(() => OnRemarksChanged(task))" />
                                                 </div>
@@ -853,6 +879,55 @@
     private StoreDailyActivity? _currentSession;
     private List<TaskProgress> _taskProgresses = new();
     private List<TaskPhoto> _loadedPhotos = new();
+
+    private bool IsAutoCompletedPreviousDay(TaskProgress prog, ChecklistItem task)
+    {
+        return prog.IsCompleted && 
+               prog.CompletedAt.HasValue && 
+               prog.CompletedAt.Value.Date < DateTime.Today && 
+               (task.Frequency == "Weekly" || task.Frequency == "Monthly");
+    }
+
+    private string GetRemainingDaysText(ChecklistItem task, TaskProgress prog)
+    {
+        if (!prog.CompletedAt.HasValue) return "";
+        var today = DateTime.Today;
+        var completedDate = prog.CompletedAt.Value.Date;
+        
+        DateTime expirationDate;
+        if (task.Frequency == "Weekly")
+        {
+            expirationDate = completedDate.AddDays(7);
+        }
+        else if (task.Frequency == "Monthly")
+        {
+            expirationDate = completedDate.AddMonths(1);
+        }
+        else
+        {
+            return "";
+        }
+
+        int daysLeft = (expirationDate - today).Days;
+        
+        if (daysLeft <= 1)
+        {
+            return "Available tomorrow";
+        }
+        
+        // Example: "Available Jun 5"
+        return $"Available {expirationDate:MMM d}";
+    }
+
+    private async Task ForceManualCompletion(ChecklistItem task, TaskProgress prog)
+    {
+        prog.IsCompleted = false;
+        prog.CompletedAt = null;
+        await CheckAndSyncTaskCompletion(task);
+        await SaveCurrentProgress();
+        await CheckAndAutoProgress();
+        StateHasChanged();
+    }
 
     private int _currentCategoryId;
     private int _currentCategoryOrder = 0;
@@ -1008,6 +1083,38 @@
                 _taskProgresses.Add(prog);
             }
             await CheckAndSyncTaskCompletion(task, true); // initialSync = true to skip DB saves during load
+        }
+
+        await LoadPeriodProgress(db);
+
+        // Auto-advance category pointer if the current category is already completed (e.g., from weekly/monthly auto-fills)
+        var activeCat = _categories.FirstOrDefault(c => c.Id == _currentCategoryId);
+        bool categoryChanged = false;
+
+        while (activeCat != null && CanCompleteCategory(activeCat.Id))
+        {
+            var nextCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > activeCat.SortOrder && _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)));
+            if (nextCat != null)
+            {
+                _currentCategoryId = nextCat.Id;
+                _currentCategoryOrder = nextCat.SortOrder;
+                activeCat = nextCat;
+                categoryChanged = true;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (categoryChanged)
+        {
+            var sessionToUpdate = await db.StoreDailyActivities.FindAsync(_currentSession!.Id);
+            if (sessionToUpdate != null)
+            {
+                sessionToUpdate.CurrentCategoryId = _currentCategoryId;
+                await db.SaveChangesAsync();
+            }
         }
 
         UpdateCompletedCount();
@@ -1216,55 +1323,69 @@
     private async Task LoadPeriodProgress(PDTActivityTracker.Model.AppDbContext db)
     {
         var today = DateTime.Today;
-        var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
-        var startOfMonth = new DateTime(today.Year, today.Month, 1);
 
-        // Fetch Weekly tasks progress in current week
+        // Fetch Weekly tasks progress in the last 7 days
         var weeklyTasks = _checklistItems.Where(t => t.Frequency == "Weekly").Select(t => t.Id).ToList();
         if (weeklyTasks.Any())
         {
+            var sevenDaysAgo = today.AddDays(-7);
             var weeklyProgress = await db.TaskProgresses
                 .Include(tp => tp.StoreDailyActivity)
                 .Where(tp => weeklyTasks.Contains(tp.ChecklistItemId))
-                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= startOfWeek)
-                .Where(tp => tp.IsCompleted)
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= sevenDaysAgo)
+                .Where(tp => tp.IsCompleted && tp.CompletedAt != null)
                 .OrderByDescending(tp => tp.CompletedAt)
                 .ToListAsync();
 
-            foreach (var prog in weeklyProgress)
+            foreach (var taskId in weeklyTasks)
             {
-                var currentProg = GetTaskProgress(prog.ChecklistItemId);
-                if (!currentProg.IsCompleted)
+                var mostRecent = weeklyProgress.FirstOrDefault(p => p.ChecklistItemId == taskId);
+                if (mostRecent != null && mostRecent.CompletedAt.HasValue)
                 {
-                    currentProg.IsCompleted = true;
-                    currentProg.CompletedAt = prog.CompletedAt;
-                    currentProg.Remarks = prog.Remarks;
-                    currentProg.ActualQuantity = prog.ActualQuantity;
+                    if (mostRecent.CompletedAt.Value.Date.AddDays(7) > today)
+                    {
+                        var currentProg = GetTaskProgress(taskId);
+                        if (!currentProg.IsCompleted)
+                        {
+                            currentProg.IsCompleted = true;
+                            currentProg.CompletedAt = mostRecent.CompletedAt;
+                            currentProg.Remarks = mostRecent.Remarks;
+                            currentProg.ActualQuantity = mostRecent.ActualQuantity;
+                        }
+                    }
                 }
             }
         }
 
-        // Fetch Monthly tasks progress in current month
+        // Fetch Monthly tasks progress in the last 1 month
         var monthlyTasks = _checklistItems.Where(t => t.Frequency == "Monthly").Select(t => t.Id).ToList();
         if (monthlyTasks.Any())
         {
+            var oneMonthAgo = today.AddMonths(-1);
             var monthlyProgress = await db.TaskProgresses
                 .Include(tp => tp.StoreDailyActivity)
                 .Where(tp => monthlyTasks.Contains(tp.ChecklistItemId))
-                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= startOfMonth)
-                .Where(tp => tp.IsCompleted)
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= oneMonthAgo)
+                .Where(tp => tp.IsCompleted && tp.CompletedAt != null)
                 .OrderByDescending(tp => tp.CompletedAt)
                 .ToListAsync();
 
-            foreach (var prog in monthlyProgress)
+            foreach (var taskId in monthlyTasks)
             {
-                var currentProg = GetTaskProgress(prog.ChecklistItemId);
-                if (!currentProg.IsCompleted)
+                var mostRecent = monthlyProgress.FirstOrDefault(p => p.ChecklistItemId == taskId);
+                if (mostRecent != null && mostRecent.CompletedAt.HasValue)
                 {
-                    currentProg.IsCompleted = true;
-                    currentProg.CompletedAt = prog.CompletedAt;
-                    currentProg.Remarks = prog.Remarks;
-                    currentProg.ActualQuantity = prog.ActualQuantity;
+                    if (mostRecent.CompletedAt.Value.Date.AddMonths(1) > today)
+                    {
+                        var currentProg = GetTaskProgress(taskId);
+                        if (!currentProg.IsCompleted)
+                        {
+                            currentProg.IsCompleted = true;
+                            currentProg.CompletedAt = mostRecent.CompletedAt;
+                            currentProg.Remarks = mostRecent.Remarks;
+                            currentProg.ActualQuantity = mostRecent.ActualQuantity;
+                        }
+                    }
                 }
             }
         }

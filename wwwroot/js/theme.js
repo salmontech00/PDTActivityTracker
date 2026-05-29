@@ -1,4 +1,4 @@
-﻿window.themeStorage = {
+window.themeStorage = {
     setTheme: function (theme) {
         localStorage.setItem('theme', theme);
         applyTheme(theme);
@@ -68,12 +68,26 @@ window.cameraInterop = {
             return false;
         }
     },
-    stopVideo: function (videoElementId) {
+    stopVideo: async function (videoElementId) {
         const video = document.getElementById(videoElementId);
         if (video && video.srcObject) {
             const stream = video.srcObject;
             const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
+            for (const track of tracks) {
+                if (track.kind === 'video') {
+                    try {
+                        const capabilities = track.getCapabilities();
+                        if (capabilities && capabilities.torch) {
+                            await track.applyConstraints({
+                                advanced: [{ torch: false }]
+                            });
+                        }
+                    } catch (err) {
+                        console.warn("Could not turn off flash before stopping:", err);
+                    }
+                }
+                track.stop();
+            }
             video.srcObject = null;
         }
     },

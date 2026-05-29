@@ -1001,13 +1001,18 @@
                 <MudChip T="string" Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small">WEEKLY</MudChip>
                 <MudChip T="string" Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Small">MONTHLY</MudChip>
             </div>
+            
+            <div class="d-flex justify-end mb-4 px-2">
+                <MudSwitch T="bool" @bind-Value="_previewAutoCompletedState" Color="Color.Success" Label="Preview Auto-Completed State (Weekly/Monthly)" />
+            </div>
 
             <MudExpansionPanels MultiExpansion="true" Class="modern-expansion-panels">
                 @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                 {
                     var itemsInCategory = _tasks.Where(t => t.CategoryId == category.Id).OrderBy(t => t.SortOrder).ToList();
-                    var isEmpty = !itemsInCategory.Any();
-                    var isLocked = isEmpty;
+                    if (!itemsInCategory.Any()) continue;
+                    
+                    var isLocked = false;
 
                     <MudExpansionPanel Class="@($"modern-expansion-panel {(isLocked ? "locked" : "active")}")"
                                        MaxHeight="600"
@@ -1017,14 +1022,7 @@
                                 <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" Color="@(isLocked? Color.Default: Color.Primary)" />
                                 <div class="flex-grow-1">
                                     <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
-                                    @if (isEmpty)
-                                    {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">(No Tasks - Disabled)</MudText>
-                                    }
-                                    else
-                                    {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">0/@itemsInCategory.Count Completed</MudText>
-                                    }
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">0/@itemsInCategory.Count Completed</MudText>
                                 </div>
                                 <MudSpacer />
                                 @if (isLocked)
@@ -1037,8 +1035,7 @@
                             </div>
                         </TitleContent>
                         <ChildContent>
-                            @if (!isEmpty)
-                            {
+                            @{
                                 var lastSection = "";
                                 @for (int i = 0; i < itemsInCategory.Count; i++)
                                 {
@@ -1087,18 +1084,41 @@
                                                 }
                                             </div>
 
-                                            @if (task.IsPhotoRequired)
-                                            {
-                                                <MudButton Variant="Variant.Filled"
-                                                           StartIcon="@Icons.Material.Filled.PhotoCamera"
-                                                           Size="Size.Small"
-                                                           Color="Color.Primary"
-                                                           Class="preview-upload-btn"
-                                                           Style="border-radius: 8px; font-weight: bold;"
-                                                           Disabled="true">
-                                                    CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
-                                                </MudButton>
-                                            }
+                                                @if (task.IsPhotoRequired)
+                                                {
+                                                    var isAutoCompletedMock = _previewAutoCompletedState && (task.Frequency == "Weekly" || task.Frequency == "Monthly");
+                                                    if (isAutoCompletedMock)
+                                                    {
+                                                        <div class="d-flex align-center gap-1">
+                                                            <MudButton Variant="Variant.Filled"
+                                                                       Size="Size.Small"
+                                                                       Color="Color.Success"
+                                                                       Disabled="true"
+                                                                       Style="border-radius: 8px; font-weight: bold; opacity: 0.8;">
+                                                                Available @DateTime.Today.AddDays(7).ToString("MMM d")
+                                                            </MudButton>
+                                                            <MudTooltip Text="Force manual completion">
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                                                                               Variant="Variant.Filled"
+                                                                               Color="Color.Error" 
+                                                                               Size="Size.Small" 
+                                                                               Disabled="true" />
+                                                            </MudTooltip>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudButton Variant="Variant.Filled"
+                                                                   StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Primary"
+                                                                   Class="preview-upload-btn"
+                                                                   Style="border-radius: 8px; font-weight: bold;"
+                                                                   Disabled="true">
+                                                            CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                        </MudButton>
+                                                    }
+                                                }
                                         </div>
 
                                         @if (task.TaskType == "Manpower")
@@ -1147,7 +1167,7 @@
                                                             }
                                                             <div class="mt-2 pt-2 d-flex align-center gap-6" style="border-top: 1px solid rgba(255,255,255,0.05);">
                                                                 <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL EXPECTED: <b style="color: var(--mud-palette-primary);">@task.QuantityExpected</b></MudText>
-                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL ACTUAL: <b style="color: var(--mud-palette-success);">0</b></MudText>
+                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL ACTUAL: <b style="color: var(--mud-palette-success);">@(_previewAutoCompletedState && (task.Frequency == "Weekly" || task.Frequency == "Monthly") ? task.QuantityExpected : 0)</b></MudText>
                                                             </div>
                                                         }
                                                         else
@@ -1186,12 +1206,6 @@
                                     </div>
                                 }
                             }
-                            else
-                            {
-                                <div class="pa-4 text-center">
-                                    <MudText Typo="Typo.body2" Style="opacity: 0.5;">This category will be hidden if it contains no tasks for the selected frequency.</MudText>
-                                </div>
-                            }
                         </ChildContent>
                     </MudExpansionPanel>
                 }
@@ -1210,6 +1224,7 @@
     private bool _showFilters = false;
     private bool _initialized = false;
     private bool _isPreviewMode = false;
+    private bool _previewAutoCompletedState = false;
 
     // JS Interop
     @inject IJSRuntime JS
