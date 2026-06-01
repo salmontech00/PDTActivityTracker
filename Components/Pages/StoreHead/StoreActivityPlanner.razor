@@ -949,6 +949,8 @@
     private int _completedCount = 0;
     private int _totalTasksCount = 0;
     private bool _isSaving = false;
+    // Tracks whether all tasks were complete the last time we checked — prevents duplicate notifications
+    private bool _wasAllCompleted = false;
 
     protected override void OnInitialized()
     {
@@ -1483,6 +1485,51 @@
             }
 
             await db.SaveChangesAsync();
+
+            // Check if all tasks are completed — only fire notification on state transition (incomplete -> complete)
+            try
+            {
+                var allCompleted = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+                if (allCompleted && !_wasAllCompleted)
+                {
+                    // Remove old AllTasksCompleted log for today so we can re-insert fresh
+                    var oldLog = await db.ActivityLogs
+                        .Where(l => l.StoreId == StoreId
+                            && l.Action == "AllTasksCompleted"
+                            && l.Timestamp >= DateTime.Today)
+                        .ToListAsync();
+                    if (oldLog.Any())
+                        db.ActivityLogs.RemoveRange(oldLog);
+
+                    db.ActivityLogs.Add(new ActivityLog
+                    {
+                        StoreId = StoreId,
+                        UserId = UserState.UserId,
+                        Action = "AllTasksCompleted",
+                        Details = $"{_store?.StoreName} has completed all assigned checklist tasks.",
+                        Timestamp = DateTime.Now
+                    });
+
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        db.Notifications.Add(new Notification
+                        {
+                            UserId = _store.AreaHeadId.Value,
+                            Message = $"{_store.StoreName} has completed all checklist tasks.",
+                            Type = "Info",
+                            IsRead = false,
+                            CreatedAt = DateTime.Now,
+                            RelatedEntityId = StoreId,
+                            RelatedEntityType = "Store"
+                        });
+                    }
+                    await db.SaveChangesAsync();
+                }
+                // Update tracked state
+                _wasAllCompleted = allCompleted;
+            }
+            catch { }
+
             UserState.NotifyDashboardRefresh();
         }
         catch { }
@@ -1521,6 +1568,36 @@
             }
 
             await db.SaveChangesAsync();
+
+            // Notify Area Head of submission
+            try
+            {
+                db.ActivityLogs.Add(new ActivityLog
+                {
+                    StoreId = StoreId,
+                    UserId = UserState.UserId,
+                    Action = "ProgressSubmitted",
+                    Details = $"{_store?.StoreName} submitted and locked their progress.",
+                    Timestamp = DateTime.Now
+                });
+
+                if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                {
+                    db.Notifications.Add(new Notification
+                    {
+                        UserId = _store.AreaHeadId.Value,
+                        Message = $"{_store.StoreName} has submitted and locked progress.",
+                        Type = "Info",
+                        IsRead = false,
+                        CreatedAt = DateTime.Now,
+                        RelatedEntityId = StoreId,
+                        RelatedEntityType = "Store"
+                    });
+                }
+                await db.SaveChangesAsync();
+            }
+            catch { }
+
             UserState.NotifyDashboardRefresh();
 
             Snackbar.Add("Activity planner submitted and locked successfully!", Severity.Success);
@@ -1578,6 +1655,9 @@
 
     private async Task ToggleManualTask(ChecklistItem task, TaskProgress prog, bool newVal)
     {
+        // Capture state before toggling
+        bool wasComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+
         prog.IsCompleted = newVal;
         if (newVal)
         {
@@ -1591,6 +1671,31 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+
+        // If unchecking caused a complete -> incomplete transition, notify Area Head
+        bool nowComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+        if (wasComplete && !nowComplete && !newVal && _store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+        {
+            _wasAllCompleted = false; // Reset so re-completion fires a new notification
+            try
+            {
+                using var db = await DbFactory.CreateDbContextAsync();
+                db.Notifications.Add(new Notification
+                {
+                    UserId = _store.AreaHeadId.Value,
+                    Message = $"{_store.StoreName} checklist is now incomplete (a task was unchecked).",
+                    Type = "Warning",
+                    IsRead = false,
+                    CreatedAt = DateTime.Now,
+                    RelatedEntityId = StoreId,
+                    RelatedEntityType = "Store"
+                });
+                await db.SaveChangesAsync();
+                UserState.NotifyDashboardRefresh();
+            }
+            catch { }
+        }
+
         StateHasChanged();
     }
 
@@ -1611,9 +1716,35 @@
             if (task != null)
             {
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+                // Check if tasks WERE fully complete before this removal
+                bool wasComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
                 await CreateManualActivityLog("PhotoRemoved", taskIdentifier, "TaskPhoto", photo.Id);
                 await CheckAndSyncTaskCompletion(task);
-                await SaveCurrentProgress(); // Ensure progress status is saved
+                await SaveCurrentProgress();
+
+                // If removing photo made tasks go from complete -> incomplete, notify Area Head
+                bool nowComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+                if (wasComplete && !nowComplete && _store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                {
+                    _wasAllCompleted = false; // Reset so re-completion fires a new notification
+                    try
+                    {
+                        using var dbNotif = await DbFactory.CreateDbContextAsync();
+                        dbNotif.Notifications.Add(new Notification
+                        {
+                            UserId = _store.AreaHeadId.Value,
+                            Message = $"{_store.StoreName} checklist is now incomplete (a photo was removed).",
+                            Type = "Warning",
+                            IsRead = false,
+                            CreatedAt = DateTime.Now,
+                            RelatedEntityId = StoreId,
+                            RelatedEntityType = "Store"
+                        });
+                        await dbNotif.SaveChangesAsync();
+                        UserState.NotifyDashboardRefresh();
+                    }
+                    catch { }
+                }
             }
 
             StateHasChanged();
@@ -1668,7 +1799,9 @@
                 Message = $"New Issue Reported: {issue.Title} at {_store?.StoreName}",
                 Type = "Alert",
                 IsRead = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                RelatedEntityId = StoreId,
+                RelatedEntityType = "Store"
             };
             if (notification.UserId > 0)
             {
@@ -1754,10 +1887,12 @@
                 var notification = new Notification
                 {
                     UserId = _store?.AreaHeadId ?? 0,
-                    Message = $"⚠️ {_store?.StoreName}: {taskLabel} – {name} lacking {missing} staff",
+                    Message = $"{_store?.StoreName}: {taskLabel} - {name} lacking {missing} staff",
                     Type = "Alert",
                     IsRead = false,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    RelatedEntityId = StoreId,
+                    RelatedEntityType = "Store"
                 };
 
                 if (notification.UserId > 0)

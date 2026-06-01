@@ -545,7 +545,11 @@
                                 <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                             </div>
                             <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                            <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed " : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                            @if (_lastCategoryCompletedAt.HasValue)
+                            {
+                                <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@_lastCategoryCompletedAt.Value.ToString("hh:mm tt")</MudText>
+                            }
                         </div>
                     </MudPaper>
 
@@ -595,8 +599,12 @@
                                         <div class="flex-grow-1">
                                             <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
                                             <MudText Typo="Typo.caption" Style="opacity: 0.7;">
-                                                @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                                @(cat.IsCompleted ? "Completed " : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
                                             </MudText>
+                                            @if (cat.IsCompleted && cat.CompletedAt.HasValue)
+                                            {
+                                                <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@cat.CompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -701,7 +709,11 @@
                                     <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                                 </div>
                                 <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed " : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                                @if (_lastCategoryCompletedAt.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@_lastCategoryCompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                }
                             </div>
                         </MudPaper>
 
@@ -750,8 +762,12 @@
                                             <div class="flex-grow-1">
                                                 <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
                                                 <MudText Typo="Typo.caption" Style="opacity: 0.7;">
-                                                    @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                                    @(cat.IsCompleted ? "Completed " : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
                                                 </MudText>
+                                                @if (cat.IsCompleted && cat.CompletedAt.HasValue)
+                                                {
+                                                    <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@cat.CompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -833,8 +849,10 @@
     private int _completedTasks = 0;
     private int _totalTasksCount = 0;
     private DateTime? _derivedCheckInTime;
+    private DateTime? _lastCategoryCompletedAt;
     private bool _isFindingLocation = false;
     private System.Timers.Timer? _refreshTimer;
+    private HashSet<int> _dismissedAlertStoreIds = new();
 
     private class CategoryProgress
     {
@@ -842,6 +860,7 @@
         public string Name { get; set; } = "";
         public int CompletedTasks { get; set; }
         public int TotalTasks { get; set; }
+        public DateTime? CompletedAt { get; set; }
         public bool IsCompleted => CompletedTasks >= TotalTasks && TotalTasks > 0;
     }
 
@@ -851,6 +870,7 @@
         ThemeService.OnThemeChanged += OnThemeChanged;
         UserState.DashboardRefreshRequested += HandleDashboardChanged;
         DashboardRefresh.OnLocationUpdated += HandleLocationUpdate;
+        DashboardRefresh.OnRefreshRequested += HandleDashboardRefreshEvent;
 
         _refreshTimer = new System.Timers.Timer(60000);
         _refreshTimer.Elapsed += (s, e) => InvokeAsync(StateHasChanged);
@@ -890,11 +910,35 @@
         });
     }
 
+    private void HandleDashboardRefreshEvent(int? storeId)
+    {
+        if (storeId.HasValue)
+        {
+            _dismissedAlertStoreIds.Remove(storeId.Value);
+        }
+        else
+        {
+            _dismissedAlertStoreIds.Clear();
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            if (_selectedStoreId.HasValue && (!storeId.HasValue || storeId.Value == _selectedStoreId.Value))
+            {
+                await LoadDashboardData(_selectedStoreId.Value);
+            }
+            await LoadData(); // Refresh all stores for pins
+            await InitializeMap();
+            StateHasChanged();
+        });
+    }
+
     public async ValueTask DisposeAsync()
     {
         ThemeService.OnThemeChanged -= OnThemeChanged;
         UserState.DashboardRefreshRequested -= HandleDashboardChanged;
         DashboardRefresh.OnLocationUpdated -= HandleLocationUpdate;
+        DashboardRefresh.OnRefreshRequested -= HandleDashboardRefreshEvent;
         _refreshTimer?.Dispose();
         _objRef?.Dispose();
         try
@@ -944,6 +988,12 @@
     {
         if (!_stores.Any()) return;
 
+        using var db = await DbFactory.CreateDbContextAsync();
+        var allMyNotifs = await db.Notifications
+            .AsNoTracking()
+            .Where(n => n.UserId == UserState.UserId && !n.IsRead)
+            .ToListAsync();
+
         var mapData = _stores.Select(s => new
         {
             id = s.Id,
@@ -952,7 +1002,11 @@
             storeName = s.StoreName,
             storeCode = s.StoreCode,
             isMyStore = s.AreaHeadId == UserState.UserId, // Area Head assigned stores
-            storeHeadName = s.StoreHead?.Fullname ?? "Unassigned"
+            storeHeadName = s.StoreHead?.Fullname ?? "Unassigned",
+            hasAlert = !_dismissedAlertStoreIds.Contains(s.Id) && allMyNotifs.Any(n => 
+                (n.RelatedEntityType == "Store" && n.RelatedEntityId == s.Id) || 
+                (!string.IsNullOrEmpty(s.StoreName) && n.Message.Contains(s.StoreName)) ||
+                (!string.IsNullOrEmpty(s.StoreCode) && n.Message.Contains(s.StoreCode)))
         }).ToList();
 
         try
@@ -992,10 +1046,52 @@
         _isPanelOpen = true;
         await InvokeAsync(async () =>
         {
+            await ClearStoreNotifications(storeId);
             await LoadDashboardData(storeId);
             await TriggerMapResize();
             StateHasChanged();
         });
+    }
+
+    private async Task ClearStoreNotifications(int storeId)
+    {
+        // Immediately hide the dot visually in this session
+        _dismissedAlertStoreIds.Add(storeId);
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.removeAlertFromMarker", storeId);
+        }
+        catch { }
+
+        // Persist: mark all unread notifications for this store as read in the DB
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+            var storeNotifs = await db.Notifications
+                .Where(n => n.UserId == UserState.UserId && !n.IsRead &&
+                    (n.RelatedEntityType == "Store" && n.RelatedEntityId == storeId))
+                .ToListAsync();
+
+            // Fallback: also match by store name/code in message if RelatedEntityId not set
+            var store = _stores.FirstOrDefault(s => s.Id == storeId);
+            if (store != null)
+            {
+                var fallbackNotifs = await db.Notifications
+                    .Where(n => n.UserId == UserState.UserId && !n.IsRead &&
+                        (n.RelatedEntityId == null || n.RelatedEntityType != "Store") &&
+                        (n.Message.Contains(store.StoreName) || n.Message.Contains(store.StoreCode)))
+                    .ToListAsync();
+                storeNotifs.AddRange(fallbackNotifs);
+            }
+
+            if (storeNotifs.Any())
+            {
+                foreach (var notif in storeNotifs)
+                    notif.IsRead = true;
+                await db.SaveChangesAsync();
+            }
+        }
+        catch { }
     }
 
     private async Task LoadDashboardData(int storeId)
@@ -1055,53 +1151,141 @@
                 .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
                 .ToListAsync();
 
-            var todayItems = await db.ChecklistItems
-                .Where(i => i.Frequency == "Daily" ||
-                            (i.Frequency == "Weekly" && isMonday) ||
-                            (i.Frequency == "Monthly" && isFirstOfMonth))
+            // Rolling window: all completed progress for this store across all sessions
+            var sevenDaysAgo = today.AddDays(-7);
+            var oneMonthAgo = today.AddMonths(-1);
+
+            var allAssignedItems = (await db.ChecklistItems.AsNoTracking().ToListAsync())
+                .Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
+
+            var periodCompletedProgress = await db.TaskProgresses
+                .AsNoTracking()
+                .Include(tp => tp.StoreDailyActivity)
+                .Where(tp => tp.StoreDailyActivity != null
+                          && tp.StoreDailyActivity.StoreId == storeId
+                          && tp.IsCompleted
+                          && tp.CompletedAt != null)
                 .ToListAsync();
 
-            var assignedItems = todayItems.Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
+            int completedCount = taskProgresses.Count(p => p.IsCompleted && allAssignedItems.Any(i => i.Id == p.ChecklistItemId && i.Frequency == "Daily"));
+            completedCount += allAssignedItems.Where(i => i.Frequency == "Weekly")
+                .Count(i => periodCompletedProgress.Any(tp => tp.ChecklistItemId == i.Id
+                    && tp.CompletedAt.HasValue && tp.CompletedAt.Value >= sevenDaysAgo));
+            completedCount += allAssignedItems.Where(i => i.Frequency == "Monthly")
+                .Count(i => periodCompletedProgress.Any(tp => tp.ChecklistItemId == i.Id
+                    && tp.CompletedAt.HasValue && tp.CompletedAt.Value >= oneMonthAgo));
 
-            _completedTasks = taskProgresses.Count(p => p.IsCompleted && assignedItems.Any(i => i.Id == p.ChecklistItemId));
-            _totalTasksCount = assignedItems.Count;
+            _completedTasks = completedCount;
+            _totalTasksCount = allAssignedItems.Count;
             _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
         }
         else
         {
             _completionPercentage = 0;
             _completedTasks = 0;
-            var todayItems = await db.ChecklistItems
-                .Where(i => i.Frequency == "Daily" ||
-                            (i.Frequency == "Weekly" && isMonday) ||
-                            (i.Frequency == "Monthly" && isFirstOfMonth))
-                .ToListAsync();
-            _totalTasksCount = todayItems.Count(i => IsTaskAssignedToStore(i, storeId));
+            var allItems2 = await db.ChecklistItems.AsNoTracking().ToListAsync();
+            _totalTasksCount = allItems2.Count(i => IsTaskAssignedToStore(i, storeId));
         }
 
         var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var allChecklistItems = await db.ChecklistItems
-            .AsNoTracking()
-            .Where(i => i.Frequency == "Daily" ||
-                        (i.Frequency == "Weekly" && isMonday) ||
-                        (i.Frequency == "Monthly" && isFirstOfMonth))
-            .ToListAsync();
-        var checklistItems = allChecklistItems.Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
+        var allChecklistItems = (await db.ChecklistItems.AsNoTracking().ToListAsync())
+            .Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
         var currentProgresses = taskProgresses ?? new List<TaskProgress>();
 
-        _categoryProgresses = categories
-            .Select(c => new CategoryProgress
+        // Load all completed progress across sessions for this store (for weekly/monthly)
+        var allPeriodProgress = await db.TaskProgresses
+            .AsNoTracking()
+            .Include(tp => tp.StoreDailyActivity)
+            .Where(tp => tp.StoreDailyActivity != null
+                      && tp.StoreDailyActivity.StoreId == storeId
+                      && tp.IsCompleted
+                      && tp.CompletedAt != null)
+            .ToListAsync();
+
+        var sevenDaysAgo2 = today.AddDays(-7);
+        var oneMonthAgo2 = today.AddMonths(-1);
+
+        _categoryProgresses = categories.Select(c =>
+        {
+            var catItems = allChecklistItems.Where(i => i.CategoryId == c.Id).ToList();
+            int catCompleted = 0;
+            foreach (var item in catItems)
+            {
+                bool done = false;
+                if (item.Frequency == "Daily")
+                    done = currentProgresses.Any(tp => tp.ChecklistItemId == item.Id && tp.IsCompleted);
+                else if (item.Frequency == "Weekly")
+                    done = allPeriodProgress.Any(tp => tp.ChecklistItemId == item.Id
+                        && tp.CompletedAt.HasValue && tp.CompletedAt.Value >= sevenDaysAgo2);
+                else if (item.Frequency == "Monthly")
+                    done = allPeriodProgress.Any(tp => tp.ChecklistItemId == item.Id
+                        && tp.CompletedAt.HasValue && tp.CompletedAt.Value >= oneMonthAgo2);
+                if (done) catCompleted++;
+            }
+
+            DateTime? completedAt = null;
+            if (catCompleted >= catItems.Count && catItems.Count > 0)
+            {
+                var timestamps = catItems.Select(item =>
+                {
+                    if (item.Frequency == "Daily")
+                        return currentProgresses
+                            .FirstOrDefault(tp => tp.ChecklistItemId == item.Id && tp.IsCompleted)?.CompletedAt;
+                    if (item.Frequency == "Weekly")
+                        return allPeriodProgress
+                            .FirstOrDefault(tp => tp.ChecklistItemId == item.Id
+                                && tp.CompletedAt.HasValue && tp.CompletedAt.Value >= sevenDaysAgo2)?.CompletedAt;
+                    if (item.Frequency == "Monthly")
+                        return allPeriodProgress
+                            .FirstOrDefault(tp => tp.ChecklistItemId == item.Id
+                                && tp.CompletedAt.HasValue && tp.CompletedAt.Value >= oneMonthAgo2)?.CompletedAt;
+                    return null;
+                }).Where(d => d.HasValue && d.Value > DateTime.MinValue).Select(d => d!.Value).ToList();
+
+                if (timestamps.Any())
+                    completedAt = timestamps.Max();
+            }
+
+            return new CategoryProgress
             {
                 CategoryId = c.Id,
                 Name = c.Name,
-                TotalTasks = checklistItems.Count(i => i.CategoryId == c.Id),
-                CompletedTasks = currentProgresses.Count(tp =>
-                    checklistItems.Any(i => i.Id == tp.ChecklistItemId && i.CategoryId == c.Id) && tp.IsCompleted)
-            })
-            .Where(c => c.TotalTasks > 0)
-            .ToList();
+                TotalTasks = catItems.Count,
+                CompletedTasks = catCompleted,
+                CompletedAt = completedAt
+            };
+        }).Where(c => c.TotalTasks > 0).ToList();
 
-        // Notifications: unread for area head user — reset first so they don't accumulate across store selections
+        // Timestamp inheritance: categories with ONLY weekly/monthly tasks inherit timestamp from prior completed category
+        // Only inherit if it's auto-completing (i.e., its actual CompletedAt is from a previous day or null)
+        for (int i = 0; i < _categoryProgresses.Count; i++)
+        {
+            var prog = _categoryProgresses[i];
+            if (!prog.IsCompleted) continue;
+            var catItems = allChecklistItems.Where(item => item.CategoryId == prog.CategoryId).ToList();
+            bool hasDaily = catItems.Any(item => item.Frequency == "Daily");
+            
+            if (!hasDaily && (!prog.CompletedAt.HasValue || prog.CompletedAt.Value.Date < today.Date))
+            {
+                for (int j = i - 1; j >= 0; j--)
+                {
+                    if (_categoryProgresses[j].IsCompleted && _categoryProgresses[j].CompletedAt.HasValue)
+                    {
+                        prog.CompletedAt = _categoryProgresses[j].CompletedAt;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Track last completed category timestamp for Check In card
+        _lastCategoryCompletedAt = _categoryProgresses
+            .Where(c => c.IsCompleted && c.CompletedAt.HasValue)
+            .Select(c => c.CompletedAt!.Value)
+            .DefaultIfEmpty(DateTime.MinValue)
+            .Max() is DateTime dt && dt > DateTime.MinValue ? dt : (DateTime?)null;
+
+        // Notifications: load all for this store within 24 hours (read + unread) so history is visible
         _notifications = new List<Notification>();
         _activityLogs = new List<ActivityLog>();
 
@@ -1112,18 +1296,30 @@
             var storeCode = store?.StoreCode ?? "";
             var twentyFourHoursAgo = DateTime.Now.AddHours(-24);
 
-            // First get unread notifications for the user from the last 24 hours
+            // Auto-expire: delete notifications older than 24 hours for this user
+            var expiredNotifs = await db.Notifications
+                .Where(n => n.UserId == UserState.UserId && n.CreatedAt < twentyFourHoursAgo)
+                .ToListAsync();
+            if (expiredNotifs.Any())
+            {
+                db.Notifications.RemoveRange(expiredNotifs);
+                await db.SaveChangesAsync();
+            }
+
+            // Fetch ALL notifications for this store (read + unread) within 24h for panel display
             var allMyNotifs = await db.Notifications
                 .AsNoTracking()
-                .Where(n => n.UserId == UserState.UserId && !n.IsRead && n.CreatedAt >= twentyFourHoursAgo)
+                .Where(n => n.UserId == UserState.UserId && n.CreatedAt >= twentyFourHoursAgo)
                 .OrderByDescending(n => n.CreatedAt)
                 .ToListAsync();
 
-            // Filter to only this store's notifications based on message content
+            // Filter to only this store's notifications
             _notifications = allMyNotifs
-                .Where(n => (!string.IsNullOrEmpty(storeName) && n.Message.Contains(storeName)) || 
-                            (!string.IsNullOrEmpty(storeCode) && n.Message.Contains(storeCode)))
-                .Take(8)
+                .Where(n =>
+                    (n.RelatedEntityType == "Store" && n.RelatedEntityId == storeId) ||
+                    (!string.IsNullOrEmpty(storeName) && n.Message.Contains(storeName)) ||
+                    (!string.IsNullOrEmpty(storeCode) && n.Message.Contains(storeCode)))
+                .Take(10)
                 .ToList();
 
             // Recent activity log for this store (last 24 hours)
@@ -1191,7 +1387,7 @@
     private string GetStoreStatusText()
     {
         if (_selectedStoreActivity == null) return "Inactive";
-        if (_completionPercentage >= 100) return "Completed";
+        if (_completionPercentage >= 100) return "Completed ";
         return "In Progress";
     }
 
@@ -1218,8 +1414,8 @@
 
     private Color GetLogColor(string action) => action switch
     {
-        "SessionStarted" or "TaskCompleted" or "CategoryCompleted" => Color.Success,
-        "IssueReported" or "LowManpower" => Color.Error,
+        "SessionStarted" or "TaskCompleted" or "CategoryCompleted" or "ProgressSubmitted" or "AllTasksCompleted" => Color.Success,
+        "IssueReported" or "LowManpower" or "PhotoRemoved" or "TaskReverted" or "SessionReverted" => Color.Error,
         "PhotoUploaded" => Color.Primary,
         "Login" => Color.Info,
         _ => Color.Default
@@ -1228,11 +1424,16 @@
     private string GetLogIcon(string action) => action switch
     {
         "TaskCompleted" => Icons.Material.Filled.TaskAlt,
+        "TaskReverted" => Icons.Material.Filled.Undo,
         "CategoryCompleted" => Icons.Material.Filled.CheckCircle,
+        "ProgressSubmitted" => Icons.Material.Filled.Lock,
+        "AllTasksCompleted" => Icons.Material.Filled.AssignmentTurnedIn,
         "PhotoUploaded" => Icons.Material.Filled.PhotoCamera,
+        "PhotoRemoved" => Icons.Material.Filled.HideImage,
         "IssueReported" => Icons.Material.Filled.BugReport,
         "LowManpower" => Icons.Material.Filled.Warning,
         "SessionStarted" => Icons.Material.Filled.PlayCircle,
+        "SessionReverted" => Icons.Material.Filled.Restore,
         "Login" => Icons.Material.Filled.Login,
         _ => Icons.Material.Filled.Circle
     };

@@ -107,6 +107,10 @@ window.leafletMap = {
                 }
 
                 // Render SVG Pin
+                var alertDotHtml = (isStoreHeadMode && store.hasAlert)
+                    ? `<div class="alert-dot" style="position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; background: #f44336; border: 2px solid #fff; border-radius: 50%; z-index: 10; animation: alertPulse 1.2s ease-in-out infinite;"></div>`
+                    : '';
+
                 var iconHtml = `
                     <div style="position: relative; width: 32px; height: 32px;">
                         ${pulseHtml}
@@ -114,6 +118,7 @@ window.leafletMap = {
                             <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
                             <circle cx="12" cy="11" r="2.5" fill="#fff"/>
                         </svg>
+                        ${alertDotHtml}
                     </div>
                 `;
 
@@ -166,6 +171,7 @@ window.leafletMap = {
                     // Admin: Default popup behavior (handled by Leaflet auto-open)
                 });
 
+                marker.storeId = store.id;
                 markersLayer.addLayer(marker);
 
                 bounds.extend(marker.getLatLng());
@@ -268,6 +274,7 @@ window.leafletMap = {
         }
     },
 
+
     destroy: function () {
         if (mapInstance) {
             mapInstance.remove();
@@ -276,5 +283,15 @@ window.leafletMap = {
             userLocationMarker = null;
             this.personnelMarkers = {};
         }
+    },
+
+    removeAlertFromMarker: function (storeId) {
+        if (!markersLayer) return;
+        markersLayer.eachLayer(function (layer) {
+            if (layer._icon && layer.storeId === storeId) {
+                var dot = layer._icon.querySelector('.alert-dot');
+                if (dot) dot.remove();
+            }
+        });
     }
 };

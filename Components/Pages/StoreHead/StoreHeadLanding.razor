@@ -536,7 +536,11 @@
                                     <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                                 </div>
                                 <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed " : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                                @if (_derivedCheckInTime.HasValue && _lastCategoryCompletedAt.HasValue)
+                                {
+                                    <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@_lastCategoryCompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                }
                             </div>
                         </MudPaper>
 
@@ -586,8 +590,12 @@
                                             <div class="flex-grow-1">
                                                 <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
                                                 <MudText Typo="Typo.caption" Style="opacity: 0.7;">
-                                                    @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                                    @(cat.IsCompleted ? "Completed " : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
                                                 </MudText>
+                                                @if (cat.IsCompleted && cat.CompletedAt.HasValue)
+                                                {
+                                                    <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@cat.CompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                                }
 
                                                 @if (!cat.IsCompleted)
                                                 {
@@ -658,7 +666,11 @@
                                         <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                                     </div>
                                     <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed" : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_derivedCheckInTime.HasValue ? "Completed " : (_selectedStoreActivity != null ? "In Progress" : "Not Started"))</MudText>
+                                    @if (_derivedCheckInTime.HasValue && _lastCategoryCompletedAt.HasValue)
+                                    {
+                                        <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@_lastCategoryCompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                    }
                                 </div>
                             </MudPaper>
 
@@ -708,8 +720,12 @@
                                                 <div class="flex-grow-1">
                                                     <MudText Typo="Typo.body1" Style="font-weight: 700;">@cat.Name</MudText>
                                                     <MudText Typo="Typo.caption" Style="opacity: 0.7;">
-                                                        @(cat.IsCompleted ? "Completed" : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
+                                                        @(cat.IsCompleted ? "Completed " : (cat.CompletedTasks > 0 ? $"In Progress ({cat.CompletedTasks}/{cat.TotalTasks})" : "Not Started"))
                                                     </MudText>
+                                                    @if (cat.IsCompleted && cat.CompletedAt.HasValue)
+                                                    {
+                                                        <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@cat.CompletedAt.Value.ToString("hh:mm tt")</MudText>
+                                                    }
 
                                                     @if (!cat.IsCompleted)
                                                     {
@@ -758,6 +774,7 @@
     private int _completedTasks = 0;
     private int _totalTasksCount = 0;
     private DateTime? _derivedCheckInTime;
+    private DateTime? _lastCategoryCompletedAt;
     private bool _isFindingLocation = false;
     private CancellationTokenSource? _locationCts;
 
@@ -767,6 +784,7 @@
         public string Name { get; set; } = "";
         public int CompletedTasks { get; set; }
         public int TotalTasks { get; set; }
+        public DateTime? CompletedAt { get; set; }
         public bool IsCompleted => CompletedTasks >= TotalTasks && TotalTasks > 0;
     }
 
@@ -1054,10 +1072,7 @@
             }
         }
 
-        // 2. Calculate Progress
-        bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
-        bool isFirstOfMonth = today.Day == 1;
-
+        // 2. Calculate Progress using rolling windows (same as planner)
         if (_selectedStoreActivity != null)
         {
             taskProgresses = await db.TaskProgresses
@@ -1065,50 +1080,150 @@
                 .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
                 .ToListAsync();
 
-            var todayItems = await db.ChecklistItems
+            // Load rolling weekly/monthly progress (same logic as StoreActivityPlanner)
+            var sevenDaysAgo = today.AddDays(-7);
+            var oneMonthAgo = today.AddMonths(-1);
+
+            var allItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+            var assignedItems = allItems.Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
+
+            // For daily tasks, always count
+            // For weekly: count if completed within last 7 days
+            // For monthly: count if completed within last 1 month
+            var weeklyCompletedIds = await db.TaskProgresses
                 .AsNoTracking()
-                .Where(i => i.Frequency == "Daily" ||
-                            (i.Frequency == "Weekly" && isMonday) ||
-                            (i.Frequency == "Monthly" && isFirstOfMonth))
+                .Include(tp => tp.StoreDailyActivity)
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == storeId
+                          && tp.StoreDailyActivity.Date >= sevenDaysAgo
+                          && tp.IsCompleted && tp.CompletedAt != null)
+                .Select(tp => tp.ChecklistItemId)
+                .Distinct()
                 .ToListAsync();
 
-            var assignedItems = todayItems.Where(i => IsTaskAssignedToStore(i, storeId)).ToList();
-            _totalTasksCount = assignedItems.Count;
-            _completedTasks = taskProgresses.Count(p => p.IsCompleted && assignedItems.Any(i => i.Id == p.ChecklistItemId));
+            var monthlyCompletedIds = await db.TaskProgresses
+                .AsNoTracking()
+                .Include(tp => tp.StoreDailyActivity)
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == storeId
+                          && tp.StoreDailyActivity.Date >= oneMonthAgo
+                          && tp.IsCompleted && tp.CompletedAt != null)
+                .Select(tp => tp.ChecklistItemId)
+                .Distinct()
+                .ToListAsync();
+
+            // Active tasks = daily tasks + weekly tasks with recent completion + monthly tasks with recent completion
+            var activeItems = assignedItems.Where(i =>
+                i.Frequency == "Daily" ||
+                (i.Frequency == "Weekly" && weeklyCompletedIds.Contains(i.Id)) ||
+                (i.Frequency == "Monthly" && monthlyCompletedIds.Contains(i.Id)) ||
+                // Also include weekly/monthly that haven't been done yet (so they appear as pending)
+                (i.Frequency == "Weekly" && !weeklyCompletedIds.Contains(i.Id)) ||
+                (i.Frequency == "Monthly" && !monthlyCompletedIds.Contains(i.Id))
+            ).ToList();
+
+            _totalTasksCount = activeItems.Count;
+            _completedTasks = taskProgresses.Count(p => p.IsCompleted && assignedItems.Any(i => i.Id == p.ChecklistItemId))
+                + weeklyCompletedIds.Count(id => assignedItems.Any(i => i.Id == id && i.Frequency == "Weekly") && !taskProgresses.Any(tp => tp.ChecklistItemId == id && tp.IsCompleted))
+                + monthlyCompletedIds.Count(id => assignedItems.Any(i => i.Id == id && i.Frequency == "Monthly") && !taskProgresses.Any(tp => tp.ChecklistItemId == id && tp.IsCompleted));
             _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
         }
         else
         {
             _completionPercentage = 0;
             _completedTasks = 0;
-            var todayItems = await db.ChecklistItems
-                .AsNoTracking()
-                .Where(i => i.Frequency == "Daily" ||
-                            (i.Frequency == "Weekly" && isMonday) ||
-                            (i.Frequency == "Monthly" && isFirstOfMonth))
-                .ToListAsync();
-            _totalTasksCount = todayItems.Count(i => IsTaskAssignedToStore(i, storeId));
+            var allItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+            _totalTasksCount = allItems.Count(i => IsTaskAssignedToStore(i, storeId));
         }
 
-        // 3. Fetch Category Progress Timeline
+        // 3. Fetch Category Progress Timeline using rolling windows
         var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var allChecklistItems = await db.ChecklistItems
-            .AsNoTracking()
-            .Where(i => i.Frequency == "Daily" ||
-                        (i.Frequency == "Weekly" && isMonday) ||
-                        (i.Frequency == "Monthly" && isFirstOfMonth))
-            .ToListAsync();
-        var checklistItems = allChecklistItems.Where(t => IsTaskAssignedToStore(t, storeId)).ToList();
+        var allChecklistItems2 = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var checklistItems = allChecklistItems2.Where(t => IsTaskAssignedToStore(t, storeId)).ToList();
 
         var currentProgresses = taskProgresses ?? new List<TaskProgress>();
 
-        _categoryProgresses = categories.Select(c => new CategoryProgress
+        // Get rolling-window completed task IDs for weekly/monthly
+        var sevenDaysAgo2 = today.AddDays(-7);
+        var oneMonthAgo2 = today.AddMonths(-1);
+
+        var periodCompletedProgress = await db.TaskProgresses
+            .AsNoTracking()
+            .Include(tp => tp.StoreDailyActivity)
+            .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == storeId
+                      && tp.IsCompleted && tp.CompletedAt != null)
+            .ToListAsync();
+
+        _categoryProgresses = categories.Select(c =>
         {
-            CategoryId = c.Id,
-            Name = c.Name,
-            TotalTasks = checklistItems.Count(i => i.CategoryId == c.Id),
-            CompletedTasks = currentProgresses.Count(tp => checklistItems.Any(i => i.Id == tp.ChecklistItemId && i.CategoryId == c.Id) && tp.IsCompleted)
-        }).ToList();
+            var catItems = checklistItems.Where(i => i.CategoryId == c.Id).ToList();
+            int completedCount = 0;
+            foreach (var item in catItems)
+            {
+                bool isCompleted = false;
+                if (item.Frequency == "Daily")
+                {
+                    isCompleted = currentProgresses.Any(tp => tp.ChecklistItemId == item.Id && tp.IsCompleted);
+                }
+                else if (item.Frequency == "Weekly")
+                {
+                    isCompleted = periodCompletedProgress.Any(tp => tp.ChecklistItemId == item.Id
+                        && tp.CompletedAt!.Value.Date.AddDays(7) > today);
+                }
+                else if (item.Frequency == "Monthly")
+                {
+                    isCompleted = periodCompletedProgress.Any(tp => tp.ChecklistItemId == item.Id
+                        && tp.CompletedAt!.Value.Date.AddMonths(1) > today);
+                }
+                if (isCompleted) completedCount++;
+            }
+            return new CategoryProgress
+            {
+                CategoryId = c.Id,
+                Name = c.Name,
+                TotalTasks = catItems.Count,
+                CompletedTasks = completedCount,
+                CompletedAt = completedCount >= catItems.Count && catItems.Count > 0
+                    ? catItems.Select(item =>
+                    {
+                        if (item.Frequency == "Daily")
+                            return currentProgresses.Where(tp => tp.ChecklistItemId == item.Id && tp.IsCompleted).Select(tp => tp.CompletedAt).FirstOrDefault();
+                        if (item.Frequency == "Weekly")
+                            return periodCompletedProgress.Where(tp => tp.ChecklistItemId == item.Id && tp.CompletedAt!.Value.Date.AddDays(7) > today).Select(tp => tp.CompletedAt).FirstOrDefault();
+                        if (item.Frequency == "Monthly")
+                            return periodCompletedProgress.Where(tp => tp.ChecklistItemId == item.Id && tp.CompletedAt!.Value.Date.AddMonths(1) > today).Select(tp => tp.CompletedAt).FirstOrDefault();
+                        return null;
+                    }).Where(d => d.HasValue).Select(d => d!.Value).DefaultIfEmpty(DateTime.MinValue).Max()
+                    : (DateTime?)null
+            };
+        }).Where(c => c.TotalTasks > 0).ToList();
+
+        // Adjust CompletedAt for categories containing ONLY weekly/monthly tasks
+        // Only inherit if it's auto-completing (i.e., its actual CompletedAt is from a previous day or null)
+        for (int i = 0; i < _categoryProgresses.Count; i++)
+        {
+            var progress = _categoryProgresses[i];
+            var catItems = checklistItems.Where(item => item.CategoryId == progress.CategoryId).ToList();
+            bool hasDaily = catItems.Any(item => item.Frequency == "Daily");
+            
+            if (!hasDaily && progress.IsCompleted && (!progress.CompletedAt.HasValue || progress.CompletedAt.Value.Date < today.Date))
+            {
+                // Find the nearest preceding completed category to inherit its CompletedAt
+                for (int j = i - 1; j >= 0; j--)
+                {
+                    if (_categoryProgresses[j].IsCompleted && _categoryProgresses[j].CompletedAt.HasValue)
+                    {
+                        progress.CompletedAt = _categoryProgresses[j].CompletedAt;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Track the timestamp of the very last category completed
+        _lastCategoryCompletedAt = _categoryProgresses
+            .Where(c => c.IsCompleted && c.CompletedAt.HasValue)
+            .Select(c => c.CompletedAt!.Value)
+            .DefaultIfEmpty()
+            .Max() is DateTime dt && dt > DateTime.MinValue ? dt : (DateTime?)null;
 
 
         StateHasChanged();
