@@ -638,6 +638,14 @@
     {
         if (Activity == null || _isSubmitting) return;
 
+        var totalTasks = _allTasks.Count;
+        var completedTasks = _allTasks.Count(t => t.IsCompleted);
+        if (totalTasks == 0 || completedTasks < totalTasks)
+        {
+            Snackbar.Add("Cannot approve report. Store tasks are still incomplete.", Severity.Warning);
+            return;
+        }
+
         _isSubmitting = true;
         try
         {

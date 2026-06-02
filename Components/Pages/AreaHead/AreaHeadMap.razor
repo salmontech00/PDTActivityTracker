@@ -1004,9 +1004,7 @@
             isMyStore = s.AreaHeadId == UserState.UserId, // Area Head assigned stores
             storeHeadName = s.StoreHead?.Fullname ?? "Unassigned",
             hasAlert = !_dismissedAlertStoreIds.Contains(s.Id) && allMyNotifs.Any(n => 
-                (n.RelatedEntityType == "Store" && n.RelatedEntityId == s.Id) || 
-                (!string.IsNullOrEmpty(s.StoreName) && n.Message.Contains(s.StoreName)) ||
-                (!string.IsNullOrEmpty(s.StoreCode) && n.Message.Contains(s.StoreCode)))
+                (n.RelatedEntityType == "Store" && n.RelatedEntityId == s.Id))
         }).ToList();
 
         try
@@ -1072,18 +1070,7 @@
                     (n.RelatedEntityType == "Store" && n.RelatedEntityId == storeId))
                 .ToListAsync();
 
-            // Fallback: also match by store name/code in message if RelatedEntityId not set
-            var store = _stores.FirstOrDefault(s => s.Id == storeId);
-            if (store != null)
-            {
-                var fallbackNotifs = await db.Notifications
-                    .Where(n => n.UserId == UserState.UserId && !n.IsRead &&
-                        (n.RelatedEntityId == null || n.RelatedEntityType != "Store") &&
-                        (n.Message.Contains(store.StoreName) || n.Message.Contains(store.StoreCode)))
-                    .ToListAsync();
-                storeNotifs.AddRange(fallbackNotifs);
-            }
-
+            // Fallback string matching removed because it caused false positives between stores with similar names.
             if (storeNotifs.Any())
             {
                 foreach (var notif in storeNotifs)
@@ -1315,10 +1302,7 @@
 
             // Filter to only this store's notifications
             _notifications = allMyNotifs
-                .Where(n =>
-                    (n.RelatedEntityType == "Store" && n.RelatedEntityId == storeId) ||
-                    (!string.IsNullOrEmpty(storeName) && n.Message.Contains(storeName)) ||
-                    (!string.IsNullOrEmpty(storeCode) && n.Message.Contains(storeCode)))
+                .Where(n => n.RelatedEntityType == "Store" && n.RelatedEntityId == storeId)
                 .Take(10)
                 .ToList();
 

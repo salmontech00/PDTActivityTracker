@@ -1,4 +1,4 @@
-﻿@page "/area-head/weekly-report/{StoreId:int}"
+@page "/area-head/weekly-report/{StoreId:int}"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using System.Text.Json
@@ -1202,6 +1202,12 @@
     private async Task ApproveReport()
     {
         if (_currentSession == null) return;
+
+        if (GetReportProgress() < 100.0)
+        {
+            Snackbar.Add("Cannot approve report. Store tasks are still incomplete.", Severity.Warning);
+            return;
+        }
 
         using var db = await DbFactory.CreateDbContextAsync();
         var session = await db.StoreDailyActivities.FindAsync(_currentSession.Id);

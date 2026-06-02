@@ -1237,12 +1237,67 @@
                 prog.CompletedAt = DateTime.Now;
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
                 await CreateManualActivityLog("TaskCompleted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // Check if this is the very first task accomplished for the day
+                int completedTodayBefore = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today && tp.ChecklistItemId != task.Id);
+                if (completedTodayBefore == 0)
+                {
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        try
+                        {
+                            using var db = await DbFactory.CreateDbContextAsync();
+                            db.Notifications.Add(new Notification
+                            {
+                                UserId = _store.AreaHeadId.Value,
+                                Message = $"{_store.StoreName} has started their tasks today (First task accomplished: {taskIdentifier}).",
+                                Type = "Info",
+                                IsRead = false,
+                                CreatedAt = DateTime.Now,
+                                RelatedEntityId = StoreId,
+                                RelatedEntityType = "Store"
+                            });
+                            await db.SaveChangesAsync();
+                            UserState.NotifyDashboardRefresh();
+                        }
+                        catch { }
+                    }
+                }
             }
             else
             {
                 prog.CompletedAt = null;
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
-                if (!initialSync) await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+                if (!initialSync)
+                {
+                    await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                    // Check if all tasks are now incomplete (meaning the last completed task was reverted)
+                    int completedTodayNow = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today);
+                    if (completedTodayNow == 0)
+                    {
+                        if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                        {
+                            try
+                            {
+                                using var db = await DbFactory.CreateDbContextAsync();
+                                db.Notifications.Add(new Notification
+                                {
+                                    UserId = _store.AreaHeadId.Value,
+                                    Message = $"{_store.StoreName} checklist progress has been reverted (no tasks completed yet).",
+                                    Type = "Warning",
+                                    IsRead = false,
+                                    CreatedAt = DateTime.Now,
+                                    RelatedEntityId = StoreId,
+                                    RelatedEntityType = "Store"
+                                });
+                                await db.SaveChangesAsync();
+                                UserState.NotifyDashboardRefresh();
+                            }
+                            catch { }
+                        }
+                    }
+                }
 
                 // If the entire session was completed, revert it
                 if (_currentSession != null && _currentSession.IsCompleted)
@@ -1657,6 +1712,7 @@
     {
         // Capture state before toggling
         bool wasComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+        bool oldVal = prog.IsCompleted;
 
         prog.IsCompleted = newVal;
         if (newVal)
@@ -1671,6 +1727,71 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+
+        if (oldVal != newVal)
+        {
+            var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+            if (newVal)
+            {
+                await CreateManualActivityLog("TaskCompleted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // Check if this is the very first task accomplished for the day
+                int completedTodayBefore = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today && tp.ChecklistItemId != task.Id);
+                if (completedTodayBefore == 0)
+                {
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        try
+                        {
+                            using var db = await DbFactory.CreateDbContextAsync();
+                            db.Notifications.Add(new Notification
+                            {
+                                UserId = _store.AreaHeadId.Value,
+                                Message = $"{_store.StoreName} has started their tasks today (First task accomplished: {taskIdentifier}).",
+                                Type = "Info",
+                                IsRead = false,
+                                CreatedAt = DateTime.Now,
+                                RelatedEntityId = StoreId,
+                                RelatedEntityType = "Store"
+                            });
+                            await db.SaveChangesAsync();
+                            UserState.NotifyDashboardRefresh();
+                        }
+                        catch { }
+                    }
+                }
+            }
+            else
+            {
+                await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // Check if all tasks are now incomplete (meaning the last completed task was reverted)
+                int completedTodayNow = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today);
+                if (completedTodayNow == 0)
+                {
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        try
+                        {
+                            using var db = await DbFactory.CreateDbContextAsync();
+                            db.Notifications.Add(new Notification
+                            {
+                                UserId = _store.AreaHeadId.Value,
+                                Message = $"{_store.StoreName} checklist progress has been reverted (no tasks completed yet).",
+                                Type = "Warning",
+                                IsRead = false,
+                                CreatedAt = DateTime.Now,
+                                RelatedEntityId = StoreId,
+                                RelatedEntityType = "Store"
+                            });
+                            await db.SaveChangesAsync();
+                            UserState.NotifyDashboardRefresh();
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
 
         // If unchecking caused a complete -> incomplete transition, notify Area Head
         bool nowComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
