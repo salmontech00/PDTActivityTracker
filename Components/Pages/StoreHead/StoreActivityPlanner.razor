@@ -1386,7 +1386,27 @@
             .ToList();
 
         _totalTasksCount = filteredItems.Count;
-        _completedCount = filteredItems.Count(t => GetTaskProgress(t.Id).IsCompleted);
+
+        int completedCount = 0;
+        bool stopCounting = false;
+
+        foreach (var category in _categories.OrderBy(c => c.SortOrder))
+        {
+            var catItems = filteredItems.Where(t => t.CategoryId == category.Id).ToList();
+            if (!catItems.Any()) continue;
+
+            if (stopCounting) break;
+
+            int catCompleted = catItems.Count(t => GetTaskProgress(t.Id).IsCompleted);
+            completedCount += catCompleted;
+
+            if (catCompleted < catItems.Count)
+            {
+                stopCounting = true;
+            }
+        }
+
+        _completedCount = completedCount;
     }
 
     private async Task LoadPeriodProgress(PDTActivityTracker.Model.AppDbContext db)
