@@ -491,6 +491,18 @@
             .pdt-button .mud-button-label {
                 font-size: 0.60rem !important;
             }
+
+        .mud-pagination {
+            gap: 2px !important;
+        }
+
+        .mud-pagination .mud-button-root {
+            min-width: 26px !important;
+            width: 26px !important;
+            height: 26px !important;
+            font-size: 0.7rem !important;
+            margin: 0 !important;
+        }
     }
 
     /* LOGS */
@@ -881,7 +893,7 @@
                             <div class="activity-content">
                                 <MudText Typo="Typo.body2" Style="font-weight: 600;">
                                     @(log.User?.Fullname)
-                                    <span style="font-weight: 400;">@log.Action: @log.Details</span>
+                                    <span style="font-weight: 400;">@GetLogDescription(log)</span>
                                 </MudText>
                                 <MudText Class="activity-time">
                                     @GetRelativeTime(log.Timestamp) • @(log.Store?.StoreName)
@@ -908,7 +920,7 @@
                         <MudItem xs="12" sm="4" md="3">
                             <MudTextField T="string"
                                           @bind-Value="_photoSearchTerm"
-                                          @bind-Value:after="FilterPhotos"
+                                          @bind-Value:after="() => FilterPhotos(true)"
                                           Label="Search"
                                           Placeholder="Task or user..."
                                           Variant="Variant.Outlined"
@@ -933,7 +945,7 @@
                                              Class="rounded-lg" />
                         </MudItem>
                         <MudItem xs="12" sm="4" md="3">
-                            <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="FilterPhotos" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
+                            <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="() => FilterPhotos(true)" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                                 <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
                                 @foreach (var cat in _categoriesList)
                                 {
@@ -944,7 +956,7 @@
                         <MudItem xs="12" sm="12" md="3">
                             <MudDateRangePicker Label="Date Range"
                                                 @bind-DateRange="_photoDateRange"
-                                                @bind-DateRange:after="FilterPhotos"
+                                                @bind-DateRange:after="() => FilterPhotos(true)"
                                                 Variant="Variant.Outlined"
                                                 Margin="Margin.Dense" />
                         </MudItem>
@@ -953,7 +965,7 @@
                         <MudItem xs="12">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
-                                    Showing @(_filteredPhotos.Count) of @(_allPhotos.Count) photos
+                                    Showing @(_filteredPhotos.Count) of @(_totalPhotosCount) photos
                                 </MudText>
                                 @if (HasPhotoFilters())
                                 {
@@ -985,6 +997,16 @@
                             </div>
                         }
                     </div>
+                    @if (_photoTotalMatchingCount > _photoPageSize)
+                    {
+                        <div class="d-flex justify-center mt-6">
+                            <MudPagination Color="Color.Primary" 
+                                           Count="@((_photoTotalMatchingCount + _photoPageSize - 1) / _photoPageSize)" 
+                                           Selected="@_photoCurrentPage" 
+                                           SelectedChanged="OnPhotoPageChanged" 
+                                           Variant="Variant.Filled" />
+                        </div>
+                    }
                 }
                 else
                 {
@@ -1165,6 +1187,10 @@
     private List<ActivityLog> _activityLogsList = new();
     private List<TaskPhoto> _allPhotos = new();
     private List<TaskPhoto> _filteredPhotos = new();
+    private int _totalPhotosCount = 0;
+    private int _photoPageSize = 24;
+    private int _photoCurrentPage = 1;
+    private int _photoTotalMatchingCount = 0;
     private List<Category> _categoriesList = new();
     private List<StoreDailyActivity> _activityLogs = new();
     private List<StoreDailyActivity> _activityLogsFiltered = new();
@@ -1194,7 +1220,7 @@
     private int? _issueStoreFilter;
     private string _issueStatusFilter = string.Empty;
 
-    private Dictionary<int, (double progress, DateTime? lastCompletedAt)> _activityProgressCache = new();
+    private Dictionary<int, PDTActivityTracker.Components.Services.ActivityProgressHelper.ActivityProgressResult> _activityProgressCache = new();
     private System.Timers.Timer? _refreshTimer;
 
     public class CategoryPerformanceModel
@@ -1272,7 +1298,7 @@
         // Assigned Stores
         _assignedStores = await db.Stores
             .AsNoTracking()
-            .Where(s => s.AreaHeadId == UserState.UserId)
+            .Where(s => !s.IsDeleted && s.AreaHeadId == UserState.UserId)
             .Include(s => s.StoreHead)
             .ToListAsync();
 
@@ -1292,28 +1318,28 @@
             .ToDictionary(g => g.Key, g => (StoreDailyActivity?)g.OrderByDescending(a => a.Id).FirstOrDefault());
 
         // Progress Calculations
-        _activeHeads = todayActivities.Select(a => a.StartedById).Distinct().Count();
+        _activeHeads = todayActivities.Select(a => a.StartedById).Where(id => id.HasValue).Distinct().Count();
 
-        bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
-        bool isFirstOfMonth = today.Day == 1;
-
-        var checklistItems = await db.ChecklistItems
+        // All Activities (for Reports tab)
+        _activityLogs = await db.StoreDailyActivities
             .AsNoTracking()
-            .Where(i => i.Frequency == "Daily" ||
-                        (i.Frequency == "Weekly" && isMonday) ||
-                        (i.Frequency == "Monthly" && isFirstOfMonth))
+            .Include(a => a.Store)
+            .Include(a => a.StartedBy)
+            .Include(a => a.AreaHead)
+            .Where(a => storeIds.Contains(a.StoreId))
+            .OrderByDescending(a => a.Date)
             .ToListAsync();
+
+        // Cache progress for all activities
+        _activityProgressCache = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(_activityLogs, db);
 
         foreach (var storeId in storeIds)
         {
             var activity = _todayActivities.GetValueOrDefault(storeId);
-            var storeChecklistCount = checklistItems.Count(t => IsTaskAssignedToStore(t, storeId));
-
-            if (activity != null)
+            
+            if (activity != null && _activityProgressCache.TryGetValue(activity.Id, out var p))
             {
-                var completedTasks = await db.TaskProgresses.CountAsync(tp => tp.StoreDailyActivityId == activity.Id && tp.IsCompleted);
-                var progress = storeChecklistCount > 0 ? (completedTasks * 100.0 / storeChecklistCount) : 0;
-                _storeProgresses[storeId] = progress;
+                _storeProgresses[storeId] = p.CompletionPercentage;
             }
             else
             {
@@ -1326,9 +1352,11 @@
 
         // Category Performance Aggregation
         _categoryPerformance.Clear();
+        var allChecklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+
         foreach (var category in _categoriesList)
         {
-            var tasksInCategory = checklistItems.Where(item => item.CategoryId == category.Id).ToList();
+            var tasksInCategory = allChecklistItems.Where(item => item.CategoryId == category.Id).ToList();
             if (!tasksInCategory.Any()) continue;
 
             // totalPossible is the sum of tasks in this category that are assigned to each store
@@ -1358,53 +1386,13 @@
             .Take(50)
             .ToListAsync();
 
-        // All Activities (for Reports tab)
-        _activityLogs = await db.StoreDailyActivities
-            .AsNoTracking()
-            .Include(a => a.Store)
-            .Include(a => a.StartedBy)
-            .Include(a => a.AreaHead)
-            .Where(a => storeIds.Contains(a.StoreId))
-            .OrderByDescending(a => a.Date)
-            .ToListAsync();
-
-        // Cache progress for all activities
-        _activityProgressCache.Clear();
-        foreach (var activity in _activityLogs)
-        {
-            var taskProgresses = await db.TaskProgresses
-                .Where(tp => tp.StoreDailyActivityId == activity.Id)
-                .ToListAsync();
-
-            var completedTasks = taskProgresses.Where(tp => tp.IsCompleted).ToList();
-            var completedCount = completedTasks.Count;
-            var activityChecklistCount = checklistItems.Count(t => IsTaskAssignedToStore(t, activity.StoreId));
-
-            var progress = activityChecklistCount > 0 ? (completedCount * 100.0 / activityChecklistCount) : 0;
-            var lastTaskTime = completedTasks.Any() ? completedTasks.Max(tp => tp.CompletedAt) : null;
-
-            _activityProgressCache[activity.Id] = (progress, lastTaskTime);
-        }
-
         ApplyReportFilters();
 
         // Photos
-        _allPhotos = await db.TaskPhotos
-            .AsNoTracking()
-            .Include(p => p.UploadedBy)
-            .Include(p => p.Category)
-            .Include(p => p.Store)
-            .Include(p => p.StoreDailyActivity)
-                .ThenInclude(s => s!.Store)
-            .Include(p => p.StoreDailyActivity)
-                .ThenInclude(s => s!.StartedBy)
-            .Include(p => p.ChecklistItem)
-                .ThenInclude(c => c!.Category)
-            .Where(p => p.StoreDailyActivity != null && storeIds.Contains(p.StoreDailyActivity.StoreId))
-            .OrderByDescending(p => p.UploadedAt)
-            .ToListAsync();
+        _totalPhotosCount = await db.TaskPhotos
+            .CountAsync(p => p.StoreDailyActivity != null && storeIds.Contains(p.StoreDailyActivity.StoreId));
 
-        FilterPhotos();
+        await FilterPhotos();
 
         // Issues
         _issues = await db.Issues
@@ -1450,46 +1438,75 @@
 
     private bool HasActiveReportFilters() => _selectedStoreId.HasValue || (_dateRange?.Start != null);
 
-    private void FilterPhotos()
+    private async Task FilterPhotos(bool resetPage = true)
     {
-        var filtered = _allPhotos.AsQueryable();
+        if (resetPage)
+        {
+            _photoCurrentPage = 1;
+        }
+
+        using var db = await DbFactory.CreateDbContextAsync();
+        var storeIds = _assignedStores.Select(s => s.Id).ToList();
+        var query = db.TaskPhotos.AsNoTracking()
+            .Include(p => p.UploadedBy)
+            .Include(p => p.Category)
+            .Include(p => p.Store)
+            .Include(p => p.StoreDailyActivity).ThenInclude(s => s!.Store)
+            .Include(p => p.StoreDailyActivity).ThenInclude(s => s!.StartedBy)
+            .Include(p => p.ChecklistItem).ThenInclude(c => c!.Category)
+            .Where(p => p.StoreDailyActivity != null && storeIds.Contains(p.StoreDailyActivity.StoreId))
+            .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(_photoSearchTerm))
         {
             var term = _photoSearchTerm.ToLower();
-            filtered = filtered.Where(p =>
+            query = query.Where(p =>
                 (p.ChecklistItem != null && p.ChecklistItem.TaskName != null && p.ChecklistItem.TaskName.ToLower().Contains(term)) ||
                 (p.StoreDailyActivity != null && p.StoreDailyActivity.StartedBy != null && p.StoreDailyActivity.StartedBy.Fullname != null && p.StoreDailyActivity.StartedBy.Fullname.ToLower().Contains(term)));
         }
 
         if (_photoStoreFilter.HasValue)
-            filtered = filtered.Where(p => p.StoreDailyActivity != null && p.StoreDailyActivity.StoreId == _photoStoreFilter.Value);
+            query = query.Where(p => p.StoreDailyActivity != null && p.StoreDailyActivity.StoreId == _photoStoreFilter.Value);
 
         if (_photoCategoryFilter.HasValue)
-            filtered = filtered.Where(p => p.ChecklistItem != null && p.ChecklistItem.CategoryId == _photoCategoryFilter.Value);
+            query = query.Where(p => p.ChecklistItem != null && p.ChecklistItem.CategoryId == _photoCategoryFilter.Value);
 
         if (_photoDateRange?.Start != null)
-            filtered = filtered.Where(p => p.UploadedAt.Date >= _photoDateRange.Start.Value.Date);
+            query = query.Where(p => p.UploadedAt >= _photoDateRange.Start.Value);
 
         if (_photoDateRange?.End != null)
-            filtered = filtered.Where(p => p.UploadedAt.Date <= _photoDateRange.End.Value.Date);
+            query = query.Where(p => p.UploadedAt <= _photoDateRange.End.Value.AddDays(1));
 
-        _filteredPhotos = filtered.ToList();
+        _photoTotalMatchingCount = await query.CountAsync();
+
+        _filteredPhotos = await query
+            .OrderByDescending(p => p.UploadedAt)
+            .Skip((_photoCurrentPage - 1) * _photoPageSize)
+            .Take(_photoPageSize)
+            .ToListAsync();
+            
+        StateHasChanged();
     }
 
-    private void OnPhotoStoreFilterChanged(int? storeId)
+    private async Task OnPhotoStoreFilterChanged(int? storeId)
     {
         _photoStoreFilter = storeId;
-        FilterPhotos();
+        await FilterPhotos();
     }
 
-    private void ClearPhotoFilters()
+    private async Task ClearPhotoFilters()
     {
         _photoSearchTerm = string.Empty;
         _photoStoreFilter = null;
         _photoCategoryFilter = null;
         _photoDateRange = null;
-        FilterPhotos();
+        await FilterPhotos();
+    }
+
+    private async Task OnPhotoPageChanged(int newPage)
+    {
+        _photoCurrentPage = newPage;
+        await FilterPhotos(resetPage: false);
     }
 
     private bool HasPhotoFilters() => !string.IsNullOrEmpty(_photoSearchTerm) || _photoStoreFilter.HasValue || _photoCategoryFilter.HasValue || (_photoDateRange?.Start != null);
@@ -1554,17 +1571,17 @@
                                       ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
 
     private double GetStoreProgress(int storeId) => _storeProgresses.GetValueOrDefault(storeId, 0);
-
-    private double GetCompletionProgress(int activityId) => _activityProgressCache.GetValueOrDefault(activityId, (0, null)).progress;
+    
+    private double GetCompletionProgress(int activityId) => _activityProgressCache.TryGetValue(activityId, out var val) ? val.CompletionPercentage : 0;
 
     private string GetActivityCompletedAt(StoreDailyActivity activity)
     {
         if (activity.CompletedAt.HasValue)
             return activity.CompletedAt.Value.ToString("hh:mm tt");
 
-        var cached = _activityProgressCache.GetValueOrDefault(activity.Id, (0, null));
-        if (cached.progress >= 100 && cached.lastCompletedAt.HasValue)
-            return cached.lastCompletedAt.Value.ToString("hh:mm tt");
+        var cached = _activityProgressCache.GetValueOrDefault(activity.Id);
+        if (cached != null && cached.IsFullyCompleted && cached.LastCategoryCompletedAt.HasValue)
+            return cached.LastCategoryCompletedAt.Value.ToString("hh:mm tt");
 
         return "-";
     }
@@ -1589,31 +1606,71 @@
 
     private string GetActivityStatusLabel(StoreDailyActivity activity)
     {
-        if (activity.IsCompleted || GetCompletionProgress(activity.Id) >= 100) return "Completed";
-        if (activity.Date.Date < DateTime.Today) return "Incomplete";
-        return "In Progress";
+        return _activityProgressCache.TryGetValue(activity.Id, out var val) ? val.StatusLabel : "Not Started";
     }
 
     private Color GetActivityStatusColor(StoreDailyActivity activity)
     {
-        if (activity.IsCompleted || GetCompletionProgress(activity.Id) >= 100) return Color.Success;
-        if (activity.Date.Date < DateTime.Today) return Color.Error;
-        return Color.Warning;
+        return _activityProgressCache.TryGetValue(activity.Id, out var val) && Enum.TryParse<Color>(val.StatusColor, out var color) ? color : Color.Default;
     }
 
     private string GetLogIcon(string action) => action switch
     {
         "TaskCompleted" => Icons.Material.Filled.CheckCircle,
+        "AllTasksCompleted" => Icons.Material.Filled.AssignmentTurnedIn,
+        "CategoryCompleted" => Icons.Material.Filled.LibraryAddCheck,
+        "ProgressSubmitted" => Icons.Material.Filled.Lock,
+        "SessionStarted" => Icons.Material.Filled.PlayCircle,
         "PhotoUploaded" => Icons.Material.Filled.CameraAlt,
         "Login" => Icons.Material.Filled.Login,
         "Logout" => Icons.Material.Filled.Logout,
         "PhotoRemoved" => Icons.Material.Filled.NoPhotography,
         "TaskReverted" => Icons.Material.Filled.History,
         "SessionReverted" => Icons.Material.Filled.Undo,
+        "IssueReported" => Icons.Material.Filled.BugReport,
+        "LowManpower" => Icons.Material.Filled.Warning,
         _ => Icons.Material.Filled.Info
     };
 
-    private string GetActivityIconStyle(string action) => action switch { "TaskCompleted" => "background: #22c55e; color: #fff;", "PhotoUploaded" => "background: #0072cf; color: #fff;", "Login" => "background: #0ea5e9; color: #fff;", "PhotoRemoved" => "background: #ef4444; color: #fff;", "TaskReverted" => "background: #f59e0b; color: #fff;", "SessionReverted" => "background: #ef4444; color: #fff;", _ => "background: #94a3b8; color: #fff;" };
+    private string GetActivityIconStyle(string action) => action switch
+    {
+        "TaskCompleted" => "background: #22c55e; color: #fff;",
+        "AllTasksCompleted" => "background: #16a34a; color: #fff;",
+        "CategoryCompleted" => "background: #4ade80; color: #fff;",
+        "ProgressSubmitted" => "background: #7c3aed; color: #fff;",
+        "SessionStarted" => "background: #0ea5e9; color: #fff;",
+        "PhotoUploaded" => "background: #0072cf; color: #fff;",
+        "Login" => "background: #0ea5e9; color: #fff;",
+        "PhotoRemoved" => "background: #ef4444; color: #fff;",
+        "TaskReverted" => "background: #f59e0b; color: #fff;",
+        "SessionReverted" => "background: #ef4444; color: #fff;",
+        "IssueReported" => "background: #ef4444; color: #fff;",
+        "LowManpower" => "background: #f59e0b; color: #fff;",
+        "Logout" => "background: #64748b; color: #fff;",
+        _ => "background: #94a3b8; color: #fff;"
+    };
+
+    private string GetLogDescription(ActivityLog log)
+    {
+        var details = string.IsNullOrWhiteSpace(log.Details) ? "" : log.Details;
+        return log.Action switch
+        {
+            "TaskCompleted" => $" completed task: {details}",
+            "AllTasksCompleted" => " completed all tasks for the day",
+            "CategoryCompleted" => $" completed all tasks in: {details}",
+            "ProgressSubmitted" => " submitted daily progress report",
+            "SessionStarted" => " started a new session",
+            "PhotoUploaded" => $" uploaded photo for {details}",
+            "PhotoRemoved" => $" removed photo for {details}",
+            "TaskReverted" => $" task became incomplete: {details}",
+            "SessionReverted" => " daily session reverted to In-Progress",
+            "Login" => " logged in",
+            "Logout" => " logged out",
+            "IssueReported" => $" reported an issue: {details}",
+            "LowManpower" => $" reported low manpower: {details}",
+            _ => string.IsNullOrWhiteSpace(details) ? $" performed: {log.Action}" : $" {details}"
+        };
+    }
 
     private async Task OpenActivityDetail(StoreDailyActivity activity)
     {

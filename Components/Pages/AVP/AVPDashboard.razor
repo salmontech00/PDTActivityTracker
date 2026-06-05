@@ -1,4 +1,4 @@
-﻿@page "/avp/dashboard"
+@page "/avp/dashboard"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -498,10 +498,10 @@
         var today = DateTime.Today;
 
         // Core Stats
-        _totalStores = await db.Stores.CountAsync();
+        _totalStores = await db.Stores.CountAsync(s => !s.IsDeleted);
         _totalAreaHeads = await db.Users.CountAsync(u => u.Role == "Area Head");
 
-        var allStores = await db.Stores.ToListAsync();
+        var allStores = await db.Stores.Where(s => !s.IsDeleted).ToListAsync();
         var areaHeads = await db.Users.Where(u => u.Role == "Area Head").ToListAsync();
         var todayActivities = await db.StoreDailyActivities
             .Where(a => a.Date.Date == today)
@@ -510,11 +510,8 @@
 
         _activeOperations = todayActivities.Select(a => a.StoreId).Distinct().Count();
 
-        // Calculate Overall Compliance
-        // For simplicity, overall compliance is the average of current activity progress of all stores
-        // In a real system, you'd calculate this based on task completion
-        // Calculate Overall Compliance based on active stores vs total stores
-        _overallCompliance = _totalStores > 0 ? (int)((double)_activeOperations / _totalStores * 100) : 0;
+        // Calculate today's activities progress via helper
+        var progressCache = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(todayActivities, db);
 
         // Area Head Performance
         _areaHeadPerformance = new List<AreaHeadMetric>();
@@ -523,7 +520,16 @@
             var ahStores = allStores.Where(s => s.AreaHeadId == ah.Id).ToList();
             var ahActive = todayActivities.Count(a => a.Store?.AreaHeadId == ah.Id);
 
-            var compliance = ahStores.Count > 0 ? (int)((double)ahActive / ahStores.Count * 100) : 0;
+            double ahProgressSum = 0;
+            foreach (var store in ahStores)
+            {
+                var activity = todayActivities.OrderByDescending(a => a.Id).FirstOrDefault(a => a.StoreId == store.Id);
+                if (activity != null && progressCache.TryGetValue(activity.Id, out var p))
+                {
+                    ahProgressSum += p.CompletionPercentage;
+                }
+            }
+            var compliance = ahStores.Count > 0 ? (int)(ahProgressSum / ahStores.Count) : 0;
 
             var imagePath = ah.ImageData != null && !string.IsNullOrEmpty(ah.ImageMimeType)
                 ? $"data:{ah.ImageMimeType};base64,{Convert.ToBase64String(ah.ImageData)}"
@@ -538,6 +544,9 @@
                 ComplianceRate = compliance
             });
         }
+
+        // Calculate Overall Compliance based on Area Head Performance average
+        _overallCompliance = _areaHeadPerformance.Any() ? (int)_areaHeadPerformance.Average(m => m.ComplianceRate) : 0;
 
         // Activity Trend (Last 7 Days)
         _activityLabels = Enumerable.Range(0, 7).Select(i => DateTime.Today.AddDays(-6 + i).ToString("MMM dd")).ToArray();

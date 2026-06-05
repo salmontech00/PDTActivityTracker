@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -27,7 +27,7 @@ namespace PDTActivityTracker.Components.Model
 
         public DateTime? CompletedAt { get; set; }
 
-        public int StartedById { get; set; }
+        public int? StartedById { get; set; }
 
         [ForeignKey("StartedById")]
         public User? StartedBy { get; set; }

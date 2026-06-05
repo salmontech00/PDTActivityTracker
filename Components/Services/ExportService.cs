@@ -1,4 +1,4 @@
-﻿using OfficeOpenXml;
+using OfficeOpenXml;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
@@ -174,7 +174,7 @@ namespace PDTActivityTracker.Components.Services
             using var db = await _dbFactory.CreateDbContextAsync();
 
             // 1. Gather Data
-            var totalStores = await db.Stores.CountAsync();
+            var totalStores = await db.Stores.CountAsync(s => !s.IsDeleted);
             var areaHeads = await db.Users.Where(u => u.Role == "Area Head").ToListAsync();
             var today = DateTime.Today;
             var todayActivities = await db.StoreDailyActivities
@@ -191,7 +191,7 @@ namespace PDTActivityTracker.Components.Services
 
             foreach (var ah in areaHeads)
             {
-                var managedStores = await db.Stores.CountAsync(s => s.AreaHeadId == ah.Id);
+                var managedStores = await db.Stores.CountAsync(s => !s.IsDeleted && s.AreaHeadId == ah.Id);
                 var activeToday = todayActivities.Count(a => a.Store?.AreaHeadId == ah.Id);
                 var compliance = managedStores > 0 ? (int)((double)activeToday / managedStores * 100) : 0;
 

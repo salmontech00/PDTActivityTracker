@@ -231,6 +231,12 @@
             {
                 using var db = await DbFactory.CreateDbContextAsync();
 
+                if (_storeModel.Status == "Inactive" && (_storeModel.StoreHeadId != null || _storeModel.AreaHeadId != null))
+                {
+                    Snackbar.Add("Cannot set store status to Inactive while an Area Head or Store Head is assigned. Please unassign them first.", Severity.Warning);
+                    return;
+                }
+
                 // Trim inputs before saving so we don't save trailing spaces
                 _storeModel.StoreCode = _storeModel.StoreCode?.Trim();
                 _storeModel.StoreName = _storeModel.StoreName?.Trim();
@@ -252,7 +258,7 @@
                 }
 
                 // Fetch all to memory for foolproof string matching in C# as a secondary local fallback check
-                var allStores = await db.Stores.AsNoTracking().ToListAsync();
+                var allStores = await db.Stores.Where(s => !s.IsDeleted).AsNoTracking().ToListAsync();
                 var codeDuplicateLocal = allStores.FirstOrDefault(s => s.Id != Store.Id && string.Equals(s.StoreCode?.Trim(), codeToMatch, StringComparison.OrdinalIgnoreCase));
                 var nameDuplicateLocal = allStores.FirstOrDefault(s => s.Id != Store.Id && string.Equals(s.StoreName?.Trim(), nameToMatch, StringComparison.OrdinalIgnoreCase));
 

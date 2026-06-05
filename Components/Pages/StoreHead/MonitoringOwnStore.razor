@@ -492,6 +492,18 @@
             padding: 4px 8px !important;
             white-space: nowrap !important;
         }
+
+        .mud-pagination {
+            gap: 2px !important;
+        }
+
+        .mud-pagination .mud-button-root {
+            min-width: 26px !important;
+            width: 26px !important;
+            height: 26px !important;
+            font-size: 0.7rem !important;
+            margin: 0 !important;
+        }
     }
 </style>
 
@@ -768,7 +780,7 @@
                         <MudItem xs="12">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
-                                    Showing @(_filteredPhotos.Count) of @(_allPhotos.Count) photos
+                                    Showing @_filteredPhotos.Count of @_photoTotalMatchingCount photos
                                 </MudText>
                                 @if (_selectedCategoryId != null || (_photoDateRange != null && _photoDateRange.Start.HasValue))
                                 {
@@ -802,6 +814,18 @@
                             </div>
                         }
                     </div>
+                    @if (_photoTotalMatchingCount > _photoPageSize)
+                    {
+                        <div class="d-flex justify-center mt-6">
+                            <MudPagination Color="Color.Primary" 
+                                           Count="@((_photoTotalMatchingCount + _photoPageSize - 1) / _photoPageSize)" 
+                                           Selected="@_photoCurrentPage" 
+                                           SelectedChanged="@(page => { _photoCurrentPage = page; StateHasChanged(); })" 
+                                           Variant="Variant.Filled"
+                                           BoundaryCount="1"
+                                           MiddleCount="3" />
+                        </div>
+                    }
                 }
                 else
                 {
@@ -1027,7 +1051,10 @@
     private List<StoreDailyActivity> _dailyActivities = new();
     private List<StoreDailyActivity> _allDailyActivities = new();
     private List<TaskPhoto> _allPhotos = new();
+    private int _photoPageSize = 24;
+    private int _photoCurrentPage = 1;
     private List<TaskPhoto> _filteredPhotos => GetFilteredPhotos();
+    private int _photoTotalMatchingCount => GetAllFilteredPhotos().Count;
     private DateRange? _photoDateRange = null;
     private List<Category> _categories = new();
     private int? _selectedCategoryId;
@@ -1052,7 +1079,7 @@
     private List<CategoryPerformanceModel> _categoryPerformance = new();
     private string _topCategoryName = "Opening";
     private int _topCategoryRate = 0;
-    private Dictionary<int, (double progress, DateTime? lastCompletedAt)> _activityProgressCache = new();
+    private Dictionary<int, PDTActivityTracker.Components.Services.ActivityProgressHelper.ActivityProgressResult> _activityProgressCache = new();
 
     protected override void OnInitialized()
     {
@@ -1085,7 +1112,7 @@
         using var db = await DbFactory.CreateDbContextAsync();
 
         // Load Store
-        _myStore = await db.Stores.FirstOrDefaultAsync(s => s.StoreHeadId == UserState.UserId);
+        _myStore = await db.Stores.FirstOrDefaultAsync(s => s.StoreHeadId == UserState.UserId && !s.IsDeleted);
         if (_myStore == null) return;
 
         _categories = await db.Categories.OrderBy(c => c.SortOrder).ToListAsync();
@@ -1110,11 +1137,7 @@
         _totalReports = _allDailyActivities.Count;
 
         // Cache progress for all loaded reports first so CalculateStats has data
-        _activityProgressCache.Clear();
-        foreach (var activity in _allDailyActivities)
-        {
-            _activityProgressCache[activity.Id] = await CalculateActivityProgress(activity.Id, db);
-        }
+        _activityProgressCache = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(_allDailyActivities, db);
 
         await ApplyReportFilters();
     }
@@ -1143,7 +1166,7 @@
         await ApplyReportFilters();
     }
 
-    private List<TaskPhoto> GetFilteredPhotos()
+    private List<TaskPhoto> GetAllFilteredPhotos()
     {
         var photos = _allPhotos.AsEnumerable();
 
@@ -1160,6 +1183,14 @@
         }
 
         return photos.ToList();
+    }
+
+    private List<TaskPhoto> GetFilteredPhotos()
+    {
+        return GetAllFilteredPhotos()
+            .Skip((_photoCurrentPage - 1) * _photoPageSize)
+            .Take(_photoPageSize)
+            .ToList();
     }
 
     private void ClearPhotoFilters()
@@ -1196,7 +1227,6 @@
         if (_myStore == null) return;
         using var db = await DbFactory.CreateDbContextAsync();
 
-        var localActivityProgress = new Dictionary<int, (double progress, DateTime? lastCompletedAt)>();
 
         // Avg Completion based on filtered reports
         if (_dailyActivities.Any())
@@ -1204,7 +1234,7 @@
             var filteredIds = _dailyActivities.Select(a => a.Id).ToList();
             var filteredValues = _activityProgressCache
                 .Where(kvp => filteredIds.Contains(kvp.Key))
-                .Select(kvp => kvp.Value.progress)
+                .Select(kvp => kvp.Value.CompletionPercentage)
                 .ToList();
 
             _avgCompletionRate = filteredValues.Any() ? (int)filteredValues.Average() : 0;
@@ -1262,7 +1292,7 @@
 
     private double GetCompletionProgress(int activityId)
     {
-        return _activityProgressCache.TryGetValue(activityId, out var val) ? val.progress : 0;
+        return _activityProgressCache.TryGetValue(activityId, out var val) ? val.CompletionPercentage : 0;
     }
 
     private string GetActivityCompletedAt(StoreDailyActivity activity)
@@ -1270,28 +1300,10 @@
         if (activity.CompletedAt.HasValue)
             return activity.CompletedAt.Value.ToString("hh:mm tt");
 
-        var cached = _activityProgressCache.GetValueOrDefault(activity.Id, (0, null));
-        if (cached.progress >= 100 && cached.lastCompletedAt.HasValue)
-            return cached.lastCompletedAt.Value.ToString("hh:mm tt");
+        if (_activityProgressCache.TryGetValue(activity.Id, out var val) && val.IsFullyCompleted && val.LastCategoryCompletedAt.HasValue)
+            return val.LastCategoryCompletedAt.Value.ToString("hh:mm tt");
 
         return "-";
-    }
-
-    private async Task<(double progress, DateTime? lastCompletedAt)> CalculateActivityProgress(int activityId, PDTActivityTracker.Model.AppDbContext db)
-    {
-        var taskProgresses = await db.TaskProgresses
-            .Where(p => p.StoreDailyActivityId == activityId)
-            .ToListAsync();
-
-        var total = taskProgresses.Count;
-        if (total == 0) return (0, null);
-
-        var completedTasks = taskProgresses.Where(p => p.IsCompleted).ToList();
-        var completedCount = completedTasks.Count;
-        var progress = (double)completedCount / total * 100;
-        var lastTaskTime = completedTasks.Any() ? completedTasks.Max(tp => tp.CompletedAt) : null;
-
-        return (progress, lastTaskTime);
     }
 
     private async Task OpenActivityDetail(StoreDailyActivity activity)
@@ -1328,18 +1340,12 @@
 
     private string GetActivityStatusLabel(StoreDailyActivity activity)
     {
-        var progress = GetCompletionProgress(activity.Id);
-        if (activity.IsCompleted || progress >= 100) return "Completed";
-        if (activity.Date.Date < DateTime.Today) return "Incomplete";
-        return "In Progress";
+        return _activityProgressCache.TryGetValue(activity.Id, out var val) ? val.StatusLabel : "Not Started";
     }
 
     private Color GetActivityStatusColor(StoreDailyActivity activity)
     {
-        var progress = GetCompletionProgress(activity.Id);
-        if (activity.IsCompleted || progress >= 100) return Color.Success;
-        if (activity.Date.Date < DateTime.Today) return Color.Error;
-        return Color.Warning;
+        return _activityProgressCache.TryGetValue(activity.Id, out var val) && Enum.TryParse<Color>(val.StatusColor, out var color) ? color : Color.Default;
     }
 
     private async Task LoadMyIssues()

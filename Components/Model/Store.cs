@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PDTActivityTracker.Components.Model
@@ -24,6 +24,8 @@ namespace PDTActivityTracker.Components.Model
 
         public string? ContactPhone { get; set; }
         public string? ContactEmail { get; set; }
+
+        public bool IsDeleted { get; set; } = false;
 
         // Assignments
         public int? StoreHeadId { get; set; }

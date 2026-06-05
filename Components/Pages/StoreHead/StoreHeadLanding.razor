@@ -922,7 +922,7 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
         var userId = UserState.UserId;
-        _stores = await db.Stores.Include(s => s.AreaHead).AsNoTracking().ToListAsync();
+        _stores = await db.Stores.Where(s => !s.IsDeleted).Include(s => s.AreaHead).AsNoTracking().ToListAsync();
         _myStore = _stores.FirstOrDefault(s => s.StoreHeadId == userId);
     }
 
@@ -1034,74 +1034,30 @@
             .AsNoTracking()
             .OrderByDescending(a => a.Id)
             .FirstOrDefaultAsync(s => s.StoreId == storeId && s.Date >= today && s.Date < today.AddDays(1));
-
+        
         _derivedCheckInTime = null;
         _checkInStatus = "Not Started";
+
         if (_selectedStoreActivity != null)
         {
-            var checkInCat = await db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
-            if (checkInCat != null)
+            var progResult = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(new[] { _selectedStoreActivity }, db);
+            if (progResult.TryGetValue(_selectedStoreActivity.Id, out var p))
             {
-                bool isMonday = today.DayOfWeek == DayOfWeek.Monday;
-                bool isFirstOfMonth = today.Day == 1;
-
-                // Only include check-in tasks assigned to THIS store
-                var allCheckInItems = await db.ChecklistItems
-                    .AsNoTracking()
-                    .Where(i => i.CategoryId == checkInCat.Id &&
-                                (i.Frequency == "Daily" ||
-                                 (i.Frequency == "Weekly" && isMonday) ||
-                                 (i.Frequency == "Monthly" && isFirstOfMonth)))
-                    .ToListAsync();
-
-                var checkInTaskIds = allCheckInItems
-                    .Where(i => IsTaskAssignedToStore(i, storeId))
-                    .Select(i => i.Id)
-                    .ToList();
-
-                if (checkInTaskIds.Any())
+                _derivedCheckInTime = p.CheckInTime;
+                _completedTasks = p.CompletedTasks;
+                _totalTasksCount = p.TotalTasks;
+                _completionPercentage = p.CompletionPercentage;
+                _lastCategoryCompletedAt = p.LastCategoryCompletedAt;
+                
+                _checkInStatus = p.CheckInTime.HasValue ? "In Progress" : p.StatusLabel;
+                
+                if (p.IsFullyCompleted && !_selectedStoreActivity.IsCompleted)
                 {
-                    var completedCheckInTasks = await db.TaskProgresses
-                        .AsNoTracking()
-                        .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id &&
-                                    checkInTaskIds.Contains(tp.ChecklistItemId) &&
-                                    tp.IsCompleted &&
-                                    tp.CompletedAt.HasValue)
-                        .OrderBy(tp => tp.CompletedAt)
-                        .ToListAsync();
-
-                    if (completedCheckInTasks.Count == checkInTaskIds.Count)
-                    {
-                        _derivedCheckInTime = completedCheckInTasks.Last().CompletedAt;
-                        _checkInStatus = "Completed ";
-                    }
-                    else if (completedCheckInTasks.Any())
-                    {
-                        _checkInStatus = "In Progress";
-                        _derivedCheckInTime = null;
-                    }
-                    else
-                    {
-                        _checkInStatus = "Not Started";
-                        _derivedCheckInTime = null;
-                    }
-                }
-                else
-                {
-                    // No applicable check-in tasks today — keep as Not Started
-                    _checkInStatus = "Not Started";
+                    _selectedStoreActivity.IsCompleted = true;
+                    _selectedStoreActivity.CompletedAt = _lastCategoryCompletedAt ?? DateTime.Now;
                 }
             }
-            else
-            {
-                // No check-in category found — keep as Not Started
-                _checkInStatus = "Not Started";
-            }
-        }
 
-        // 2. Fetch today's task progresses for this session
-        if (_selectedStoreActivity != null)
-        {
             taskProgresses = await db.TaskProgresses
                 .AsNoTracking()
                 .Where(tp => tp.StoreDailyActivityId == _selectedStoreActivity.Id)
@@ -1150,24 +1106,31 @@
                 }
                 if (isCompleted) completedCount++;
             }
+
+            DateTime? completedAt = null;
+            if (completedCount >= catItems.Count && catItems.Count > 0)
+            {
+                var timestamps = catItems.Select(item =>
+                {
+                    if (item.Frequency == "Daily")
+                        return currentProgresses.FirstOrDefault(tp => tp.ChecklistItemId == item.Id && tp.IsCompleted)?.CompletedAt;
+                    if (item.Frequency == "Weekly")
+                        return periodCompletedProgress.FirstOrDefault(tp => tp.ChecklistItemId == item.Id && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date.AddDays(7) > today)?.CompletedAt;
+                    if (item.Frequency == "Monthly")
+                        return periodCompletedProgress.FirstOrDefault(tp => tp.ChecklistItemId == item.Id && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date.AddMonths(1) > today)?.CompletedAt;
+                    return null;
+                }).Where(d => d.HasValue && d.Value > DateTime.MinValue).Select(d => d!.Value).ToList();
+
+                if (timestamps.Any()) completedAt = timestamps.Max();
+            }
+
             return new CategoryProgress
             {
                 CategoryId = c.Id,
                 Name = c.Name,
                 TotalTasks = catItems.Count,
                 CompletedTasks = completedCount,
-                CompletedAt = completedCount >= catItems.Count && catItems.Count > 0
-                    ? catItems.Select(item =>
-                    {
-                        if (item.Frequency == "Daily")
-                            return currentProgresses.Where(tp => tp.ChecklistItemId == item.Id && tp.IsCompleted).Select(tp => tp.CompletedAt).FirstOrDefault();
-                        if (item.Frequency == "Weekly")
-                            return periodCompletedProgress.Where(tp => tp.ChecklistItemId == item.Id && tp.CompletedAt!.Value.Date.AddDays(7) > today).Select(tp => tp.CompletedAt).FirstOrDefault();
-                        if (item.Frequency == "Monthly")
-                            return periodCompletedProgress.Where(tp => tp.ChecklistItemId == item.Id && tp.CompletedAt!.Value.Date.AddMonths(1) > today).Select(tp => tp.CompletedAt).FirstOrDefault();
-                        return null;
-                    }).Where(d => d.HasValue).Select(d => d!.Value).DefaultIfEmpty(DateTime.MinValue).Max()
-                    : (DateTime?)null
+                CompletedAt = completedAt
             };
         }).Where(c => c.TotalTasks > 0).ToList();
 
@@ -1193,34 +1156,7 @@
             }
         }
 
-        // Track the timestamp of the very last category completed (planner submission time)
-        bool allCompleted = _categoryProgresses.Any() && _categoryProgresses.All(c => c.IsCompleted);
-        _lastCategoryCompletedAt = allCompleted
-            ? (_categoryProgresses
-                .Where(c => c.IsCompleted && c.CompletedAt.HasValue)
-                .Select(c => c.CompletedAt!.Value)
-                .DefaultIfEmpty()
-                .Max() is DateTime dt && dt > DateTime.MinValue ? dt : (DateTime?)null)
-            : null;
-
-        if (_selectedStoreActivity != null)
-        {
-            int completedCount = 0;
-            bool stopCounting = false;
-            foreach (var catProg in _categoryProgresses)
-            {
-                if (stopCounting) break;
-                completedCount += catProg.CompletedTasks;
-                if (catProg.CompletedTasks < catProg.TotalTasks)
-                {
-                    stopCounting = true;
-                }
-            }
-            _completedTasks = completedCount;
-            _totalTasksCount = checklistItems.Count;
-            _completionPercentage = _totalTasksCount > 0 ? (_completedTasks * 100.0 / _totalTasksCount) : 0;
-        }
-        else
+        if (_selectedStoreActivity == null)
         {
             _completedTasks = 0;
             _totalTasksCount = checklistItems.Count;

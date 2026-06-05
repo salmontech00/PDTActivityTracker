@@ -309,7 +309,7 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
         _stores = await db.Stores
-            .Where(s => s.Status == "Active")
+            .Where(s => !s.IsDeleted && s.Status == "Active")
             .OrderBy(s => s.StoreName)
             .ToListAsync();
     }

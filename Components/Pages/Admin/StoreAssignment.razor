@@ -719,14 +719,14 @@
                                 {
                                     <div class="d-flex flex-column">
                                         <span style="font-weight: 500">@context.StoreHead.Fullname</span>
-                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Change ▼</MudLink>
                                     </div>
                                 }
                                 else
                                 {
                                     <div class="d-flex flex-column">
                                         <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
-                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Assign ▼</MudLink>
                                     </div>
                                 }
                             </MudTd>
@@ -735,14 +735,14 @@
                                 {
                                     <div class="d-flex flex-column">
                                         <span style="font-weight: 500">@context.AreaHead.Fullname</span>
-                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Change ▼</MudLink>
                                     </div>
                                 }
                                 else
                                 {
                                     <div class="d-flex flex-column">
                                         <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
-                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Assign ▼</MudLink>
                                     </div>
                                 }
                             </MudTd>
@@ -876,10 +876,12 @@
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" FullWidth="true"
                                            StartIcon="@Icons.Material.Filled.Person"
                                            OnClick="@(() => OpenAssignStoreHeadDialog(store))"
+                                           Disabled="@(store.Status == "Inactive")"
                                            Class="modern-button">Assign SH</MudButton>
                                 <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small" FullWidth="true"
                                            StartIcon="@Icons.Material.Filled.SupervisorAccount"
                                            OnClick="@(() => OpenAssignAreaHeadDialog(store))"
+                                           Disabled="@(store.Status == "Inactive")"
                                            Class="modern-button">Assign AH</MudButton>
                             </div>
                             <div class="d-flex justify-space-between align-center px-1">
@@ -999,6 +1001,7 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
         _allStores = await db.Stores
+            .Where(s => !s.IsDeleted)
             .Include(s => s.StoreHead)
             .Include(s => s.AreaHead)
             .OrderBy(s => s.StoreCode)
@@ -1167,7 +1170,7 @@
         if (codeDuplicate == null)
         {
             var dbCodeDuplicate = await db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.Id != excludeId &&
-                s.StoreCode.ToLower() == codeMatch.ToLower());
+                !s.IsDeleted && s.StoreCode.ToLower() == codeMatch.ToLower());
             if (dbCodeDuplicate != null)
             {
                 errors.Add($"Store Code '{codeMatch}' already exists in database.");
@@ -1177,7 +1180,7 @@
         if (nameDuplicate == null)
         {
             var dbNameDuplicate = await db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.Id != excludeId &&
-                s.StoreName.ToLower() == nameMatch.ToLower());
+                !s.IsDeleted && s.StoreName.ToLower() == nameMatch.ToLower());
             if (dbNameDuplicate != null)
             {
                 errors.Add($"Store Name '{nameMatch}' already exists in database.");
@@ -1225,6 +1228,11 @@
 
     private async Task OpenAssignStoreHeadDialog(Store store)
     {
+        if (store.Status == "Inactive")
+        {
+            Snackbar.Add("Cannot assign Store Head to an inactive store.", Severity.Warning);
+            return;
+        }
         var parameters = new DialogParameters { ["Store"] = store };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
@@ -1244,6 +1252,11 @@
 
     private async Task OpenAssignAreaHeadDialog(Store store)
     {
+        if (store.Status == "Inactive")
+        {
+            Snackbar.Add("Cannot assign Area Head to an inactive store.", Severity.Warning);
+            return;
+        }
         var parameters = new DialogParameters { ["PreSelectedStores"] = new List<Store> { store } };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
@@ -1282,7 +1295,17 @@
             if (actionResult.Action == "AssignAreaHead")
             {
                 // Chain to Open Assign Area Head Dialog
-                var areaParams = new DialogParameters { ["PreSelectedStores"] = actionResult.Stores };
+                var activeSelectedStores = actionResult.Stores.Where(s => s.Status != "Inactive").ToList();
+                var inactiveCount = actionResult.Stores.Count - activeSelectedStores.Count;
+                if (inactiveCount > 0)
+                {
+                    Snackbar.Add($"{inactiveCount} inactive store(s) excluded from assignment.", Severity.Info);
+                }
+                if (!activeSelectedStores.Any())
+                {
+                    return;
+                }
+                var areaParams = new DialogParameters { ["PreSelectedStores"] = activeSelectedStores };
                 var areaOptions = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
                 var areaDialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", areaParams, areaOptions);
 
@@ -1339,7 +1362,7 @@
     {
         var parameters = new DialogParameters
         {
-            ["ContentText"] = $"Are you sure you want to delete {store.StoreName} ({store.StoreCode})? This action cannot be undone.",
+            ["ContentText"] = $"Are you sure you want to delete {store.StoreName} ({store.StoreCode})? Historical records will be preserved.",
             ["ButtonText"] = "Delete",
             ["Color"] = Color.Error
         };
@@ -1354,7 +1377,10 @@
             var s = await db.Stores.FindAsync(store.Id);
             if (s != null)
             {
-                db.Stores.Remove(s);
+                s.IsDeleted = true;
+                s.Status = "Deleted";
+                s.StoreHeadId = null;
+                s.AreaHeadId = null;
                 await db.SaveChangesAsync();
                 Snackbar.Add("Store deleted successfully!", Severity.Success);
                 await LoadData();

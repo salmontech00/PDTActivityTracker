@@ -1019,6 +1019,7 @@
         }
 
         _store = await db.Stores
+            .Where(s => !s.IsDeleted)
             .Include(s => s.AreaHead)
             .FirstOrDefaultAsync(s => s.Id == StoreId);
         if (_store == null)

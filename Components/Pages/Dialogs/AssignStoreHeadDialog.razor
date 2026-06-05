@@ -186,7 +186,7 @@
         // Get all StoreHeadIds already assigned to OTHER stores (not this one)
         var alreadyAssignedIds = await db.Stores
             .AsNoTracking()
-            .Where(s => s.StoreHeadId != null && s.Id != Store.Id)
+            .Where(s => !s.IsDeleted && s.StoreHeadId != null && s.Id != Store.Id)
             .Select(s => s.StoreHeadId!.Value)
             .ToListAsync(token);
 

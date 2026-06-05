@@ -172,7 +172,7 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
 
-        var query = db.Stores.AsNoTracking();
+        var query = db.Stores.Where(s => !s.IsDeleted).AsNoTracking();
         if (UserState.Role == "Area Head")
         {
             query = query.Where(s => s.AreaHeadId == UserState.UserId);

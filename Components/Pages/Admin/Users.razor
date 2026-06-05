@@ -1005,7 +1005,33 @@
                 var userLogs = await db.StoreAssignmentLogs.Where(l => l.UserId == user.Id).ToListAsync();
                 foreach (var l in userLogs) l.UserId = null;
 
-                // 3. Delete the user
+                // 3. Handle foreign key constraints in Notifications (delete notifications targeted to the deleted user)
+                var userNotifications = await db.Notifications.Where(n => n.UserId == user.Id).ToListAsync();
+                db.Notifications.RemoveRange(userNotifications);
+
+                // 4. Handle foreign key constraints in ActivityLogs (preserve logs but nullify user reference)
+                var userActivityLogs = await db.ActivityLogs.Where(al => al.UserId == user.Id).ToListAsync();
+                foreach (var al in userActivityLogs) al.UserId = null;
+
+                // 5. Handle foreign key constraints in TaskPhotos
+                var userPhotos = await db.TaskPhotos.Where(p => p.UploadedById == user.Id).ToListAsync();
+                foreach (var p in userPhotos) p.UploadedById = null;
+
+                // 6. Handle foreign key constraints in Issues
+                var issuesAsReporter = await db.Issues.Where(i => i.ReportedById == user.Id).ToListAsync();
+                foreach (var i in issuesAsReporter) i.ReportedById = null;
+
+                var issuesAsReviewer = await db.Issues.Where(i => i.ReviewedById == user.Id).ToListAsync();
+                foreach (var i in issuesAsReviewer) i.ReviewedById = null;
+
+                // 7. Handle foreign key constraints in StoreDailyActivities
+                var activitiesAsStarter = await db.StoreDailyActivities.Where(a => a.StartedById == user.Id).ToListAsync();
+                foreach (var a in activitiesAsStarter) a.StartedById = null;
+
+                var activitiesAsArea = await db.StoreDailyActivities.Where(a => a.AreaHeadId == user.Id).ToListAsync();
+                foreach (var a in activitiesAsArea) a.AreaHeadId = null;
+
+                // 8. Delete the user
                 var userToDelete = await db.Users.FindAsync(user.Id);
                 if (userToDelete != null)
                 {

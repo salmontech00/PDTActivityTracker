@@ -265,23 +265,23 @@
 
         // Load stores currently assigned to this Area Head
         _currentStores = await db.Stores.AsNoTracking()
-            .Where(s => s.AreaHeadId == _selectedUser!.Id)
+            .Where(s => !s.IsDeleted && s.AreaHeadId == _selectedUser!.Id)
             .OrderBy(s => s.StoreCode)
             .ToListAsync();
 
         _originalStores = new List<Store>(_currentStores);
 
-        // Load all stores EXCEPT those already assigned to THIS Area Head
+        // Load all stores EXCEPT those already assigned to THIS Area Head and inactive stores
         _allAvailableStores = await db.Stores.AsNoTracking()
             .Include(s => s.AreaHead)
-            .Where(s => s.AreaHeadId != _selectedUser!.Id)
+            .Where(s => !s.IsDeleted && s.AreaHeadId != _selectedUser!.Id && s.Status != "Inactive")
             .OrderBy(s => s.StoreCode)
             .ToListAsync();
 
-        // Pre-select stores if passed via parameter
+        // Pre-select stores if passed via parameter (filter to active ones only)
         if (PreSelectedStores != null && PreSelectedStores.Any())
         {
-            var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToHashSet();
+            var preSelectedIds = PreSelectedStores.Where(ps => ps.Status != "Inactive").Select(ps => ps.Id).ToHashSet();
             var toSelect = _allAvailableStores.Where(s => preSelectedIds.Contains(s.Id)).ToList();
             _selectedStoresToAdd = new HashSet<Store>(toSelect);
         }

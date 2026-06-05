@@ -204,12 +204,20 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [GPSLongitude] float NULL,
                 [ContactPhone] nvarchar(max) NULL,
                 [ContactEmail] nvarchar(max) NULL,
+                [IsDeleted] bit NOT NULL DEFAULT 0,
                 [StoreHeadId] int NULL,
                 [AreaHeadId] int NULL,
                 CONSTRAINT [PK_Stores] PRIMARY KEY ([Id]),
                 CONSTRAINT [FK_Stores_Users_StoreHeadId] FOREIGN KEY ([StoreHeadId]) REFERENCES [Users] ([Id]),
                 CONSTRAINT [FK_Stores_Users_AreaHeadId] FOREIGN KEY ([AreaHeadId]) REFERENCES [Users] ([Id])
             );
+        END
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'IsDeleted' AND Object_ID = Object_ID(N'Stores'))
+            BEGIN
+                ALTER TABLE [Stores] ADD [IsDeleted] bit NOT NULL DEFAULT 0;
+            END
         END
 
         -- Create StoreAssignmentLogs Table
@@ -324,7 +332,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [Description] nvarchar(max) NULL,
                 [Priority] nvarchar(max) NOT NULL,
                 [Status] nvarchar(max) NOT NULL,
-                [ReportedById] int NOT NULL,
+                [ReportedById] int NULL,
                 [ReportedAt] datetime2 NOT NULL,
                 [ResolvedAt] datetime2 NULL,
                 CONSTRAINT [PK_Issues] PRIMARY KEY ([Id]),
@@ -334,6 +342,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         END
         ELSE
         BEGIN
+            IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'ReportedById' AND Object_ID = Object_ID(N'Issues') AND is_nullable = 0)
+            BEGIN
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Issues_Users_ReportedById')
+                BEGIN
+                    ALTER TABLE [Issues] DROP CONSTRAINT [FK_Issues_Users_ReportedById];
+                END
+                ALTER TABLE [Issues] ALTER COLUMN [ReportedById] int NULL;
+                ALTER TABLE [Issues] ADD CONSTRAINT [FK_Issues_Users_ReportedById] FOREIGN KEY ([ReportedById]) REFERENCES [Users] ([Id]);
+            END
+
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ImageData' AND Object_ID = Object_ID(N'Issues'))
             BEGIN
                 ALTER TABLE [Issues] ADD [ImageData] varbinary(max) NULL;
@@ -399,7 +417,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [CurrentCategoryId] int NOT NULL,
                 [IsCompleted] bit NOT NULL,
                 [CompletedAt] datetime2 NULL,
-                [StartedById] int NOT NULL,
+                [StartedById] int NULL,
                 CONSTRAINT [PK_StoreDailyActivities] PRIMARY KEY ([Id]),
                 CONSTRAINT [FK_StoreDailyActivities_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]) ON DELETE CASCADE,
                 CONSTRAINT [FK_StoreDailyActivities_Categories_CurrentCategoryId] FOREIGN KEY ([CurrentCategoryId]) REFERENCES [Categories] ([Id]),
@@ -408,6 +426,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         END
         ELSE
         BEGIN
+            IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'StartedById' AND Object_ID = Object_ID(N'StoreDailyActivities') AND is_nullable = 0)
+            BEGIN
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_StoreDailyActivities_Users_StartedById')
+                BEGIN
+                    ALTER TABLE [StoreDailyActivities] DROP CONSTRAINT [FK_StoreDailyActivities_Users_StartedById];
+                END
+                ALTER TABLE [StoreDailyActivities] ALTER COLUMN [StartedById] int NULL;
+                ALTER TABLE [StoreDailyActivities] ADD CONSTRAINT [FK_StoreDailyActivities_Users_StartedById] FOREIGN KEY ([StartedById]) REFERENCES [Users] ([Id]);
+            END
+
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadRemark' AND Object_ID = Object_ID(N'StoreDailyActivities'))
             BEGIN
                 ALTER TABLE [StoreDailyActivities] ADD [AreaHeadRemark] nvarchar(max) NULL;

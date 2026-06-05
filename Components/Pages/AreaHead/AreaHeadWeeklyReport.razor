@@ -848,6 +848,7 @@
     private DateTime? _derivedCheckInTime;
     private int _dailyCompleted = 0;
     private int _dailyTotal = 0;
+    private double _dailyCompletionPercentage = 0;
 
     // Period switcher
     private string _viewMode = "Daily";
@@ -863,7 +864,7 @@
         public DateTime? CheckInTime { get; set; }
         public int CompletedTasks { get; set; }
         public int TotalTasks { get; set; }
-        public double CompletionPercentage => TotalTasks > 0 ? (CompletedTasks * 100.0 / TotalTasks) : 0;
+        public double CompletionPercentage { get; set; }
         public bool HasSession { get; set; }
         public string StatusText => !HasSession ? "Inactive" : (CompletionPercentage >= 100 ? "Completed" : "In Progress");
         public Color StatusColor => !HasSession ? Color.Default : (CompletionPercentage >= 100 ? Color.Success : Color.Info);
@@ -951,6 +952,7 @@
         _loadedPhotos = new();
         _dailyCompleted = 0;
         _dailyTotal = 0;
+        _dailyCompletionPercentage = 0;
 
         if (_currentSession != null)
         {
@@ -971,45 +973,18 @@
                 .Where(p => p.StoreDailyActivityId == _currentSession.Id)
                 .ToListAsync();
 
-            // Derive Check-In time
-            var checkInCat = await db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
-            if (checkInCat != null)
+            var progResult = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(new[] { _currentSession }, db);
+            if (progResult.TryGetValue(_currentSession.Id, out var p))
             {
-                var checkInIds = await db.ChecklistItems.AsNoTracking()
-                    .Where(i => i.CategoryId == checkInCat.Id &&
-                                (i.Frequency == "Daily" ||
-                                 (i.Frequency == "Weekly" && isMonday) ||
-                                 (i.Frequency == "Monthly" && isFirstOfMonth)))
-                    .Select(i => i.Id).ToListAsync();
-
-                if (checkInIds.Any())
-                {
-                    var done = _taskProgresses
-                        .Where(tp => checkInIds.Contains(tp.ChecklistItemId) && tp.IsCompleted && tp.CompletedAt.HasValue)
-                        .OrderBy(tp => tp.CompletedAt).ToList();
-                    if (done.Count == checkInIds.Count)
-                        _derivedCheckInTime = done.Last().CompletedAt;
-                }
+                _derivedCheckInTime = p.CheckInTime;
+                _dailyTotal = p.TotalTasks;
+                _dailyCompleted = p.CompletedTasks;
+                _dailyCompletionPercentage = p.CompletionPercentage;
             }
-
-            // Task counts (frequency-filtered)
-            var todayItems = _checklistItems.Where(i =>
-                (i.Frequency == "Daily" ||
-                (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                IsTaskAssignedToStore(i, StoreId)).ToList();
-
-            _dailyTotal = todayItems.Count;
-            _dailyCompleted = _taskProgresses.Count(p => p.IsCompleted && todayItems.Any(i => i.Id == p.ChecklistItemId));
         }
         else
         {
-            var todayItems = _checklistItems.Where(i =>
-                (i.Frequency == "Daily" ||
-                (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                IsTaskAssignedToStore(i, StoreId)).ToList();
-            _dailyTotal = todayItems.Count;
+            _dailyTotal = _checklistItems.Count(i => IsTaskAssignedToStore(i, StoreId));
         }
 
         _initialized = true;
@@ -1033,56 +1008,26 @@
             .Where(a => a.StoreId == StoreId && a.Date >= start && a.Date < end.AddDays(1))
             .ToListAsync();
 
-        // Fetch all task progresses for those sessions
-        var sessionIds = sessions.Select(s => s.Id).ToList();
-        var allProgresses = sessionIds.Any()
-            ? await db.TaskProgresses.AsNoTracking()
-                .Where(tp => sessionIds.Contains(tp.StoreDailyActivityId))
-                .ToListAsync()
-            : new List<TaskProgress>();
-
-        var checkInCat = await db.Categories.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
+        var allPeriodProgress = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(sessions, db);
+        var defaultTotalTasks = _checklistItems.Count(i => IsTaskAssignedToStore(i, StoreId));
 
         // Build a row for each day in the range (up to today)
         for (var d = start; d <= DateTime.Today && d <= end; d = d.AddDays(1))
         {
-            bool isMonday = d.DayOfWeek == DayOfWeek.Monday;
-            bool isFirstOfMonth = d.Day == 1;
-
-            var applicableItems = _checklistItems.Where(i =>
-                (i.Frequency == "Daily" ||
-                (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                IsTaskAssignedToStore(i, StoreId)).ToList();
-
             var session = sessions.OrderByDescending(s => s.Id).FirstOrDefault(s => s.Date.Date == d.Date);
-            var progresses = session != null
-                ? allProgresses.Where(tp => tp.StoreDailyActivityId == session.Id).ToList()
-                : new List<TaskProgress>();
-
+            
             DateTime? checkIn = null;
-            if (session != null && checkInCat != null)
+            int completed = 0;
+            int total = defaultTotalTasks;
+            double percentage = 0;
+
+            if (session != null && allPeriodProgress.TryGetValue(session.Id, out var p))
             {
-                var checkInIds = _checklistItems
-                    .Where(i => i.CategoryId == checkInCat.Id &&
-                                (i.Frequency == "Daily" ||
-                                 (i.Frequency == "Weekly" && isMonday) ||
-                                 (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                                IsTaskAssignedToStore(i, StoreId))
-                    .Select(i => i.Id).ToList();
-
-                if (checkInIds.Any())
-                {
-                    var done = progresses
-                        .Where(tp => checkInIds.Contains(tp.ChecklistItemId) && tp.IsCompleted && tp.CompletedAt.HasValue)
-                        .OrderBy(tp => tp.CompletedAt).ToList();
-                    if (done.Count == checkInIds.Count)
-                        checkIn = done.Last().CompletedAt;
-                }
+                checkIn = p.CheckInTime;
+                completed = p.CompletedTasks;
+                total = p.TotalTasks;
+                percentage = p.CompletionPercentage;
             }
-
-            int completed = progresses.Count(p => p.IsCompleted && applicableItems.Any(i => i.Id == p.ChecklistItemId));
 
             rows.Add(new DayReportRow
             {
@@ -1090,7 +1035,8 @@
                 HasSession = session != null,
                 CheckInTime = checkIn,
                 CompletedTasks = completed,
-                TotalTasks = applicableItems.Count
+                TotalTasks = total,
+                CompletionPercentage = percentage
             });
         }
 
@@ -1288,8 +1234,7 @@
 
     private double GetReportProgress()
     {
-        if (_dailyTotal == 0) return 0;
-        return _dailyCompleted * 100.0 / _dailyTotal;
+        return _dailyCompletionPercentage;
     }
 
     private Color GetReportStatusColor()
