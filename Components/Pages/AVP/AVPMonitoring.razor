@@ -751,7 +751,7 @@
                 </MudButton>
 
                 <MudGrid Spacing="2">
-                    <MudItem xs="12" sm="4" md="4">
+                    <MudItem xs="12" sm="6" md="4">
                         <MudTextField T="string"
                                       @bind-Value="_photoSearchTerm"
                                       @bind-Value:after="() => FilterPhotos(true)"
@@ -759,18 +759,31 @@
                                       Placeholder="Task or store..."
                                       Variant="Variant.Outlined"
                                       Margin="Margin.Dense"
+                                      Class="rounded-lg"
+                                      Immediate="true"
+                                      DebounceInterval="300"
                                       Adornment="Adornment.Start"
                                       AdornmentIcon="@Icons.Material.Filled.Search" />
                     </MudItem>
-                    <MudItem xs="12" sm="4" md="4">
+                    <MudItem xs="12" sm="6" md="4">
                         <MudAutocomplete T="Store" Label="Store"
                                          Value="@_photoStore" ValueChanged="OnPhotoStoreSelected"
                                          SearchFunc="@SearchStores"
                                          ToStringFunc="@(s => s == null ? "All Stores" : $"{s.StoreCode} - {s.StoreName}")"
                                          Variant="Variant.Outlined" Margin="Margin.Dense"
+                                         Class="rounded-lg"
                                          Clearable="true" />
                     </MudItem>
-                    <MudItem xs="12" sm="4" md="4">
+                    <MudItem xs="12" sm="6" md="2">
+                        <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="() => FilterPhotos(true)" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg" Clearable="true">
+                            <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
+                            @foreach (var cat in _categoriesList)
+                            {
+                                <MudSelectItem Value="@((int?)cat.Id)">@cat.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6" md="2">
                         <MudDateRangePicker Label="Date Range"
                                             @bind-DateRange="_photoDateRange"
                                             @bind-DateRange:after="() => FilterPhotos(true)"
@@ -989,6 +1002,8 @@
     private Store? _selectedStore;
     private Store? _photoStore;
     private string _photoSearchTerm = "";
+    private int? _photoCategoryFilter;
+    private List<Category> _categoriesList = new();
     private string _storeSearchString = "";
     private string? _selectedStatus;
     private string? _selectedReviewStatus;
@@ -1030,6 +1045,8 @@
             .Include(s => s.AreaHead)
             .Include(s => s.StoreHead)
             .ToListAsync();
+
+        _categoriesList = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
 
         _allActivities = await db.StoreDailyActivities.AsNoTracking()
             .Include(a => a.Store!).ThenInclude(s => s!.AreaHead!)
@@ -1138,12 +1155,14 @@
     private bool HasPhotoFilters() =>
         !string.IsNullOrEmpty(_photoSearchTerm) ||
         _photoStore != null ||
+        _photoCategoryFilter != null ||
         _photoDateRange.Start.HasValue || _photoDateRange.End.HasValue;
 
     private async Task ClearPhotoFilters()
     {
         _photoSearchTerm = "";
         _photoStore = null;
+        _photoCategoryFilter = null;
         _photoDateRange = new DateRange();
         await FilterPhotos(true);
     }
@@ -1172,12 +1191,19 @@
         {
             var term = _photoSearchTerm.ToLower();
             query = query.Where(p =>
+                (p.Description != null && p.Description.ToLower().Contains(term)) ||
                 (p.ChecklistItem != null && p.ChecklistItem.TaskName != null && p.ChecklistItem.TaskName.ToLower().Contains(term)) ||
-                (p.Store != null && p.Store.StoreName.ToLower().Contains(term)));
+                (p.ChecklistItem != null && p.ChecklistItem.Description != null && p.ChecklistItem.Description.ToLower().Contains(term)) ||
+                (p.UploadedBy != null && p.UploadedBy.Fullname != null && p.UploadedBy.Fullname.ToLower().Contains(term)) ||
+                (p.Store != null && p.Store.StoreName.ToLower().Contains(term))
+            );
         }
 
         if (_photoStore != null)
             query = query.Where(p => p.StoreId == _photoStore.Id);
+
+        if (_photoCategoryFilter.HasValue)
+            query = query.Where(p => p.CategoryId == _photoCategoryFilter.Value);
 
         if (_photoDateRange.Start != null)
             query = query.Where(p => p.UploadedAt >= _photoDateRange.Start.Value);

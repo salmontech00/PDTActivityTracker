@@ -757,8 +757,22 @@
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6">
-                            <MudSelect T="int?" @bind-Value="_selectedCategoryId" Label="Filter by Category" Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg" AnchorOrigin="Origin.BottomCenter">
+                        <MudItem xs="12" sm="4" md="4">
+                            <MudTextField T="string"
+                                          @bind-Value="_photoSearchTerm"
+                                          @bind-Value:after="() => _photoCurrentPage = 1"
+                                          Label="Search"
+                                          Placeholder="Task or user..."
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Class="rounded-lg"
+                                          Immediate="true"
+                                          DebounceInterval="300"
+                                          Adornment="Adornment.Start"
+                                          AdornmentIcon="@Icons.Material.Filled.Search" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4" md="4">
+                            <MudSelect T="int?" @bind-Value="_selectedCategoryId" @bind-Value:after="() => _photoCurrentPage = 1" Label="Filter by Category" Variant="Variant.Outlined" Margin="Margin.Dense" Class="rounded-lg" AnchorOrigin="Origin.BottomCenter">
                                 <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
                                 @foreach (var cat in _categories)
                                 {
@@ -766,9 +780,10 @@
                                 }
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="12" sm="4" md="4">
                             <MudDateRangePicker Label="Date Range"
                                                 @bind-DateRange="_photoDateRange"
+                                                @bind-DateRange:after="() => _photoCurrentPage = 1"
                                                 Variant="Variant.Outlined"
                                                 Margin="Margin.Dense"
                                                 AnchorOrigin="Origin.BottomCenter"
@@ -782,7 +797,7 @@
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @_filteredPhotos.Count of @_photoTotalMatchingCount photos
                                 </MudText>
-                                @if (_selectedCategoryId != null || (_photoDateRange != null && _photoDateRange.Start.HasValue))
+                                @if (!string.IsNullOrEmpty(_photoSearchTerm) || _selectedCategoryId != null || (_photoDateRange != null && _photoDateRange.Start.HasValue))
                                 {
                                     <MudButton Variant="Variant.Filled"
                                                Color="Color.Secondary"
@@ -1058,6 +1073,7 @@
     private DateRange? _photoDateRange = null;
     private List<Category> _categories = new();
     private int? _selectedCategoryId;
+    private string _photoSearchTerm = "";
     private int _totalReportsCount = 0;
     private List<Issue> _myIssues = new();
     private List<Issue> _myIssuesFiltered = new();
@@ -1170,6 +1186,18 @@
     {
         var photos = _allPhotos.AsEnumerable();
 
+        if (!string.IsNullOrWhiteSpace(_photoSearchTerm))
+        {
+            var term = _photoSearchTerm.ToLower();
+            photos = photos.Where(p =>
+                (p.Description != null && p.Description.ToLower().Contains(term)) ||
+                (p.ChecklistItem != null && p.ChecklistItem.TaskName != null && p.ChecklistItem.TaskName.ToLower().Contains(term)) ||
+                (p.ChecklistItem != null && p.ChecklistItem.Description != null && p.ChecklistItem.Description.ToLower().Contains(term)) ||
+                (p.UploadedBy != null && p.UploadedBy.Fullname != null && p.UploadedBy.Fullname.ToLower().Contains(term)) ||
+                (p.Store != null && p.Store.StoreName.ToLower().Contains(term))
+            );
+        }
+
         if (_selectedCategoryId != null)
         {
             photos = photos.Where(p => p.CategoryId == _selectedCategoryId);
@@ -1195,8 +1223,10 @@
 
     private void ClearPhotoFilters()
     {
+        _photoSearchTerm = "";
         _selectedCategoryId = null;
         _photoDateRange = null;
+        _photoCurrentPage = 1;
     }
 
     private bool HasActiveReportFilters()
