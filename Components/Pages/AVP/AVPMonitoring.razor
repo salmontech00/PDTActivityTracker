@@ -430,6 +430,34 @@
                 font-size: 0.85rem !important;
                 flex-shrink: 0 !important;
             }
+
+    }
+
+    @@media (max-width: 600px) {
+        .clear-filters-button.mud-button-root {
+            height: 22px !important;
+            font-size: 0.6rem !important;
+            border-radius: 4px !important;
+            padding: 0 6px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            line-height: 1 !important;
+            white-space: nowrap !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.8rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -2px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+        }
     }
 
     @@media (min-width: 961px) {
@@ -443,35 +471,11 @@
     }
 
     @@media (max-width: 375px) {
-        .clear-filters-button.mud-button-root {
-            border-radius: 4px !important;
-            height: 22px !important;
-            font-size: 0.6rem !important;
-            padding: 0 6px !important;
-            min-width: unset !important;
-        }
-
-        .clear-filters-button .mud-button-label {
-            white-space: nowrap !important;
-            line-height: 1 !important;
-            font-size: 0.6rem !important;
-        }
-
-        .clear-filters-button .mud-button-icon-start {
-            font-size: 0.8rem !important;
-            margin-inline-end: 2px !important;
-            margin-inline-start: -2px !important;
-        }
 
         .mud-main-content {
             padding-bottom: 0px !important;
             padding-left: 0px !important;
             padding-right: 0px !important;
-        }
-
-        .filter-info-text {
-            font-size: 0.65rem !important;
-            white-space: nowrap !important;
         }
 
         .mud-picker-paper {
@@ -1225,48 +1229,50 @@
                 }
                 else if (_activeSection == "areahead")
                 {
-                    <MudTable Items="_areaHeadMetrics" Hover="true" Breakpoint="Breakpoint.Sm" Dense="true" Elevation="0">
-                        <HeaderContent>
-                            <MudTh>Area Head</MudTh>
-                            <MudTh>Managed Stores</MudTh>
-                            <MudTh>Active Today</MudTh>
-                            <MudTh>Avg. Compliance</MudTh>
-                            <MudTh>Overall Performance</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="Area Head">
+                    @foreach (var metric in _areaHeadMetrics)
+                    {
+                        <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                            <div class="mobile-card-header">
                                 <div class="d-flex align-center gap-2">
                                     <MudAvatar Color="@GetAvatarColor()" Size="Size.Small">
-                                        @if (!string.IsNullOrEmpty(context.ImagePath))
+                                        @if (!string.IsNullOrEmpty(metric.ImagePath))
                                         {
-                                            <img src="@context.ImagePath" style="width: 100%; height: 100%; object-fit: cover;" />
+                                            <img src="@metric.ImagePath" style="width: 100%; height: 100%; object-fit: cover;" />
                                         }
                                         else
                                         {
                                             <MudIcon Icon="@Icons.Material.Filled.Person" Style="color: white !important;" />
                                         }
                                     </MudAvatar>
-                                    <MudText Style="font-weight: 600;">@context.Name</MudText>
+                                    <MudText Style="font-weight: 600;">@metric.Name</MudText>
                                 </div>
-                            </MudTd>
-                            <MudTd DataLabel="Managed Stores">@context.TotalStores</MudTd>
-                            <MudTd DataLabel="Active Today">@context.ActiveToday</MudTd>
-                            <MudTd DataLabel="Avg. Compliance">
-                                <div class="d-flex align-center gap-2">
-                                    <MudProgressLinear Color="@GetProgressColor(context.ComplianceRate)"
-                                                       Value="@context.ComplianceRate" Rounded="true" Style="width: 80px;" />
-                                    <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)context.ComplianceRate)%</MudText>
-                                </div>
-                            </MudTd>
-                            <MudTd DataLabel="Overall Performance">
                                 <MudChip T="string" Size="Size.Small"
-                                         Color="@GetStatusColorFromCompliance(context.ComplianceRate)"
+                                         Color="@GetStatusColorFromCompliance(metric.ComplianceRate)"
                                          Variant="Variant.Filled" Style="font-weight: 700;">
-                                    @GetStatusLabelFromCompliance(context.ComplianceRate)
+                                    @GetStatusLabelFromCompliance(metric.ComplianceRate)
                                 </MudChip>
-                            </MudTd>
-                        </RowTemplate>
-                    </MudTable>
+                            </div>
+                            <div class="mobile-card-content">
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Managed Stores</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">@metric.TotalStores</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">Active Today</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">@metric.ActiveToday</MudText>
+                                    </MudItem>
+                                    <MudItem xs="12">
+                                        <div class="d-flex align-center justify-space-between mb-1">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6;">Avg. Compliance</MudText>
+                                            <MudText Typo="Typo.caption" Style="font-weight: 700;">@((int)metric.ComplianceRate)%</MudText>
+                                        </div>
+                                        <MudProgressLinear Color="@GetProgressColor(metric.ComplianceRate)" Value="@metric.ComplianceRate" Rounded="true" Size="Size.Small" />
+                                    </MudItem>
+                                </MudGrid>
+                            </div>
+                        </MudPaper>
+                    }
                 }
             </MudPaper>
 
