@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Pages.Dialogs
+@using PDTActivityTracker.Components.Pages.Dialogs
 @using Microsoft.EntityFrameworkCore
 @inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
@@ -121,8 +121,8 @@
         }
 
             .mud-appbar .mud-icon-button svg {
-                width: 20px !important;
-                height: 20px !important;
+                width: 24px !important;
+                height: 24px !important;
             }
         /* MINI LOGO STYLES */
         .logo-main-small {
@@ -253,6 +253,11 @@
         background: transparent !important;
     }
 
+    /* MINI DRAWER AUTO HIDE SECTIONS & DIVIDERS */
+    .mud-drawer--closed .nav-section-header-v2,
+    .mud-drawer--closed .mud-divider {
+        display: none !important;
+    }
 </style>
 
 @if (_isCheckingAuth)
@@ -342,6 +347,7 @@ else
                    @bind-Open="_drawerOpen"
                    ClipMode="DrawerClipMode.Always"
                    Elevation="2"
+                   Variant="DrawerVariant.Mini"
                    Class="@($"desktop-drawer {GetDrawerClass()}")">
             <NavMenu />
             <MudDivider Class="my-2" />
