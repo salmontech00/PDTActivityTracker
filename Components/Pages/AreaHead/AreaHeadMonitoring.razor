@@ -449,6 +449,51 @@
                 letter-spacing: 0.5px;
                 margin-top: 4px;
             }
+
+        .action-buttons-container {
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 4px !important;
+        }
+
+        .filters-summary-row {
+            align-items: center !important;
+        }
+
+        .clear-filters-button.mud-button-root {
+            height: 24px !important;
+            font-size: 0.6rem !important;
+            padding: 0 4px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.5rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.75rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+        }
+
+        .filters-summary-row > div:first-child,
+        .filters-summary-row > .mud-text:first-child {
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+            overflow: hidden !important;
+        }
     }
 
     @@media (min-width: 961px) {
@@ -461,63 +506,41 @@
         }
     }
 
-    @@media (max-width: 600px) {
-        .clear-filters-button.mud-button-root {
-            height: 22px !important;
-            font-size: 0.6rem !important;
-            border-radius: 4px !important;
-            padding: 0 6px !important;
-            min-width: unset !important;
-        }
-
-            .clear-filters-button .mud-button-label {
-                line-height: 1 !important;
-                white-space: nowrap !important;
-                font-size: 0.6rem !important;
-            }
-
-            .clear-filters-button .mud-button-icon-start {
-                font-size: 0.8rem !important;
-                margin-inline-end: 2px !important;
-                margin-inline-start: -2px !important;
-            }
-
-        .filter-info-text {
-            font-size: 0.65rem !important;
-            white-space: nowrap !important;
-        }
-    }
-
     @@media (max-width: 375px) {
+        /* Make CLEAR FILTERS button much more compact */
         .clear-filters-button.mud-button-root {
-            border-radius: 4px !important;
-            height: 22px !important;
-            font-size: 0.6rem !important;
-            padding: 0 6px !important;
+            height: 20px !important;
+            font-size: 0.5rem !important;
+            padding: 0 3px !important;
             min-width: unset !important;
         }
 
         .clear-filters-button .mud-button-label {
             white-space: nowrap !important;
             line-height: 1 !important;
-            font-size: 0.6rem !important;
+            font-size: 0.5rem !important;
         }
 
         .clear-filters-button .mud-button-icon-start {
-            font-size: 0.8rem !important;
-            margin-inline-end: 2px !important;
-            margin-inline-start: -2px !important;
+            font-size: 0.4rem !important;
+            margin-inline-end: 1px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.60rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+            max-width: 55% !important;
         }
 
         .mud-main-content {
             padding-bottom: 0px !important;
             padding-left: 0px !important;
             padding-right: 0px !important;
-        }
-
-        .filter-info-text {
-            font-size: 0.65rem !important;
-            white-space: nowrap !important;
         }
 
         .mud-picker-paper {
@@ -754,8 +777,8 @@
                                StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showFilters = !_showFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
                         @(_showFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
@@ -786,21 +809,23 @@
                     </MudGrid>
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_activityLogsFiltered.Count) of @(_activityLogs.Count) reports
                                 </MudText>
-                                @if (HasActiveReportFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearReportFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
+                                <div class="action-buttons-container">
+                                    @if (HasActiveReportFilters())
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.Clear"
+                                                   OnClick="ClearReportFilters"
+                                                   Class="clear-filters-button">
+                                            Clear Filters
+                                        </MudButton>
+                                    }
+                                </div>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -1011,8 +1036,8 @@
                                StartIcon="@(_showPhotoFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showPhotoFilters = !_showPhotoFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
                         @(_showPhotoFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
@@ -1065,21 +1090,23 @@
                     </MudGrid>
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_filteredPhotos.Count) of @(_totalPhotosCount) photos
                                 </MudText>
-                                @if (HasPhotoFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearPhotoFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
+                                <div class="action-buttons-container">
+                                    @if (HasPhotoFilters())
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.Clear"
+                                                   OnClick="ClearPhotoFilters"
+                                                   Class="clear-filters-button">
+                                            Clear Filters
+                                        </MudButton>
+                                    }
+                                </div>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -1126,8 +1153,8 @@
                                StartIcon="@(_showIssueFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showIssueFilters = !_showIssueFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
                         @(_showIssueFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
@@ -1170,21 +1197,23 @@
 
                     <MudGrid>
                         <MudItem xs="12">
-                            <div class="d-flex justify-space-between align-center px-1">
+                            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_issuesFiltered.Count) of @(_issues.Count) issues
                                 </MudText>
-                                @if (HasIssueFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearIssueFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
+                                <div class="action-buttons-container">
+                                    @if (HasIssueFilters())
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.Clear"
+                                                   OnClick="ClearIssueFilters"
+                                                   Class="clear-filters-button">
+                                            Clear Filters
+                                        </MudButton>
+                                    }
+                                </div>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -1381,20 +1410,20 @@
                                StartIcon="@(_showFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showFilters = !_showFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
                         @(_showFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="12">
                             <MudDateRangePicker Label="Date Range"
                                                 @bind-DateRange="_dateRange"
                                                 @bind-DateRange:after="ApplyReportFilters"
                                                 Variant="Variant.Outlined"
                                                 Margin="Margin.Dense" />
                         </MudItem>
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="12">
                             <MudAutocomplete T="Store"
                                              Label="Store"
                                              Value="@(_assignedStores.FirstOrDefault(s => s.Id == _selectedStoreId))"
@@ -1413,21 +1442,23 @@
                     </MudGrid>
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_activityLogsFiltered.Count) of @(_activityLogs.Count) reports
                                 </MudText>
-                                @if (HasActiveReportFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearReportFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
+                                <div class="action-buttons-container">
+                                    @if (HasActiveReportFilters())
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.Clear"
+                                                   OnClick="ClearReportFilters"
+                                                   Class="clear-filters-button">
+                                            Clear Filters
+                                        </MudButton>
+                                    }
+                                </div>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -1584,13 +1615,13 @@
                                StartIcon="@(_showPhotoFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showPhotoFilters = !_showPhotoFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
                         @(_showPhotoFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12">
                             <MudTextField T="string"
                                           @bind-Value="_photoSearchTerm"
                                           @bind-Value:after="() => FilterPhotos(true)"
@@ -1603,7 +1634,7 @@
                                           Adornment="Adornment.Start"
                                           AdornmentIcon="@Icons.Material.Filled.Search" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="4">
+                        <MudItem xs="12">
                             <MudAutocomplete T="Store"
                                              Label="Store"
                                              Value="@(_assignedStores.FirstOrDefault(s => s.Id == _photoStoreFilter))"
@@ -1619,7 +1650,7 @@
                                              Margin="Margin.Dense"
                                              Class="rounded-lg" />
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="2">
+                        <MudItem xs="12">
                             <MudSelect T="int?" @bind-Value="_photoCategoryFilter" @bind-Value:after="() => FilterPhotos(true)" Label="Category" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                                 <MudSelectItem Value="@((int?)null)">All Categories</MudSelectItem>
                                 @foreach (var cat in _categoriesList)
@@ -1628,7 +1659,7 @@
                                 }
                             </MudSelect>
                         </MudItem>
-                        <MudItem xs="12" sm="6" md="2">
+                        <MudItem xs="12">
                             <MudDateRangePicker Label="Date Range"
                                                 @bind-DateRange="_photoDateRange"
                                                 @bind-DateRange:after="() => FilterPhotos(true)"
@@ -1638,21 +1669,23 @@
                     </MudGrid>
                     <MudGrid>
                         <MudItem xs="12">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_filteredPhotos.Count) of @(_totalPhotosCount) photos
                                 </MudText>
-                                @if (HasPhotoFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearPhotoFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
+                                <div class="action-buttons-container">
+                                    @if (HasPhotoFilters())
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.Clear"
+                                                   OnClick="ClearPhotoFilters"
+                                                   Class="clear-filters-button">
+                                            Clear Filters
+                                        </MudButton>
+                                    }
+                                </div>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -1698,13 +1731,13 @@
                                StartIcon="@(_showIssueFilters ? Icons.Material.Filled.FilterAltOff : Icons.Material.Filled.FilterAlt)"
                                FullWidth="true"
                                OnClick="@(() => _showIssueFilters = !_showIssueFilters)"
-                               Class="filter-toggle-button"
-                               Style="margin-bottom: 16px;">
+                               Class="@($"filter-toggle-button modern-button mb-2 {GetThemeClass()}")"
+                               Style="@GetFilterButtonStyle()">
                         @(_showIssueFilters ? "Hide Filters" : "Show Filters")
                     </MudButton>
 
                     <MudGrid Spacing="2">
-                        <MudItem xs="12" sm="6">
+                        <MudItem xs="12">
                             <MudTextField T="string"
                                           @bind-Value="_issueSearchTerm"
                                           @bind-Value:after="ApplyIssueFilters"
@@ -1715,7 +1748,7 @@
                                           Adornment="Adornment.Start"
                                           AdornmentIcon="@Icons.Material.Filled.Search" />
                         </MudItem>
-                        <MudItem xs="12" sm="4">
+                        <MudItem xs="12">
                             <MudAutocomplete T="Store"
                                              Label="Store"
                                              Value="@(_assignedStores.FirstOrDefault(s => s.Id == _issueStoreFilter))"
@@ -1731,7 +1764,7 @@
                                              Margin="Margin.Dense"
                                              Class="rounded-lg" />
                         </MudItem>
-                        <MudItem xs="12" sm="2">
+                        <MudItem xs="12">
                             <MudSelect T="string" @bind-Value="_issueStatusFilter" @bind-Value:after="ApplyIssueFilters" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" Clearable="true">
                                 <MudSelectItem Value="@(string.Empty)">All Status</MudSelectItem>
                                 <MudSelectItem Value="@("Open")">Open</MudSelectItem>
@@ -1742,21 +1775,23 @@
 
                     <MudGrid>
                         <MudItem xs="12">
-                            <div class="d-flex justify-space-between align-center px-1">
+                            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                                 <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
                                     Showing @(_issuesFiltered.Count) of @(_issues.Count) issues
                                 </MudText>
-                                @if (HasIssueFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled"
-                                               Color="Color.Secondary"
-                                               Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearIssueFilters"
-                                               Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
+                                <div class="action-buttons-container">
+                                    @if (HasIssueFilters())
+                                    {
+                                        <MudButton Variant="Variant.Filled"
+                                                   Color="Color.Secondary"
+                                                   Size="Size.Small"
+                                                   StartIcon="@Icons.Material.Filled.Clear"
+                                                   OnClick="ClearIssueFilters"
+                                                   Class="clear-filters-button">
+                                            Clear Filters
+                                        </MudButton>
+                                    }
+                                </div>
                             </div>
                         </MudItem>
                     </MudGrid>
@@ -1816,6 +1851,14 @@
 </div>
 
 @code {
+    private string GetFilterButtonStyle()
+    {
+        if (ThemeService == null) return "";
+        return ThemeService.CurrentTheme == ThemeMode.Lightest
+            ? "color: #0072cf; border-color: #0072cf; border-radius: 12px;"
+            : "color: #ffffff; border-color: #ffffff; border-radius: 12px; background-color: transparent !important;";
+    }
+
     private bool _initialized = false;
     private string _activeSection = "stores";
     private List<Store> _assignedStores = new();

@@ -85,7 +85,6 @@
 
     .clear-filters-button.mud-button-root {
         font-weight: 700 !important;
-        border-radius: 12px !important;
     }
 
     .clear-filters-button .mud-button-label {
@@ -684,50 +683,58 @@
 
     @@media (max-width: 960px) {
         .clear-filters-button.mud-button-root {
-            border-radius: 6px !important;
-            height: 28px !important;
-            font-size: 0.7rem !important;
-            padding: 0 10px !important;
+            height: 24px !important;
+            font-size: 0.6rem !important;
+            padding: 0 4px !important;
             min-width: unset !important;
         }
 
         .clear-filters-button .mud-button-label {
             white-space: nowrap !important;
             line-height: 1 !important;
-            font-size: 0.7rem !important;
+            font-size: 0.6rem !important;
         }
 
         .clear-filters-button .mud-button-icon-start {
-            font-size: 0.85rem !important;
-            margin-inline-end: 3px !important;
-            margin-inline-start: -2px !important;
+            font-size: 0.5rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -3px !important;
         }
 
         .filter-info-text {
             font-size: 0.75rem !important;
             white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
         }
+
+            .filters-summary-row > div:first-child {
+                min-width: 0 !important;
+                flex: 1 1 0 !important;
+                overflow: hidden !important;
+            }
     }
 
     @@media (max-width: 375px) {
         .clear-filters-button.mud-button-root {
-            border-radius: 4px !important;
-            height: 22px !important;
-            font-size: 0.6rem !important;
-            padding: 0 6px !important;
+            height: 20px !important;
+            font-size: 0.5rem !important;
+            padding: 0 3px !important;
             min-width: unset !important;
         }
 
         .clear-filters-button .mud-button-label {
             white-space: nowrap !important;
             line-height: 1 !important;
-            font-size: 0.6rem !important;
+            font-size: 0.5rem !important;
         }
 
         .clear-filters-button .mud-button-icon-start {
-            font-size: 0.8rem !important;
-            margin-inline-end: 2px !important;
-            margin-inline-start: -2px !important;
+            font-size: 0.4rem !important;
+            margin-inline-end: 1px !important;
+            margin-inline-start: -3px !important;
         }
 
         .mud-main-content {
@@ -739,6 +746,10 @@
         .filter-info-text {
             font-size: 0.65rem !important;
             white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
         }
 
         .button-group {
@@ -780,6 +791,15 @@
             padding-left: 12px;
             padding-right: 12px;
         }
+    }
+    .filters-summary-row {
+        align-items: center;
+    }
+
+    .action-buttons-container {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
     }
 </style>
 
@@ -875,21 +895,23 @@
                 </MudItem>
             </MudGrid>
 
-            <div class="d-flex align-center justify-space-between">
+            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
                 <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold filter-info-text")" Style="opacity: 0.8;">
                     Showing @_filteredTasks.Count of @_tasks.Count tasks
                 </MudText>
-                @if (HasActiveFilters())
-                {
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Clear"
-                               OnClick="ClearFilters"
-                               Class="modern-button clear-filters-button">
-                        Clear Filters
-                    </MudButton>
-                }
+                <div class="action-buttons-container">
+                    @if (HasActiveFilters())
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Secondary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Clear"
+                                   OnClick="ClearFilters"
+                                   Class="clear-filters-button">
+                            Clear Filters
+                        </MudButton>
+                    }
+                </div>
             </div>
         </MudPaper>
 
