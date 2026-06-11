@@ -755,10 +755,12 @@
                                     </div>
                                 </MudTd>
                                 <MudTd DataLabel="Action" Style="text-align: center;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                                   Class="action-icon-circle action-btn-info"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => ViewDetails(context))" />
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                       Class="action-icon-circle action-btn-info"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => ViewDetails(context))" />
+                                    </MudTooltip>
                                 </MudTd>
                             </RowTemplate>
                             <PagerContent>
@@ -918,10 +920,12 @@
                                 </MudChip>
                             </MudTd>
                             <MudTd DataLabel="Actions" Style="text-align: center;">
-                                <MudIconButton Icon="@Icons.Material.Filled.Info"
-                                               Class="action-icon-circle action-btn-info"
-                                               Size="Size.Small"
-                                               OnClick="@(() => OpenStoreDetails(context))" />
+                                <MudTooltip Text="View Store Details">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Info"
+                                                   Class="action-icon-circle action-btn-info"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenStoreDetails(context))" />
+                                </MudTooltip>
                             </MudTd>
                         </RowTemplate>
                         <PagerContent>

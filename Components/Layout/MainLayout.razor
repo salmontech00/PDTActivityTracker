@@ -253,11 +253,22 @@
         background: transparent !important;
     }
 
-    /* MINI DRAWER AUTO HIDE SECTIONS & DIVIDERS */
-    .mud-drawer--closed .nav-section-header-v2,
-    .mud-drawer--closed .mud-divider {
+    /* MINI DRAWER AUTO HIDE SECTIONS & DIVIDERS (DESKTOP ONLY) */
+    .desktop-drawer.mud-drawer--closed .nav-section-header-v2,
+    .desktop-drawer.mud-drawer--closed .mud-divider {
         display: none !important;
     }
+
+    /* COMPLETELY ISOLATE MOBILE VIEWS FROM DESKTOP MINI DRAWER MARGIN/PADDING SHIFTS */
+    @@media (max-width: 959.98px) {
+        .mud-main-content {
+            padding-left: 16px !important;
+            padding-right: 16px !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+        }
+    }
+
 </style>
 
 @if (_isCheckingAuth)

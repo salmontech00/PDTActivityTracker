@@ -582,28 +582,31 @@
                         </MudTd>
                         <MudTd DataLabel="Action" Style="text-align: center;">
                             <div class="d-flex justify-center gap-2">
-                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                               Class="action-icon-circle action-btn-info"
-                                               Size="Size.Small"
-                                               OnClick="@(() => OpenViewUserDialog(context))"
-                                               Title="View user details" />
+                                <MudTooltip Text="View Details">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                   Class="action-icon-circle action-btn-info"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenViewUserDialog(context))" />
+                                </MudTooltip>
 
                                 @if (UserState.Role == "Admin" || context.Username == UserState.Username)
                                 {
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                   Class="action-icon-circle action-btn-info"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => EditUser(context))"
-                                                   Title="Edit user" />
+                                    <MudTooltip Text="Edit User">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                       Class="action-icon-circle action-btn-info"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => EditUser(context))" />
+                                    </MudTooltip>
 
                                     @if (UserState.Role == "Admin")
                                     {
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                       Class="action-icon-circle action-btn-error"
-                                                       Size="Size.Small"
-                                                       OnClick="@(() => DeleteUser(context))"
-                                                       Disabled="@(context.Username == UserState.Username)"
-                                                       Title="Delete user" />
+                                        <MudTooltip Text="Delete User">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Class="action-icon-circle action-btn-error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => DeleteUser(context))"
+                                                           Disabled="@(context.Username == UserState.Username)" />
+                                        </MudTooltip>
                                     }
                                 }
                             </div>
@@ -674,28 +677,31 @@
                         </div>
 
                         <div class="mobile-card-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                           Class="action-icon-circle action-btn-info"
-                                           Size="Size.Small"
-                                           OnClick="@(() => OpenViewUserDialog(user))"
-                                           Title="View user details" />
+                            <MudTooltip Text="View Details">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Class="action-icon-circle action-btn-info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenViewUserDialog(user))" />
+                            </MudTooltip>
 
                             @if (UserState.Role == "Admin" || user.Username == UserState.Username)
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Class="action-icon-circle action-btn-info"
-                                               Size="Size.Small"
-                                               OnClick="@(() => EditUser(user))"
-                                               Title="Edit user" />
+                                <MudTooltip Text="Edit User">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Class="action-icon-circle action-btn-info"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => EditUser(user))" />
+                                </MudTooltip>
 
                                 @if (UserState.Role == "Admin")
                                 {
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                   Class="action-icon-circle action-btn-error"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => DeleteUser(user))"
-                                                   Disabled="@(user.Username == UserState.Username)"
-                                                   Title="Delete user" />
+                                    <MudTooltip Text="Delete User">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Class="action-icon-circle action-btn-error"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => DeleteUser(user))"
+                                                       Disabled="@(user.Username == UserState.Username)" />
+                                    </MudTooltip>
                                 }
                             }
                         </div>

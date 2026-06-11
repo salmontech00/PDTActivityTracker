@@ -987,16 +987,18 @@
                                         </div>
 
                                         <div class="task-actions d-flex justify-center gap-1">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                           Class="action-icon-circle action-btn-info"
-                                                           Size="Size.Small"
-                                                           OnClick="@(() => EditTask(context))"
-                                                           Title="Edit task" />
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                           Class="action-icon-circle action-btn-error"
-                                                           Size="Size.Small"
-                                                           OnClick="@(() => DeleteTask(context))"
-                                                           Title="Delete task" />
+                                            <MudTooltip Text="Edit Task">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                               Class="action-icon-circle action-btn-info"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => EditTask(context))" />
+                                            </MudTooltip>
+                                            <MudTooltip Text="Delete Task">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                               Class="action-icon-circle action-btn-error"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => DeleteTask(context))" />
+                                            </MudTooltip>
                                         </div>
 
                                         <div class="mobile-only task-details-mobile">

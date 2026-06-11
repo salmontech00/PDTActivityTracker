@@ -720,10 +720,12 @@
                                     </div>
                                 </MudTd>
                                 <MudTd DataLabel="Action" Style="text-align: center;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                                   Class="action-icon-circle action-btn-info"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => OpenActivityDetail(context))" />
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                       Class="action-icon-circle action-btn-info"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => OpenActivityDetail(context))" />
+                                    </MudTooltip>
                                 </MudTd>
                             </RowTemplate>
                             <PagerContent>
@@ -984,10 +986,12 @@
                                     }
                                 </MudTd>
                                 <MudTd DataLabel="Action" Style="text-align: center;">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                                   Class="action-icon-circle action-btn-info"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => OpenIssueDetail(context))" />
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                       Class="action-icon-circle action-btn-info"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => OpenIssueDetail(context))" />
+                                    </MudTooltip>
                                 </MudTd>
                             </RowTemplate>
                             <PagerContent>

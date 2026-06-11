@@ -803,9 +803,15 @@
                             </MudTd>
                             <MudTd DataLabel="Action" Style="text-align: center;">
                                 <div class="d-flex justify-center gap-1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="Edit Store">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="Delete Store">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                                    </MudTooltip>
                                 </div>
                             </MudTd>
                         </RowTemplate>

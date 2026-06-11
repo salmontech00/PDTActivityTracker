@@ -833,14 +833,20 @@
                                 </MudTd>
                                 <MudTd DataLabel="Action" Style="text-align: center;">
                                     <div class="d-flex justify-center gap-1">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" Title="View Details" />
+                                        <MudTooltip Text="View Details">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenActivityDetail(context))" />
+                                        </MudTooltip>
                                         @if (IsActivityProtected(context))
                                         {
-                                            <MudIconButton Icon="@Icons.Material.Filled.Lock" Class="action-icon-circle action-btn-default" Size="Size.Small" Disabled="true" />
+                                            <MudTooltip Text="Locked">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Lock" Class="action-icon-circle action-btn-default" Size="Size.Small" Disabled="true" />
+                                            </MudTooltip>
                                         }
                                         else
                                         {
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteActivity(context))" Title="Delete Record" />
+                                            <MudTooltip Text="Delete Record">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteActivity(context))" />
+                                            </MudTooltip>
                                         }
                                     </div>
                                 </MudTd>
@@ -1264,8 +1270,12 @@
                                 </MudTd>
                                 <MudTd DataLabel="Action" Style="text-align: center;">
                                     <div class="d-flex justify-center gap-1">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenIssueDetail(context))" />
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteIssue(context))" />
+                                        <MudTooltip Text="View Details">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenIssueDetail(context))" />
+                                        </MudTooltip>
+                                        <MudTooltip Text="Delete Issue">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteIssue(context))" />
+                                        </MudTooltip>
                                     </div>
                                 </MudTd>
                             </RowTemplate>

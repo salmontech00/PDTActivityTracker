@@ -103,8 +103,12 @@
                             <MudText Typo="Typo.body1" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">@cat.Name</MudText>
                         </div>
                         <div class="d-flex gap-1">
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Style="@GetCategoryIconStyle()" OnClick="@(() => StartEdit(cat))" />
-                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(cat))" />
+                            <MudTooltip Text="Edit Category">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" Style="@GetCategoryIconStyle()" OnClick="@(() => StartEdit(cat))" />
+                            </MudTooltip>
+                            <MudTooltip Text="Delete Category">
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => DeleteCategory(cat))" />
+                            </MudTooltip>
                         </div>
                     </div>
                 }
