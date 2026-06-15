@@ -217,6 +217,7 @@
         background: rgba(0, 114, 207, 0.03);
     }
 
+    
     /* FILTER SECTION */
     .filter-section {
         padding: 16px;
@@ -227,29 +228,6 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
         }
-
-    .lightest .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.8) !important;
-    }
-
-    .light .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .light .filter-section .mud-input-label,
-    .light .filter-section .mud-input-adornment-start,
-    .light .filter-section .mud-select-input,
-    .light .filter-section .mud-input-slot {
-        color: #ffffff !important;
-    }
-
-    .light .filter-section .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
-        border-color: #ffffff !important;
-    }
 
     .filter-toggle-button {
         display: none;
@@ -597,13 +575,13 @@
 
         <div class="button-group">
             <div class="d-flex gap-2">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Secondary"
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Flaky"
                            OnClick="OpenBulkActionsDialog"
                            Class="@($"modern-button {GetThemeClass()}")"
                            Disabled="@(!_selectedStores.Any())"
-                           Style="@GetButtonStyle()">
+                           Style="@GetButtonStyle(!_selectedStores.Any())">
                     Bulk Actions (@_selectedStores.Count)
                 </MudButton>
                 <MudButton Variant="Variant.Filled"
@@ -1166,12 +1144,13 @@
                ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
     }
 
-    private string GetButtonStyle()
+    private string GetButtonStyle(bool isDisabled = false)
     {
         if (ThemeService == null) return "border-radius: 12px;";
+        var disabledStyle = isDisabled ? " opacity: 0.5; cursor: not-allowed;" : "";
         return ThemeService.CurrentTheme == ThemeMode.Light
-            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
-            : "border-radius: 12px; font-weight: bold;";
+            ? $"color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;{disabledStyle}"
+            : $"border-radius: 12px; font-weight: bold;{disabledStyle}";
     }
 
     private string GetFilterButtonStyle()

@@ -122,3 +122,130 @@
     z-index: 10;
     animation: alertPulse 1.2s ease-in-out infinite;
 }
+
+/* FILTER PANEL & GLASS PANEL INPUT STYLES (Lightest & Light Themes) */
+
+/* 1. Lightest Theme */
+.glass-panel.lightest .mud-input-root,
+.filter-section.lightest .mud-input-root,
+.filter-panel.lightest .mud-input-root {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.glass-panel.lightest .mud-input-outlined-border,
+.filter-section.lightest .mud-input-outlined-border,
+.filter-panel.lightest .mud-input-outlined-border {
+    border-color: rgba(0, 114, 207, 0.4) !important;
+}
+
+.glass-panel.lightest .mud-input-root:hover .mud-input-outlined-border,
+.glass-panel.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-panel.lightest .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-section.lightest .mud-input-root:hover .mud-input-outlined-border,
+.filter-section.lightest .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-panel.lightest .mud-input-root:hover .mud-input-outlined-border,
+.filter-panel.lightest .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #0072cf !important;
+}
+
+.glass-panel.lightest .mud-input-label,
+.filter-section.lightest .mud-input-label,
+.filter-panel.lightest .mud-input-label {
+    color: #475569 !important;
+}
+
+.glass-panel.lightest .mud-input-slot,
+.glass-panel.lightest .mud-input-adornment,
+.glass-panel.lightest .mud-select-input,
+.filter-section.lightest .mud-input-slot,
+.filter-section.lightest .mud-input-adornment-start,
+.filter-section.lightest .mud-select-input,
+.filter-panel.lightest .mud-input-slot,
+.filter-panel.lightest .mud-input-adornment-start,
+.filter-panel.lightest .mud-select-input {
+    color: #0f172a !important;
+    background: transparent !important;
+}
+
+/* 2. Light Theme */
+.glass-panel.light .mud-input-root,
+.filter-section.light .mud-input-root,
+.filter-panel.light .mud-input-root {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.glass-panel.light .mud-input-outlined-border,
+.filter-section.light .mud-input-outlined-border,
+.filter-panel.light .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.glass-panel.light .mud-input-root:hover .mud-input-outlined-border,
+.glass-panel.light .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-panel.light .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-section.light .mud-input-root:hover .mud-input-outlined-border,
+.filter-section.light .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-panel.light .mud-input-root:hover .mud-input-outlined-border,
+.filter-panel.light .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #ffffff !important;
+}
+
+.glass-panel.light .mud-input-label,
+.filter-section.light .mud-input-label,
+.filter-panel.light .mud-input-label {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.glass-panel.light .mud-input-slot,
+.glass-panel.light .mud-input-adornment,
+.glass-panel.light .mud-select-input,
+.filter-section.light .mud-input-slot,
+.filter-section.light .mud-input-adornment-start,
+.filter-section.light .mud-select-input,
+.filter-panel.light .mud-input-slot,
+.filter-panel.light .mud-input-adornment-start,
+.filter-panel.light .mud-select-input {
+    color: #ffffff !important;
+    background: transparent !important;
+}
+
+/* Consistent input border & label colors for dialogs (Lightest & Light Themes) */
+
+/* Lightest Theme Dialogs */
+.glass-dialog.lightest .mud-input-outlined-border {
+    border-color: rgba(0, 114, 207, 0.4) !important;
+}
+
+.glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+.glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-dialog.lightest .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #0072cf !important;
+}
+
+.glass-dialog.lightest .mud-input-label {
+    color: #475569 !important;
+}
+
+/* Light Theme Dialogs */
+.glass-dialog.light .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+.glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-dialog.light .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #ffffff !important;
+}
+
+.glass-dialog.light .mud-input-label {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Force Clear Filter button icons to be white */
+.clear-filters-button .mud-button-icon-start,
+.clear-filters-button .mud-icon-root {
+    color: #ffffff !important;
+}
+
+
+

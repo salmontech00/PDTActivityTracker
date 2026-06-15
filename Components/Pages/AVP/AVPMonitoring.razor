@@ -220,10 +220,16 @@
         color: #ffffff !important;
     }
 
-    /* Force icons brand blue in Lightest theme */
-    .glass-panel.lightest .mud-icon-root,
+    /* Force icons brand blue in Lightest theme (exclude action circles & clear-filter buttons) */
+    .glass-panel.lightest .mud-icon-root:not(.action-icon-circle .mud-icon-root):not(.clear-filters-button .mud-icon-root),
     .glass-panel.lightest .mud-list-item-icon {
         color: #0072cf !important;
+    }
+
+    /* Clear Filters button icon always white */
+    .clear-filters-button .mud-button-icon-start,
+    .clear-filters-button .mud-icon-root {
+        color: #ffffff !important;
     }
 
     /* PHOTO GALLERY */
