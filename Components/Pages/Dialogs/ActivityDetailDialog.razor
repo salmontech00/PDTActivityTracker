@@ -361,7 +361,7 @@
                             <MudText Typo="Typo.body2" Style="font-weight: 600;">@FormatLongWords(context.ChecklistItem?.TaskName)</MudText>
                             @if (!string.IsNullOrEmpty(context.ChecklistItem?.Description))
                             {
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2;">@FormatLongWords(context.ChecklistItem.Description)</MudText>
+                                <MudText Typo="Typo.caption" Style="font-size: 0.85rem !important; opacity: 0.7; display: block; line-height: 1.2;">@FormatLongWords(context.ChecklistItem.Description)</MudText>
                             }
                         </MudTd>
                         <MudTd DataLabel="Freq.">
@@ -406,7 +406,7 @@
                                     <MudText Typo="Typo.body2" Style="font-weight: 700; line-height: 1.2;">@FormatLongWords(task.ChecklistItem?.TaskName)</MudText>
                                     @if (!string.IsNullOrEmpty(task.ChecklistItem?.Description))
                                     {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 2px;">@FormatLongWords(task.ChecklistItem.Description)</MudText>
+                                        <MudText Typo="Typo.caption" Style="font-size: 0.85rem !important; opacity: 0.7; display: block; margin-top: 2px;">@FormatLongWords(task.ChecklistItem.Description)</MudText>
                                     }
                                 </div>
                                 @if (task.IsCompleted)
