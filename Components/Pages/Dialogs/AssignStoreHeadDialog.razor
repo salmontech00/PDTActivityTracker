@@ -66,7 +66,24 @@
     }
 
     /* MOBILE RESPONSIVE DIALOG */
-    @@media (max-width: 600px) {
+    @@media (max-width: 960px) {
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
+
+        .mud-picker-paper {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-popover {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+
         .glass-dialog .mud-dialog-actions {
             flex-direction: row;
             justify-content: flex-end;
@@ -116,6 +133,48 @@
                     font-size: 0.70rem !important;
                     padding: 6px 10px !important;
                 }
+
+        /* Shrink datepicker contents to fit 375px screens */
+        .mud-picker-paper {
+            padding: 0px !important;
+            min-width: unset !important;
+            width: min(290px, calc(100vw - 20px)) !important;
+            max-width: calc(100vw - 20px) !important;
+        }
+
+        .mud-picker-calendar-container {
+            padding: 0px !important;
+            width: 95% !important;
+        }
+
+        .mud-day {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.75rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-day {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.75rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week-day {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.75rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week {
+            justify-content: center !important;
+        }
+
+        .mud-picker-calendar-header {
+            justify-content: center !important;
+        }
     }
 </style>
 

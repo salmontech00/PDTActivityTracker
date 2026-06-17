@@ -1528,13 +1528,18 @@
 
     private async Task ConfirmSaveProgress()
     {
-        bool? confirmed = await DialogService.ShowMessageBox(
-            "Submit Progress",
-            "Are you sure you want to submit? Once submitted, you will no longer be able to edit this activity planner for today.",
-            yesText: "Submit",
-            cancelText: "Cancel");
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = "Are you sure you want to submit? Once submitted, you will no longer be able to edit this activity planner for today.",
+            ["ButtonText"] = "Submit",
+            ["Color"] = Color.Primary
+        };
 
-        if (confirmed == true)
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<PDTActivityTracker.Components.Pages.Dialogs.ConfirmDialog>("Submit Progress", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
         {
             await SubmitAndLockProgress();
         }

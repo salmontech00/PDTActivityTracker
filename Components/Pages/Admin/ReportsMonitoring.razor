@@ -1535,21 +1535,25 @@
                                                     Variant="Variant.Outlined" Dense="true" Margin="Margin.Dense" />
                             </MudItem>
                         </MudGrid>
-                        <div class="d-flex justify-space-between align-center px-1 mt-1 filters-summary-row">
-                            <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
-                                Showing @_filteredPhotos.Count of @_photoTotalMatchingCount photos
-                            </MudText>
-                            <div class="action-buttons-container">
-                                @if (HasPhotoFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearPhotoFilters" Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
-                            </div>
-                        </div>
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <div class="d-flex justify-space-between align-center px-1 mt-1 filters-summary-row">
+                                    <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
+                                        Showing @_filteredPhotos.Count of @_photoTotalMatchingCount photos
+                                    </MudText>
+                                    <div class="action-buttons-container">
+                                        @if (HasPhotoFilters())
+                                        {
+                                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Clear"
+                                                       OnClick="ClearPhotoFilters" Class="clear-filters-button">
+                                                Clear Filters
+                                            </MudButton>
+                                        }
+                                    </div>
+                                </div>
+                            </MudItem>
+                        </MudGrid>
                     </MudPaper>
 
                     @if (_filteredPhotos.Any())
@@ -1741,21 +1745,25 @@
                                 </MudSelect>
                             </MudItem>
                         </MudGrid>
-                        <div class="d-flex justify-space-between align-center px-1 mt-1 filters-summary-row">
-                            <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
-                                Showing @(_issuesFiltered.Count) of @(_issues.Count) issues
-                            </MudText>
-                            <div class="action-buttons-container">
-                                @if (HasIssueFilters())
-                                {
-                                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
-                                               StartIcon="@Icons.Material.Filled.Clear"
-                                               OnClick="ClearIssueFilters" Class="clear-filters-button">
-                                        Clear Filters
-                                    </MudButton>
-                                }
-                            </div>
-                        </div>
+                        <MudGrid>
+                            <MudItem xs="12">
+                                <div class="d-flex justify-space-between align-center px-1 mt-1 filters-summary-row">
+                                    <MudText Typo="Typo.body2" Style="opacity: 0.8;" Class="filter-info-text">
+                                        Showing @(_issuesFiltered.Count) of @(_issues.Count) issues
+                                    </MudText>
+                                    <div class="action-buttons-container">
+                                        @if (HasIssueFilters())
+                                        {
+                                            <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small"
+                                                       StartIcon="@Icons.Material.Filled.Clear"
+                                                       OnClick="ClearIssueFilters" Class="clear-filters-button">
+                                                Clear Filters
+                                            </MudButton>
+                                        }
+                                    </div>
+                                </div>
+                            </MudItem>
+                        </MudGrid>
                     </MudPaper>
 
                     @if (_issuesFiltered.Any())
