@@ -1369,12 +1369,12 @@
                                         <MudText Typo="Typo.body2" Style="font-weight: 700;">@issue.Title</MudText>
                                         <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
                                     </div>
-                                    <MudText Typo="Typo.body2" Class="mt-2">@issue.Description</MudText>
+                                    <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                                     @if (!string.IsNullOrEmpty(issue.AreaHeadRemark))
                                     {
                                         <div class="mt-2 pa-2 rounded-lg" style="background: rgba(0, 114, 207, 0.05); border-left: 3px solid #0072cf;">
                                             <MudText Typo="Typo.caption" Style="font-weight: 700; display: block;">FEEDBACK</MudText>
-                                            <MudText Typo="Typo.caption" Class="d-block">@issue.AreaHeadRemark</MudText>
+                                            <MudText Typo="Typo.caption" Class="d-block" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.AreaHeadRemark</MudText>
                                         </div>
                                     }
                                 </div>

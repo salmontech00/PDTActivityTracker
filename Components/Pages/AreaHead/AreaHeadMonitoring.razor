@@ -1282,7 +1282,7 @@
                                         <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
                                     </div>
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
-                                    <MudText Typo="Typo.body2" Class="mt-2 truncate-2-lines">@issue.Description</MudText>
+                                    <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                                 </div>
                                 <div class="mobile-card-actions">
                                     <MudButton StartIcon="@Icons.Material.Filled.Delete"
@@ -1820,7 +1820,7 @@
                                     <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
                                 </div>
                                 <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
-                                <MudText Typo="Typo.body2" Class="mt-2 truncate-2-lines">@issue.Description</MudText>
+                                <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                             </div>
                             <div class="mobile-card-actions">
                                 <MudButton StartIcon="@Icons.Material.Filled.Delete"

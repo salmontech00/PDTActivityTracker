@@ -250,8 +250,44 @@
         color: #0072cf !important;
     }
 
+    .issue-card-desktop {
+        display: block;
+    }
+
+    .issue-card-mobile {
+        display: none;
+    }
+
+    .stat-number {
+        font-weight: 800;
+    }
+
+    .stat-label {
+        opacity: 0.7;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
     /* RESPONSIVE */
     @@media (max-width: 600px) {
+        .stat-number {
+            font-size: 1.5rem !important;
+        }
+
+        .stat-label {
+            font-size: 0.65rem !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        .issue-card-desktop {
+            display: none;
+        }
+
+        .issue-card-mobile {
+            display: block;
+        }
+
         .preview-task-header {
             flex-wrap: wrap;
         }
@@ -370,6 +406,15 @@
 
         .page-header-row {
             margin-bottom: 8px !important;
+        }
+
+        .stat-number {
+            font-size: 1.25rem !important;
+        }
+
+        .stat-label {
+            font-size: 0.52rem !important;
+            letter-spacing: 0px !important;
         }
     }
 </style>
@@ -692,23 +737,23 @@
                 <MudPaper Class="@($"pa-4 glass-panel {GetThemeClass()} mb-4")" Elevation="0">
                     <MudGrid>
                         <MudItem xs="4" Class="text-center">
-                            <MudText Typo="Typo.h4" Style="font-weight: 800; color: #0072cf;">@_periodRows.Count(r => r.HasSession)</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Active Days</MudText>
+                            <MudText Typo="Typo.h4" Class="stat-number" Style="color: #0072cf;">@_periodRows.Count(r => r.HasSession)</MudText>
+                            <MudText Typo="Typo.caption" Class="stat-label">Active Days</MudText>
                         </MudItem>
                         <MudItem xs="4" Class="text-center">
-                            <MudText Typo="Typo.h4" Style="font-weight: 800; color: #4caf50;">@_periodRows.Count(r => r.CompletionPercentage >= 100)</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Completed</MudText>
+                            <MudText Typo="Typo.h4" Class="stat-number" Style="color: #4caf50;">@_periodRows.Count(r => r.CompletionPercentage >= 100)</MudText>
+                            <MudText Typo="Typo.caption" Class="stat-label">Completed</MudText>
                         </MudItem>
                         <MudItem xs="4" Class="text-center">
-                            <MudText Typo="Typo.h4" Style="font-weight: 800; color: #9c27b0;">
+                            <MudText Typo="Typo.h4" Class="stat-number" Style="color: #9c27b0;">
                                 @(_periodRows.Where(r => r.HasSession).Any()
                                                         ? (int)_periodRows.Where(r => r.HasSession).Average(r => r.CompletionPercentage)
                                                         : 0)%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Avg. Progress</MudText>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
+                            </MudText>
+                            <MudText Typo="Typo.caption" Class="stat-label">Avg. Progress</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
 
                 <!-- Day rows -->
         @foreach (var row in _periodRows)
@@ -800,28 +845,60 @@
                             @foreach (var issue in _issues)
                             {
                                 <MudPaper Class="pa-4 mb-3 rounded-lg" Elevation="0" Style="@GetIssueCardStyle(issue)">
-                                    <div class="d-flex justify-space-between align-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-center gap-2 mb-1">
-                                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.2;">@issue.Title</MudText>
-                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 70px;">@issue.Priority</MudChip>
-                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 70px;">@issue.Status</MudChip>
+                                    <!-- DESKTOP VIEW (hidden on mobile via CSS) -->
+                                    <div class="issue-card-desktop">
+                                        <div class="d-flex justify-space-between align-start">
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <div class="d-flex align-center gap-2 mb-1">
+                                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.3; word-break: break-word; overflow-wrap: anywhere; flex: 1; min-width: 0;">@issue.Title</MudText>
+                                                    <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700;">@issue.Priority</MudChip>
+                                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700;">@issue.Status</MudChip>
+                                                </div>
+                                                <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;" Class="mb-2">@issue.Description</MudText>
+                                                <div class="d-flex align-center gap-2 mt-2" style="opacity: 0.6;">
+                                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                                    <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
+                                                </div>
                                             </div>
-                                            <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap;">@issue.Description</MudText>
-                                            <div class="d-flex align-center gap-2 mt-3" style="opacity: 0.6;">
-                                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
-                                                <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
-                                            </div>
+                                            @if (issue.ImageData != null)
+                                            {
+                                                <div class="ml-4" style="cursor: pointer; flex-shrink: 0;" @onclick="@(() => OpenIssuePhoto(issue))">
+                                                    <img src="@GetIssueImageSource(issue)" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);" alt="Evidence" />
+                                                </div>
+                                            }
                                         </div>
+                                    </div>
+
+                                    <!-- MOBILE VIEW (hidden on desktop via CSS) -->
+                                    <div class="issue-card-mobile">
+                                        <div class="d-flex flex-column align-start mb-1">
+                                            <div class="d-flex gap-1 mb-1">
+                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700; margin: 0;">@issue.Priority</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700; margin: 0;">@issue.Status</MudChip>
+                                            </div>
+                                            <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.3; word-break: break-word; overflow-wrap: anywhere;" Class="mb-1">@issue.Title</MudText>
+                                        </div>
+                                        @* Description *@
+                                        <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;" Class="mb-2">@issue.Description</MudText>
+                                        @* Evidence photo attachment style *@
                                         @if (issue.ImageData != null)
                                         {
-                                            <div class="ml-4" style="cursor: pointer;" @onclick="@(() => OpenIssuePhoto(issue))">
-                                                <img src="@GetIssueImageSource(issue)"
-                                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);"
-                                                     alt="Evidence" />
-                                                <MudText Typo="Typo.caption" Align="Align.Center" Style="display: block; opacity: 0.6;">View Photo</MudText>
+                                            <div class="mt-2 mb-2 d-flex justify-start">
+                                                <div style="cursor: pointer; max-width: 160px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 8px rgba(0,0,0,0.15); background: rgba(0,0,0,0.2);" @onclick="@(() => OpenIssuePhoto(issue))">
+                                                    <img src="@GetIssueImageSource(issue)"
+                                                         style="width: 100%; height: 100px; object-fit: cover;"
+                                                         alt="Evidence" />
+                                                    <div style="padding: 4px; background: rgba(0,0,0,0.5); text-align: center;">
+                                                        <MudText Typo="Typo.caption" Style="color: #ffffff; opacity: 0.9; font-size: 0.7rem; font-weight: 600; display: block;">Tap to view photo</MudText>
+                                                    </div>
+                                                </div>
                                             </div>
                                         }
+                                        @* Reporter info *@
+                                        <div class="d-flex align-center gap-2 mt-2" style="opacity: 0.6;">
+                                            <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                            <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
+                                        </div>
                                     </div>
                                 </MudPaper>
                             }

@@ -1302,7 +1302,7 @@
                                     </div>
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">By: @(issue.ReportedBy?.Fullname ?? "---")</MudText>
-                                    <MudText Typo="Typo.body2" Class="mt-2">@issue.Description</MudText>
+                                    <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                                 </div>
                                 <div class="mobile-card-actions">
                                     <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Filled" OnClick="@(() => OpenIssueDetail(issue))" Class="action-pill-btn action-btn-info">
@@ -1784,7 +1784,7 @@
                                     </div>
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">By: @(issue.ReportedBy?.Fullname ?? "---")</MudText>
-                                    <MudText Typo="Typo.body2" Class="mt-2">@issue.Description</MudText>
+                                    <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                                 </div>
                                 <div class="mobile-card-actions">
                                     <MudButton StartIcon="@Icons.Material.Filled.Visibility" Variant="Variant.Filled"

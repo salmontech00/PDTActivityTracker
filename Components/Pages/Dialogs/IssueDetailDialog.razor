@@ -176,7 +176,7 @@
             <!-- Description -->
             <MudItem xs="12">
                 <span class="detail-label">Problem Description</span>
-                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; line-height: 1.6;">@_issue.Description</MudText>
+                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; line-height: 1.6; word-break: break-word; overflow-wrap: anywhere;">@_issue.Description</MudText>
             </MudItem>
 
             <!-- Evidence Photo -->
@@ -243,7 +243,7 @@
                     @if (!string.IsNullOrEmpty(_issue.AreaHeadRemark))
                     {
                         <MudPaper Class="pa-4 rounded-lg mt-2" Elevation="0" Style="background: rgba(0, 114, 207, 0.05); border-left: 4px solid #0072cf;">
-                            <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@_issue.AreaHeadRemark</MudText>
+                            <MudText Typo="Typo.body2" Style="white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;">@_issue.AreaHeadRemark</MudText>
                         </MudPaper>
                     }
                     else
