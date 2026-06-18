@@ -221,7 +221,7 @@
     }
 
     /* Force icons brand blue in Lightest theme (exclude action circles & clear-filter buttons) */
-    .glass-panel.lightest .mud-icon-root:not(.action-icon-circle, .mud-icon-root):not(.clear-filters-button, .mud-icon-root),
+    .glass-panel.lightest .mud-icon-root:not(.action-icon-circle .mud-icon-root):not(.clear-filters-button .mud-icon-root),
     .glass-panel.lightest .mud-list-item-icon {
         color: #0072cf !important;
     }
@@ -982,9 +982,6 @@
                                 </MudChip>
                             </MudTd>
                         </RowTemplate>
-                        <PagerContent>
-                            <MudTablePager />
-                        </PagerContent>
                     </MudTable>
                 </MudTabPanel>
 
@@ -1086,7 +1083,7 @@
 
                     @if (_filteredActivities.Any())
                     {
-                        @foreach (var activity in _filteredActivities.Skip((_activityPage - 1) * 10).Take(10))
+                        @foreach (var activity in _filteredActivities)
                         {
                             <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
@@ -1133,16 +1130,6 @@
                                     </MudButton>
                                 </div>
                             </MudPaper>
-                        }
-                        @if (_filteredActivities.Count > 10)
-                        {
-                            <div class="d-flex justify-center mt-4">
-                                <MudPagination Color="Color.Primary" 
-                                               Count="@((_filteredActivities.Count + 9) / 10)" 
-                                               Selected="@_activityPage" 
-                                               SelectedChanged="@(p => { _activityPage = p; StateHasChanged(); })" 
-                                               Variant="Variant.Filled" />
-                            </div>
                         }
                     }
                     else
@@ -1261,7 +1248,7 @@
                 else if (_activeSection == "stores")
                 {
                     <MudTextField @bind-Value="_storeSearchString"
-                                  @bind-Value:after="OnStoreSearchChanged"
+                                  @bind-Value:after="StateHasChanged"
                                   Placeholder="Search Stores..."
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
@@ -1272,7 +1259,7 @@
                                   Immediate="true"
                                   DebounceInterval="200" />
 
-                    @foreach (var store in GetPagedStores())
+                    @foreach (var store in _stores.Where(s => StoreQuickFilter(s)))
                     {
                         <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                             <div class="mobile-card-header">
@@ -1310,21 +1297,10 @@
                             </div>
                         </MudPaper>
                     }
-                    var filteredStoresCount = GetFilteredStores().Count;
-                    @if (filteredStoresCount > _storePageSize)
-                    {
-                        <div class="d-flex justify-center mt-4">
-                            <MudPagination Color="Color.Primary"
-                                            Count="@((filteredStoresCount + _storePageSize - 1) / _storePageSize)"
-                                            Selected="@_storeCurrentPage"
-                                            SelectedChanged="OnStorePageChanged"
-                                            Variant="Variant.Filled" />
-                        </div>
-                    }
                 }
                 else if (_activeSection == "areahead")
                 {
-                    @foreach (var metric in GetPagedAreaHeadMetrics())
+                    @foreach (var metric in _areaHeadMetrics)
                     {
                         <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                             <div class="mobile-card-header">
@@ -1368,16 +1344,6 @@
                             </div>
                         </MudPaper>
                     }
-                    @if (_areaHeadMetrics.Count > _areaHeadPageSize)
-                    {
-                        <div class="d-flex justify-center mt-4">
-                            <MudPagination Color="Color.Primary"
-                                            Count="@((_areaHeadMetrics.Count + _areaHeadPageSize - 1) / _areaHeadPageSize)"
-                                            Selected="@_areaHeadCurrentPage"
-                                            SelectedChanged="OnAreaHeadPageChanged"
-                                            Variant="Variant.Filled" />
-                        </div>
-                    }
                 }
             </MudPaper>
 
@@ -1392,7 +1358,6 @@
     private bool _showFilters = false;
     private bool _showPhotoFilters = false;
     private string _activeSection = "activity";
-    private int _activityPage = 1;
 
     private List<StoreDailyActivity> _allActivities = new();
     private List<StoreDailyActivity> _filteredActivities = new();
@@ -1416,43 +1381,6 @@
     private DateRange _dateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
     private DateRange _photoDateRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
     private Dictionary<int, PDTActivityTracker.Components.Services.ActivityProgressHelper.ActivityProgressResult> _progressCache = new();
-
-    private int _storePageSize = 10;
-    private int _storeCurrentPage = 1;
-
-    private List<Store> GetFilteredStores() =>
-    _stores.Where(s => StoreQuickFilter(s)).ToList();
-
-    private List<Store> GetPagedStores() =>
-        GetFilteredStores()
-            .Skip((_storeCurrentPage - 1) * _storePageSize)
-            .Take(_storePageSize)
-            .ToList();
-
-    private void OnStoreSearchChanged()
-    {
-        _storeCurrentPage = 1;
-        StateHasChanged();
-    }
-
-    private void OnStorePageChanged(int page)
-    {
-        _storeCurrentPage = page;
-    }
-
-    private int _areaHeadPageSize = 10;
-    private int _areaHeadCurrentPage = 1;
-
-    private List<AreaHeadMetric> GetPagedAreaHeadMetrics() =>
-        _areaHeadMetrics
-            .Skip((_areaHeadCurrentPage - 1) * _areaHeadPageSize)
-            .Take(_areaHeadPageSize)
-            .ToList();
-
-    private void OnAreaHeadPageChanged(int page)
-    {
-        _areaHeadCurrentPage = page;
-    }
 
     protected override void OnInitialized()
     {
@@ -1565,7 +1493,6 @@
 
     private void FilterData()
     {
-        _activityPage = 1;
         _filteredActivities = _allActivities
             .Where(a => (_dateRange.Start == null || a.Date.Date >= _dateRange.Start.Value.Date) &&
                         (_dateRange.End == null || a.Date.Date <= _dateRange.End.Value.Date))
@@ -1601,7 +1528,6 @@
         _selectedStore = null;
         _selectedStatus = null;
         _selectedReviewStatus = null;
-        _activityPage = 1;
         FilterData();
     }
 
@@ -1844,7 +1770,4 @@
         catch { return false; }
     }
 }
-
-
-
 

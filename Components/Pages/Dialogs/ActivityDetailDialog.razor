@@ -78,7 +78,8 @@
     }
 
     .filter-wrapper {
-        min-width: 200px;
+        min-width: 140px;
+        max-width: 200px;
     }
 
     .compact-select {
@@ -243,10 +244,27 @@
     @@media (max-width: 375px) {
         .dialog-header {
             padding-right: 0 !important;
+            gap: 6px !important;
         }
 
         .header-info h6 {
-            font-size: 1.1rem !important;
+            font-size: 1rem !important;
+        }
+
+        .header-info .mud-typography-caption {
+            font-size: 0.7rem !important;
+        }
+
+        /* Filter wrapper: shrink to fit, don't overflow */
+        .filter-wrapper {
+            min-width: unset !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            justify-content: flex-start !important;
+        }
+
+        .compact-select {
+            width: 100% !important;
         }
 
         .mobile-detail-card {
@@ -292,6 +310,25 @@
         .frequency-chip, .status-chip {
             max-width: none !important;
             font-size: 0.65rem !important;
+        }
+
+        /* Feedback action buttons: stack vertically, full-width */
+        .feedback-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 6px !important;
+        }
+
+        .feedback-actions .mud-button-root {
+            width: 100% !important;
+            font-size: 0.72rem !important;
+            padding: 6px 10px !important;
+            justify-content: center !important;
+        }
+
+        /* Feedback section padding */
+        .feedback-section {
+            padding: 12px !important;
         }
     }
 </style>
@@ -447,7 +484,7 @@
         @if (Activity != null)
         {
             <MudDivider Class="my-4" Style="opacity: 0.1;" />
-            <div class="pa-4 rounded-lg" style="@GetFeedbackContainerStyle()">
+            <div class="pa-4 rounded-lg feedback-section" style="@GetFeedbackContainerStyle()">
                 <div class="feedback-header mb-3">
                     <div class="d-flex align-center">
                         <div class="achievement-icon-box mr-2" style="background: var(--mud-palette-primary); color: #ffffff;">
@@ -474,7 +511,7 @@
                                   Lines="2"
                                   Placeholder="Enter your feedback here..."
                                   Class="mb-2" />
-                    <div class="d-flex justify-end gap-2">
+                    <div class="d-flex justify-end gap-2 flex-wrap feedback-actions">
                         @if (Activity.AreaHeadReviewedAt.HasValue)
                         {
                             <MudButton Variant="Variant.Outlined"

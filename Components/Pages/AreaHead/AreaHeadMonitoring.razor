@@ -722,7 +722,7 @@
             <!-- My Stores -->
             <MudTabPanel Text="My Stores" Icon="@Icons.Material.Filled.Store">
                 <MudGrid>
-                        @foreach (var store in GetPagedStores())
+                    @foreach (var store in _assignedStores)
                     {
                         <MudItem xs="12" md="6" lg="4">
                             <MudPaper Class="@($"pa-4 glass-panel d-flex flex-column h-100 {GetThemeClass()}")" Elevation="0" Style="height: 100%;">
@@ -768,16 +768,6 @@
                         </MudItem>
                     }
                 </MudGrid>
-                    @if (_assignedStores.Count > _storePageSize)
-                    {
-                        <div class="d-flex justify-center mt-4">
-                            <MudPagination Color="Color.Primary"
-                                           Count="@((_assignedStores.Count + _storePageSize - 1) / _storePageSize)"
-                                           Selected="@_storeCurrentPage"
-                                           SelectedChanged="OnStorePageChanged"
-                                           Variant="Variant.Filled" />
-                        </div>
-                    }
             </MudTabPanel>
 
             <!-- Activity Reports -->
@@ -895,10 +885,10 @@
                         </MudTable>
                     </div>
 
-                        <div class="mobile-view">
-                            @foreach (var activity in GetPagedActivityLogs())
-                            {
-                                <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                    <div class="mobile-view">
+                        @foreach (var activity in _activityLogsFiltered)
+                        {
+                            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
                                     <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@activity.Date.ToString("MMM dd, yyyy")</MudText>
                                     <div class="d-flex flex-column align-end">
@@ -937,19 +927,9 @@
                                         Details
                                     </MudButton>
                                 </div>
-                                </MudPaper>
-                            }
-                            @if (_activityLogsFiltered.Count > _activityPageSize)
-                            {
-                                <div class="d-flex justify-center mt-4">
-                                    <MudPagination Color="Color.Primary"
-                                                   Count="@((_activityLogsFiltered.Count + _activityPageSize - 1) / _activityPageSize)"
-                                                   Selected="@_activityCurrentPage"
-                                                   SelectedChanged="OnActivityPageChanged"
-                                                   Variant="Variant.Filled" />
-                                </div>
-                            }
-                        </div>
+                            </MudPaper>
+                        }
+                    </div>
                 }
                 else
                 {
@@ -1286,10 +1266,10 @@
                         </MudTable>
                     </div>
 
-                        <div class="mobile-view">
-                            @foreach (var issue in GetPagedIssues())
-                            {
-                                <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
+                    <div class="mobile-view">
+                        @foreach (var issue in _issuesFiltered)
+                        {
+                            <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
                                     <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@issue.ReportedAt.ToString("MMM dd")</MudText>
                                     <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled">
@@ -1322,19 +1302,9 @@
                                         Review
                                     </MudButton>
                                 </div>
-                                </MudPaper>
-                            }
-                            @if (_issuesFiltered.Count > _issuePageSize)
-                            {
-                                <div class="d-flex justify-center mt-4">
-                                    <MudPagination Color="Color.Primary"
-                                                   Count="@((_issuesFiltered.Count + _issuePageSize - 1) / _issuePageSize)"
-                                                   Selected="@_issueCurrentPage"
-                                                   SelectedChanged="OnIssuePageChanged"
-                                                   Variant="Variant.Filled" />
-                                </div>
-                            }
-                        </div>
+                            </MudPaper>
+                        }
+                    </div>
                 }
                 else
                 {
@@ -1392,7 +1362,7 @@
             @if (_activeSection == "stores")
             {
                 <MudGrid Spacing="2">
-                        @foreach (var store in GetPagedStores())
+                    @foreach (var store in _assignedStores)
                     {
                         <MudItem xs="12">
                             <MudPaper Class="@($"pa-4 glass-panel d-flex flex-column h-100 {GetThemeClass()}")" Elevation="0">
@@ -1438,16 +1408,6 @@
                         </MudItem>
                     }
                 </MudGrid>
-                    @if (_assignedStores.Count > _storePageSize)
-                    {
-                        <div class="d-flex justify-center mt-4">
-                            <MudPagination Color="Color.Primary"
-                                           Count="@((_assignedStores.Count + _storePageSize - 1) / _storePageSize)"
-                                           Selected="@_storeCurrentPage"
-                                           SelectedChanged="OnStorePageChanged"
-                                           Variant="Variant.Filled" />
-                        </div>
-                    }
             }
             else if (_activeSection == "activity")
             {
@@ -1512,7 +1472,7 @@
 
                 @if (_activityLogsFiltered.Any())
                 {
-                    @foreach (var activity in GetPagedActivityLogs())
+                    @foreach (var activity in _activityLogsFiltered)
                     {
                         <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                             <div class="mobile-card-header">
@@ -1556,16 +1516,6 @@
                             </div>
                         </MudPaper>
                     }
-                        @if (_activityLogsFiltered.Count > _activityPageSize)
-                        {
-                            <div class="d-flex justify-center mt-4">
-                                <MudPagination Color="Color.Primary"
-                                               Count="@((_activityLogsFiltered.Count + _activityPageSize - 1) / _activityPageSize)"
-                                               Selected="@_activityCurrentPage"
-                                               SelectedChanged="OnActivityPageChanged"
-                                               Variant="Variant.Filled" />
-                            </div>
-                        }
                 }
                 else
                 {
@@ -1855,7 +1805,7 @@
 
                 @if (_issuesFiltered.Any())
                 {
-                    @foreach (var issue in GetPagedIssues())
+                    @foreach (var issue in _issuesFiltered)
                     {
                         <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                             <div class="mobile-card-header">
@@ -1892,16 +1842,6 @@
                             </div>
                         </MudPaper>
                     }
-                        @if (_issuesFiltered.Count > _issuePageSize)
-                        {
-                            <div class="d-flex justify-center mt-4">
-                                <MudPagination Color="Color.Primary"
-                                               Count="@((_issuesFiltered.Count + _issuePageSize - 1) / _issuePageSize)"
-                                               Selected="@_issueCurrentPage"
-                                               SelectedChanged="OnIssuePageChanged"
-                                               Variant="Variant.Filled" />
-                            </div>
-                        }
                 }
                 else
                 {
@@ -1976,48 +1916,6 @@
     private int _logCurrentPage = 1;
     private int _logTotalCount = 0;
     private bool _loadingMoreLogs = false;
-
-    private int _activityPageSize = 10;
-    private int _activityCurrentPage = 1;
-
-    private int _issuePageSize = 10;
-    private int _issueCurrentPage = 1;
-
-    private int _storePageSize = 10;
-    private int _storeCurrentPage = 1;
-
-    private List<Store> GetPagedStores() =>
-    _assignedStores
-        .Skip((_storeCurrentPage - 1) * _storePageSize)
-        .Take(_storePageSize)
-        .ToList();
-
-    private void OnStorePageChanged(int page)
-    {
-        _storeCurrentPage = page;
-    }
-
-    private List<Issue> GetPagedIssues() =>
-        _issuesFiltered
-            .Skip((_issueCurrentPage - 1) * _issuePageSize)
-            .Take(_issuePageSize)
-            .ToList();
-
-    private void OnIssuePageChanged(int page)
-    {
-        _issueCurrentPage = page;
-    }
-
-    private List<StoreDailyActivity> GetPagedActivityLogs() =>
-    _activityLogsFiltered
-        .Skip((_activityCurrentPage - 1) * _activityPageSize)
-        .Take(_activityPageSize)
-        .ToList();
-
-    private void OnActivityPageChanged(int page)
-    {
-        _activityCurrentPage = page;
-    }
 
     public class CategoryPerformanceModel
     {
@@ -2824,7 +2722,4 @@
         catch { return false; }
     }
 }
-
-
-
 
