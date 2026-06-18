@@ -853,7 +853,7 @@
 
             <!-- Mobile View -->
             <div class="mobile-view">
-                @foreach (var store in _filteredStores)
+                @foreach (var store in GetPagedStores())
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
@@ -936,6 +936,16 @@
                         </div>
                     </MudPaper>
                 }
+                @if (_filteredStores.Count > _storePageSize)
+                {
+                    <div class="d-flex justify-center mt-4">
+                        <MudPagination Color="Color.Primary"
+                                       Count="@((_filteredStores.Count + _storePageSize - 1) / _storePageSize)"
+                                       Selected="@_storeCurrentPage"
+                                       SelectedChanged="OnStorePageChanged"
+                                       Variant="Variant.Filled" />
+                    </div>
+                }
             </div>
         }
     }
@@ -950,6 +960,20 @@
     private HashSet<Store> _expandedRows = new();
 
     private bool IsAllSelected() => _filteredStores.Any() && _selectedStores.Count >= _filteredStores.Count;
+
+    private int _storePageSize = 10;
+    private int _storeCurrentPage = 1;
+
+    private List<Store> GetPagedStores() =>
+        _filteredStores
+            .Skip((_storeCurrentPage - 1) * _storePageSize)
+            .Take(_storePageSize)
+            .ToList();
+
+    private void OnStorePageChanged(int page)
+    {
+        _storeCurrentPage = page;
+    }
 
     private void HandleSelectAll(bool value)
     {
@@ -1060,6 +1084,7 @@
 
     private async Task ApplyFilters()
     {
+        _storeCurrentPage = 1;
         var query = _allStores.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))

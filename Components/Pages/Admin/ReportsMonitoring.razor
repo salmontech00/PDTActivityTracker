@@ -571,6 +571,18 @@
             padding-right: 0px !important;
         }
 
+        .mud-pagination {
+            gap: 2px !important;
+        }
+
+            .mud-pagination .mud-button-root {
+                min-width: 26px !important;
+                width: 26px !important;
+                height: 26px !important;
+                font-size: 0.7rem !important;
+                margin: 0 !important;
+            }
+
         /* Shrink nav tab buttons - denser like AVP */
         .mobile-nav-grid .mud-button-root {
             font-size: 0.62rem !important;
@@ -1434,7 +1446,7 @@
 
                     @if (_activityLogsFiltered.Any())
                     {
-                        @foreach (var activity in _activityLogsFiltered)
+                        @foreach (var activity in GetPagedActivityLogs())
                         {
                             <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
@@ -1480,6 +1492,16 @@
                                     }
                                 </div>
                             </MudPaper>
+                        }
+                        @if (_activityLogsFiltered.Count > _activityPageSize)
+                        {
+                            <div class="d-flex justify-center mt-4">
+                                <MudPagination Color="Color.Primary"
+                                               Count="@((_activityLogsFiltered.Count + _activityPageSize - 1) / _activityPageSize)"
+                                               Selected="@_activityCurrentPage"
+                                               SelectedChanged="OnActivityPageChanged"
+                                               Variant="Variant.Filled" />
+                            </div>
                         }
                     }
                     else
@@ -1768,7 +1790,7 @@
 
                     @if (_issuesFiltered.Any())
                     {
-                        @foreach (var issue in _issuesFiltered)
+                        @foreach (var issue in GetPagedIssues())
                         {
                             <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
@@ -1797,6 +1819,16 @@
                                     </MudButton>
                                 </div>
                             </MudPaper>
+                        }
+                        @if (_issuesFiltered.Count > _issuePageSize)
+                        {
+                            <div class="d-flex justify-center mt-4">
+                                <MudPagination Color="Color.Primary"
+                                               Count="@((_issuesFiltered.Count + _issuePageSize - 1) / _issuePageSize)"
+                                               Selected="@_issueCurrentPage"
+                                               SelectedChanged="OnIssuePageChanged"
+                                               Variant="Variant.Filled" />
+                            </div>
                         }
                     }
                     else
@@ -1875,6 +1907,34 @@
     private bool _loadingMoreLogs = false;
 
     private string _activeSection = "activity";
+
+    private int _activityPageSize = 10;
+    private int _activityCurrentPage = 1;
+
+    private List<StoreDailyActivity> GetPagedActivityLogs() =>
+        _activityLogsFiltered
+            .Skip((_activityCurrentPage - 1) * _activityPageSize)
+            .Take(_activityPageSize)
+            .ToList();
+
+    private void OnActivityPageChanged(int page)
+    {
+        _activityCurrentPage = page;
+    }
+
+    private int _issuePageSize = 10;
+    private int _issueCurrentPage = 1;
+
+    private List<Issue> GetPagedIssues() =>
+        _issuesFiltered
+            .Skip((_issueCurrentPage - 1) * _issuePageSize)
+            .Take(_issuePageSize)
+            .ToList();
+
+    private void OnIssuePageChanged(int page)
+    {
+        _issueCurrentPage = page;
+    }
 
     private string GetFilterButtonStyle()
     {
@@ -2083,6 +2143,7 @@
 
     private void ApplyReportFilters()
     {
+        _activityCurrentPage = 1;
         _activityLogsFiltered = _activityLogs;
 
         if (_dateRange != null && _dateRange.Start.HasValue && _dateRange.End.HasValue)
@@ -2256,6 +2317,7 @@
 
     private void ApplyIssueFilters()
     {
+        _issueCurrentPage = 1;
         var filtered = _issues.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(_issueSearchTerm))

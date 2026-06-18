@@ -1086,7 +1086,7 @@
 
                     @if (_dailyActivities.Any())
                     {
-                        @foreach (var activity in _dailyActivities)
+                        @foreach (var activity in GetPagedActivities())
                         {
                             <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
@@ -1139,6 +1139,16 @@
                                     </MudButton>
                                 </div>
                             </MudPaper>
+                        }
+                        @if (_dailyActivities.Count > _activityPageSize)
+                        {
+                            <div class="d-flex justify-center mt-4">
+                                <MudPagination Color="Color.Primary"
+                                               Count="@((_dailyActivities.Count + _activityPageSize - 1) / _activityPageSize)"
+                                               Selected="@_activityCurrentPage"
+                                               SelectedChanged="OnActivityPageChanged"
+                                               Variant="Variant.Filled" />
+                            </div>
                         }
                     }
                     else
@@ -1355,7 +1365,7 @@
 
                     @if (_myIssuesFiltered.Any())
                     {
-                        @foreach (var issue in _myIssuesFiltered)
+                        @foreach (var issue in GetPagedIssues())
                         {
                             <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                                 <div class="mobile-card-header">
@@ -1387,6 +1397,16 @@
                                     </MudButton>
                                 </div>
                             </MudPaper>
+                        }
+                        @if (_myIssuesFiltered.Count > _issuePageSize)
+                        {
+                            <div class="d-flex justify-center mt-4">
+                                <MudPagination Color="Color.Primary"
+                                               Count="@((_myIssuesFiltered.Count + _issuePageSize - 1) / _issuePageSize)"
+                                               Selected="@_issueCurrentPage"
+                                               SelectedChanged="OnIssuePageChanged"
+                                               Variant="Variant.Filled" />
+                            </div>
                         }
                     }
                     else
@@ -1442,6 +1462,34 @@
     private string _topCategoryName = "Opening";
     private int _topCategoryRate = 0;
     private Dictionary<int, PDTActivityTracker.Components.Services.ActivityProgressHelper.ActivityProgressResult> _activityProgressCache = new();
+
+    private int _activityPageSize = 10;
+    private int _activityCurrentPage = 1;
+
+    private List<StoreDailyActivity> GetPagedActivities() =>
+        _dailyActivities
+            .Skip((_activityCurrentPage - 1) * _activityPageSize)
+            .Take(_activityPageSize)
+            .ToList();
+
+    private void OnActivityPageChanged(int page)
+    {
+        _activityCurrentPage = page;
+    }
+
+    private int _issuePageSize = 10;
+    private int _issueCurrentPage = 1;
+
+    private List<Issue> GetPagedIssues() =>
+        _myIssuesFiltered
+            .Skip((_issueCurrentPage - 1) * _issuePageSize)
+            .Take(_issuePageSize)
+            .ToList();
+
+    private void OnIssuePageChanged(int page)
+    {
+        _issueCurrentPage = page;
+    }
 
     protected override void OnInitialized()
     {
@@ -1513,6 +1561,7 @@
 
     private async Task ApplyReportFilters()
     {
+        _activityCurrentPage = 1;
         _dailyActivities = _allDailyActivities;
 
         if (_dateRange != null && _dateRange.Start.HasValue && _dateRange.End.HasValue)
@@ -1728,6 +1777,7 @@
 
     private void ApplyIssueFilters()
     {
+        _issueCurrentPage = 1;
         var filtered = _myIssues.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(_issueSearchTerm))

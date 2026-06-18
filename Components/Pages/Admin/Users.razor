@@ -601,7 +601,7 @@
         <div class="mobile-view">
             @if (_filteredUsers.Any())
             {
-                @foreach (var user in _filteredUsers)
+                @foreach (var user in GetPagedUsers())
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
@@ -685,6 +685,16 @@
                         </div>
                     </MudPaper>
                 }
+                @if (_filteredUsers.Count > _userPageSize)
+                {
+                    <div class="d-flex justify-center mt-4">
+                        <MudPagination Color="Color.Primary"
+                                       Count="@((_filteredUsers.Count + _userPageSize - 1) / _userPageSize)"
+                                       Selected="@_userCurrentPage"
+                                       SelectedChanged="OnUserPageChanged"
+                                       Variant="Variant.Filled" />
+                    </div>
+                }
             }
             else
             {
@@ -754,6 +764,20 @@
     private string _searchTerm = string.Empty;
     private string _roleFilter = "All";
     private string _statusFilter = "All";
+
+    private int _userPageSize = 10;
+    private int _userCurrentPage = 1;
+
+    private List<User> GetPagedUsers() =>
+        _filteredUsers
+            .Skip((_userCurrentPage - 1) * _userPageSize)
+            .Take(_userPageSize)
+            .ToList();
+
+    private void OnUserPageChanged(int page)
+    {
+        _userCurrentPage = page;
+    }
 
     protected override void OnInitialized()
     {
@@ -857,6 +881,7 @@
 
     private void ApplyFilters()
     {
+        _userCurrentPage = 1;
         _filteredUsers = _allUsers;
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))
