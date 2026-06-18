@@ -18,7 +18,17 @@ var builder = WebApplication.CreateBuilder(args);
 ExcelPackage.License.SetNonCommercialPersonal("TuitionValidation");
 #pragma warning restore CS0618
 
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config =>
+{
+    // Desktop keeps default bottom-left; mobile centering is handled via CSS
+    config.SnackbarConfiguration.PreventDuplicates = false;
+    config.SnackbarConfiguration.NewestOnTop = true;
+    config.SnackbarConfiguration.ShowCloseIcon = true;
+    config.SnackbarConfiguration.VisibleStateDuration = 4500;  // 4.5s — enough time to read errors on mobile
+    config.SnackbarConfiguration.HideTransitionDuration = 300;
+    config.SnackbarConfiguration.ShowTransitionDuration = 200;
+    config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
+});
 builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddScoped<PDTActivityTracker.Components.Services.ThemeService>();
 

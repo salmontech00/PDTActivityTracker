@@ -247,5 +247,67 @@
     color: #ffffff !important;
 }
 
+/* =============================================
+   SNACKBAR - MOBILE: center at top (≤960px)
+   Desktop keeps default bottom-left position
+   ============================================= */
+.mud-snackbar {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
 
+@media (max-width: 960px) {
+    .mud-snackbar-location-bottom-left,
+    .mud-snackbar-location-bottom-right,
+    .mud-snackbar-location-bottom-center,
+    .mud-snackbar-location-top-left,
+    .mud-snackbar-location-top-right,
+    .mud-snackbar-location-top-center {
+        left: 50% !important;
+        right: auto !important;
+        bottom: auto !important;
+        top: 12px !important;
+        transform: translateX(-50%) !important;
+        max-width: 420px !important;
+        min-width: 240px !important;
+        width: auto !important;
+    }
+}
 
+@media (max-width: 480px) {
+    .mud-snackbar-location-bottom-left,
+    .mud-snackbar-location-bottom-right,
+    .mud-snackbar-location-bottom-center,
+    .mud-snackbar-location-top-left,
+    .mud-snackbar-location-top-right,
+    .mud-snackbar-location-top-center {
+        top: 8px !important;
+        width: calc(100vw - 32px) !important;
+        max-width: calc(100vw - 32px) !important;
+        min-width: unset !important;
+    }
+
+    .mud-snackbar {
+        font-size: 0.8rem !important;
+        padding: 6px 12px !important;
+        min-height: 36px !important;
+        border-radius: 8px !important;
+    }
+
+    .mud-snackbar .mud-snackbar-content-message {
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
+    }
+
+    .mud-snackbar .mud-icon-root {
+        font-size: 1rem !important;
+        width: 1rem !important;
+        height: 1rem !important;
+    }
+
+    .mud-snackbar .mud-button-root {
+        padding: 2px !important;
+        min-width: unset !important;
+    }
+}
