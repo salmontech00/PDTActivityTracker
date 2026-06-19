@@ -72,6 +72,16 @@
         margin-top: 0.5rem;
     }
 
+    .logo-version {
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+        font-size: 0.75rem;
+        letter-spacing: 0.15em;
+        margin-left: 0.3rem;
+        margin-top: 0.4rem;
+        opacity: 0.35;
+    }
+
     .login-card-container {
         flex: 1;
         display: flex;
@@ -158,6 +168,13 @@
             margin: 0px;
         }
 
+        .logo-version {
+            font-size: 0.65rem;
+            letter-spacing: 0.12em;
+            margin: 0.3rem 0 0 0;
+            opacity: 0.35;
+        }
+
         .login-card-container {
             justify-content: center;
             width: 100%;
@@ -205,6 +222,13 @@
             margin: 0px;
         }
 
+        .logo-version {
+            font-size: 0.55rem;
+            letter-spacing: 0.1em;
+            margin: 0.2rem 0 0 0;
+            opacity: 0.3;
+        }
+
         .login-card-container {
             justify-content: center;
             width: 100%;
@@ -228,6 +252,7 @@
     <div class="css-logo">
         <span class="logo-main" style="@GetLogoMainStyle()">SMR</span>
         <span class="logo-sub" style="@GetLogoSubStyle()">ACTIVITY TRACKER</span>
+        <span class="logo-version" style="@GetLogoVersionStyle()">salmontech00 · v1.0</span>
 
         <div class="login-instructions" style="@GetInstructionStyle()">
             <div class="instruction-item">
@@ -403,6 +428,18 @@
             ThemeMode.Lightest => "#0f172a",
             ThemeMode.Light => "#fdd45c",
             ThemeMode.Dark => "#0072cf",
+            _ => "#0f172a"
+        };
+        return $"color: {color};";
+    }
+
+    private string GetLogoVersionStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#94a3b8",
             _ => "#0f172a"
         };
         return $"color: {color};";
