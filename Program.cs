@@ -190,6 +190,11 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             END
         END
 
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'IsDeleted' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [IsDeleted] bit NOT NULL DEFAULT 0;
+        END
+
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Section' AND Object_ID = Object_ID(N'ChecklistItems'))
         BEGIN
             ALTER TABLE [ChecklistItems] ADD [Section] nvarchar(max) NULL;

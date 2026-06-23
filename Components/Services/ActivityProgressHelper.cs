@@ -32,7 +32,7 @@ namespace PDTActivityTracker.Components.Services
             if (activities == null || !activities.Any()) return results;
 
             var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-            var allChecklistItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+            var allChecklistItems = await db.ChecklistItems.Where(t => !t.IsDeleted).AsNoTracking().ToListAsync();
 
             var activityIds = activities.Select(a => a.Id).ToList();
             var allCurrentProgresses = await db.TaskProgresses

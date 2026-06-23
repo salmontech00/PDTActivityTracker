@@ -1066,7 +1066,7 @@
 
         // 3. Fetch Category Progress Timeline using rolling windows
         var categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var allChecklistItems2 = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var allChecklistItems2 = await db.ChecklistItems.Where(t => !t.IsDeleted).AsNoTracking().ToListAsync();
         var checklistItems = allChecklistItems2.Where(t => IsTaskAssignedToStore(t, storeId)).ToList();
 
         var currentProgresses = taskProgresses ?? new List<TaskProgress>();

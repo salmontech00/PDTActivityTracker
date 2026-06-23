@@ -2401,6 +2401,9 @@
                 // 1. Find all related TaskProgress records
                 var progressRecords = await db.TaskProgresses.Where(p => p.StoreDailyActivityId == activity.Id).ToListAsync();
 
+                // Capture checklist item IDs referenced by progress records for this deleted report
+                var checklistItemIdsToCheck = progressRecords.Select(p => p.ChecklistItemId).Distinct().ToList();
+
                 // 2. Find all related TaskPhotos (matched by store and date)
                 var startOfDay = activity.Date.Date;
                 var endOfDay = startOfDay.AddDays(1).AddSeconds(-1);
@@ -2413,6 +2416,24 @@
                 var existingActivity = await db.StoreDailyActivities.FindAsync(activity.Id);
                 if (existingActivity != null) db.StoreDailyActivities.Remove(existingActivity);
 
+                await db.SaveChangesAsync();
+
+                // 4. Clean up soft-deleted tasks that are no longer referenced in any other reports
+                foreach (var itemId in checklistItemIdsToCheck)
+                {
+                    var item = await db.ChecklistItems.FindAsync(itemId);
+                    if (item != null && item.IsDeleted)
+                    {
+                        bool hasOtherProgress = await db.TaskProgresses.AnyAsync(p => p.ChecklistItemId == itemId);
+                        if (!hasOtherProgress)
+                        {
+                            var remainingPhotos = await db.TaskPhotos.Where(p => p.ChecklistItemId == itemId).ToListAsync();
+                            if (remainingPhotos.Any()) db.TaskPhotos.RemoveRange(remainingPhotos);
+
+                            db.ChecklistItems.Remove(item);
+                        }
+                    }
+                }
                 await db.SaveChangesAsync();
 
                 Snackbar.Add("Report and related data deleted successfully!", Severity.Success);

@@ -1421,6 +1421,7 @@
 
         // Load all tasks
         _tasks = await db.ChecklistItems
+            .Where(t => !t.IsDeleted)
             .Include(t => t.Category)
             .OrderBy(t => t.SortOrder)
             .AsNoTracking()
@@ -1557,31 +1558,33 @@
 
                 if (taskToDelete != null)
                 {
-                    // 1. Delete associated TaskProgresses first to avoid FK constraint error
-                    var progresses = await db.TaskProgresses
-                        .Where(tp => tp.ChecklistItemId == task.Id)
-                        .ToListAsync();
+                    // Check if there are any associated TaskProgresses
+                    var hasProgresses = await db.TaskProgresses.AnyAsync(tp => tp.ChecklistItemId == task.Id);
 
-                    if (progresses.Any())
+                    if (hasProgresses)
                     {
-                        db.TaskProgresses.RemoveRange(progresses);
+                        // Soft delete
+                        taskToDelete.IsDeleted = true;
+                        await db.SaveChangesAsync();
+                        Snackbar.Add("Task removed from active list (soft deleted due to existing history).", Severity.Success);
+                    }
+                    else
+                    {
+                        // Hard delete: no historical references exist, safe to delete completely
+                        var photos = await db.TaskPhotos
+                            .Where(tp => tp.ChecklistItemId == task.Id)
+                            .ToListAsync();
+
+                        if (photos.Any())
+                        {
+                            db.TaskPhotos.RemoveRange(photos);
+                        }
+
+                        db.ChecklistItems.Remove(taskToDelete);
+                        await db.SaveChangesAsync();
+                        Snackbar.Add("Task deleted successfully!", Severity.Success);
                     }
 
-                    // 2. Delete associated TaskPhotos
-                    var photos = await db.TaskPhotos
-                        .Where(tp => tp.ChecklistItemId == task.Id)
-                        .ToListAsync();
-
-                    if (photos.Any())
-                    {
-                        db.TaskPhotos.RemoveRange(photos);
-                    }
-
-                    // 3. Now safe to delete the task itself
-                    db.ChecklistItems.Remove(taskToDelete);
-                    await db.SaveChangesAsync();
-
-                    Snackbar.Add("Task deleted successfully!", Severity.Success);
                     await LoadTasks(); // Refresh list
                 }
             }

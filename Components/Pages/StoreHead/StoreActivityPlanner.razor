@@ -1030,7 +1030,7 @@
 
 
         _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var allItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var allItems = await db.ChecklistItems.Where(t => !t.IsDeleted).AsNoTracking().ToListAsync();
         _checklistItems = allItems.Where(t => IsTaskAssignedToStore(t, StoreId)).ToList();
         // Total count based on filter
 
