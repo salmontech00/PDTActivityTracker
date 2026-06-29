@@ -358,6 +358,24 @@
     }
 
     @@media (max-width: 960px) {
+
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
+
+        .mud-picker-paper {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-popover {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+
         .page-header-row {
             flex-direction: column;
             gap: 16px;
@@ -402,6 +420,54 @@
             padding-bottom: 0px !important;
             padding-left: 0px !important;
             padding-right: 0px !important;
+        }
+        /* ── Date Range Picker / Calendar: fit 375px ── */
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
+
+        .mud-picker-paper {
+            padding: 0 !important;
+            min-width: unset !important;
+            width: min(280px, calc(100vw - 20px)) !important;
+            max-width: calc(100vw - 20px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-picker-calendar-container {
+            padding: 0 !important;
+            width: 90% !important;
+        }
+
+        .mud-day,
+        .mud-picker-calendar-day {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.72rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week-day {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.72rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week {
+            justify-content: center !important;
+        }
+
+        .mud-picker-calendar-header {
+            justify-content: center !important;
+        }
+
+        .mud-picker-calendar-container .mud-picker-calendar {
+            width: 100% !important;
         }
 
         .page-header-row {

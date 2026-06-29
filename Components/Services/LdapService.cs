@@ -1,4 +1,4 @@
-﻿using System.DirectoryServices.Protocols;
+using System.DirectoryServices.Protocols;
 using System.Net;
 using Microsoft.Extensions.Options;
 
@@ -90,7 +90,7 @@ namespace PDTActivityTracker.Components.Services
                         _settings.SearchBase,
                         filter,
                         SearchScope.Subtree,
-                        "displayName", "sAMAccountName", "mail", "givenName", "sn"
+                        "displayName", "sAMAccountName", "mail", "givenName", "sn", "cn", "name"
                     );
 
                     var response = (SearchResponse)connection.SendRequest(searchRequest);
@@ -98,14 +98,46 @@ namespace PDTActivityTracker.Components.Services
                     if (response.Entries.Count > 0)
                     {
                         var entry = response.Entries[0];
-                        var displayName = entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty;
+
+                        // 1. Try "name"
+                        var displayName = entry.Attributes.Contains("name")
+                            ? entry.Attributes["name"]?[0]?.ToString() ?? string.Empty
+                            : string.Empty;
+
+                        // 2. Try "cn" / "cn"
+                        if (string.IsNullOrEmpty(displayName))
+                        {
+                            displayName = entry.Attributes.Contains("cn")
+                                ? entry.Attributes["cn"]?[0]?.ToString() ?? string.Empty
+                                : string.Empty;
+                        }
+
+                        // 3. Try "displayName" / "displayname"
+                        if (string.IsNullOrEmpty(displayName))
+                        {
+                            displayName = entry.Attributes.Contains("displayName") 
+                                ? entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty
+                                : entry.Attributes.Contains("displayname") 
+                                    ? entry.Attributes["displayname"]?[0]?.ToString() ?? string.Empty
+                                    : string.Empty;
+                        }
+
                         var samAccountName = entry.Attributes["sAMAccountName"]?[0]?.ToString() ?? email.Split('@')[0];
                         var mail = entry.Attributes["mail"]?[0]?.ToString() ?? email;
 
+                        // 4. Try givenName + sn
                         if (string.IsNullOrEmpty(displayName))
                         {
-                            var gn = entry.Attributes["givenName"]?[0]?.ToString() ?? string.Empty;
-                            var sn = entry.Attributes["sn"]?[0]?.ToString() ?? string.Empty;
+                            var gn = entry.Attributes.Contains("givenName") 
+                                ? entry.Attributes["givenName"]?[0]?.ToString() ?? string.Empty
+                                : entry.Attributes.Contains("givenname") 
+                                    ? entry.Attributes["givenname"]?[0]?.ToString() ?? string.Empty
+                                    : string.Empty;
+
+                            var sn = entry.Attributes.Contains("sn") 
+                                ? entry.Attributes["sn"]?[0]?.ToString() ?? string.Empty
+                                : string.Empty;
+
                             displayName = $"{gn} {sn}".Trim();
                         }
 
