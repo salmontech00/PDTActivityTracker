@@ -355,9 +355,25 @@
             font-size: 0.7rem !important;
             padding: 4px 8px !important;
         }
+
+        .date-picker-desktop {
+            display: block;
+        }
+
+        .date-picker-mobile {
+            display: none;
+            width: 100%;
+        }
     }
 
     @@media (max-width: 960px) {
+        .date-picker-desktop {
+            display: none !important;
+        }
+
+        .date-picker-mobile {
+            display: block !important;
+        }
 
         .mud-picker-datepicker-toolbar {
             display: none !important;
@@ -555,13 +571,26 @@
                 <MudItem xs="12" sm="3" Class="d-flex align-center justify-center justify-sm-end">
                     @if (_viewMode == "Daily")
                     {
-                        <MudDatePicker Label="Select Date"
-                                       Date="_selectedDate"
-                                       DateChanged="OnDateChanged"
-                                       MaxDate="DateTime.Today"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       Class="rounded-lg date-picker-full-mobile" />
+                        <div class="date-picker-desktop">
+                            <MudDatePicker Label="Select Date"
+                                           Date="_selectedDate"
+                                           DateChanged="OnDateChanged"
+                                           MaxDate="DateTime.Today"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Class="rounded-lg date-picker-full-mobile" />
+                        </div>
+                        <div class="date-picker-mobile">
+                            <MudTextField T="string"
+                                          Label="Select Date"
+                                          Value="@(_selectedDate?.ToString("M/d/yyyy") ?? "Select Date")"
+                                          ReadOnly="true"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Adornment="Adornment.End"
+                                          AdornmentIcon="@Icons.Material.Filled.CalendarToday"
+                                          @onclick="OpenGlassCalendarDialog" />
+                        </div>
                     }
                     else
                     {
@@ -977,6 +1006,27 @@
 </div>
 
 @code {
+    private async Task OpenGlassCalendarDialog()
+    {
+        var parameters = new DialogParameters<GlassCalendarWrapperDialog>
+        {
+            { x => x.SelectedDate, _selectedDate }
+        };
+        var options = new DialogOptions
+        {
+            NoHeader = true,
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<GlassCalendarWrapperDialog>("", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled && result.Data is DateTime selectedDate)
+        {
+            await OnDateChanged(selectedDate);
+        }
+    }
+
     [Parameter] public int StoreId { get; set; }
     [Parameter][SupplyParameterFromQuery] public string? view { get; set; }
 

@@ -3,6 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject UserStateService UserState
+@inject IDialogService DialogService
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
@@ -176,6 +177,25 @@
             justify-content: center !important;
         }
     }
+
+    .date-picker-desktop {
+        display: block;
+    }
+    .date-picker-mobile {
+        display: none;
+        width: 100%;
+    }
+
+    @@media (max-width: 960px) {
+        .date-picker-desktop {
+            display: none !important;
+        }
+        .date-picker-mobile {
+            display: block !important;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
+    }
 </style>
 
 <MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
@@ -207,7 +227,21 @@
             </MudAlert>
         }
 
-        <MudDatePicker Label="Effective Date" @bind-Date="_effectiveDate" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3" />
+        <div class="date-picker-desktop">
+            <MudDatePicker Label="Effective Date" @bind-Date="_effectiveDate" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3" />
+        </div>
+
+        <div class="date-picker-mobile mt-3">
+            <MudTextField T="string"
+                          Label="Effective Date"
+                          Value="@(_effectiveDate?.ToString("M/d/yyyy") ?? "Select Date")"
+                          ReadOnly="true"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.CalendarToday"
+                          @onclick="OpenGlassCalendarDialog" />
+        </div>
 
         <MudTextField Label="Remarks (Optional)" @bind-Value="_remarks" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" Class="mt-3" />
 
@@ -229,11 +263,61 @@
 
     private User? _selectedUser;
     private DateTime? _effectiveDate = DateTime.Today;
+
+    private async Task OpenGlassCalendarDialog()
+    {
+        var parameters = new DialogParameters<GlassCalendarWrapperDialog>
+        {
+            { x => x.SelectedDate, _effectiveDate }
+        };
+
+        var options = new DialogOptions
+        {
+            NoHeader = true,
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<GlassCalendarWrapperDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is DateTime selectedDate)
+        {
+            _effectiveDate = selectedDate;
+            StateHasChanged();
+        }
+    }
     private string? _remarks;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
+
+        if (Store != null)
+        {
+            _selectedUser = Store.StoreHead;
+
+            if (Store.StoreHeadId.HasValue)
+            {
+                using var db = await DbFactory.CreateDbContextAsync();
+                var latestLog = await db.StoreAssignmentLogs
+                    .AsNoTracking()
+                    .Where(l => l.StoreId == Store.Id && l.UserId == Store.StoreHeadId && l.Action == "Assigned")
+                    .OrderByDescending(l => l.Timestamp)
+                    .FirstOrDefaultAsync();
+
+                if (latestLog != null && !string.IsNullOrEmpty(latestLog.Remarks) && latestLog.Remarks.StartsWith("Effective: "))
+                {
+                    var parts = latestLog.Remarks.Split('.');
+                    var dateStr = parts[0].Replace("Effective: ", "").Trim();
+                    if (DateTime.TryParse(dateStr, out var parsedDate))
+                    {
+                        _effectiveDate = parsedDate;
+                    }
+                }
+            }
+        }
     }
 
     private void OnThemeChanged() => StateHasChanged();

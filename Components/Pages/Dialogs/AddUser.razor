@@ -192,6 +192,7 @@
     </DialogContent>
 
     <DialogActions>
+        @*<MudButton OnClick="OpenTestCalendar" Style="@GetCancelButtonStyle()">Test Calendar</MudButton>*@
         <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
         <MudButton Color="MudBlazor.Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_isSaving" Class="rounded-lg px-6" Style="@GetButtonStyle()">
             @if (_isSaving)
@@ -215,6 +216,14 @@
     private bool _showPassword = false;
     private bool _showConfirmPassword = false;
 
+    @*[Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    private async Task OpenTestCalendar()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<GlassCalendarDemoDialog>("Test Calendar", options);
+    }*@
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;

@@ -221,7 +221,7 @@
     }
 
     /* Force icons brand blue in Lightest theme (exclude action circles & clear-filter buttons) */
-    .glass-panel.lightest .mud-icon-root:not(.action-icon-circle .mud-icon-root):not(.clear-filters-button .mud-icon-root),
+    .glass-panel.lightest .mud-icon-root:not(.action-icon-circle, .mud-icon-root):not(.clear-filters-button, .mud-icon-root),
     .glass-panel.lightest .mud-list-item-icon {
         color: #0072cf !important;
     }
@@ -315,8 +315,24 @@
         display: none;
     }
 
+    .date-picker-desktop {
+        display: block;
+    }
+
+    .date-picker-mobile {
+        display: none;
+        width: 100%;
+    }
+
     /* RESPONSIVE */
     @@media (max-width: 960px) {
+        .date-picker-desktop {
+            display: none !important;
+        }
+
+        .date-picker-mobile {
+            display: block !important;
+        }
         .mud-picker-datepicker-toolbar {
             display: none !important;
         }
@@ -725,9 +741,22 @@
                         </MudButton>
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="4">
-                                <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange"
-                                                    @bind-DateRange:after="FilterData"
-                                                    Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="date-picker-desktop">
+                                    <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange"
+                                                        @bind-DateRange:after="FilterData"
+                                                        Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </div>
+                                <div class="date-picker-mobile">
+                                    <MudTextField T="string"
+                                                  Label="Date Range"
+                                                  Value="@GetFormattedDateRange(_dateRange)"
+                                                  ReadOnly="true"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@Icons.Material.Filled.DateRange"
+                                                  @onclick="@(() => OpenGlassRangeCalendarDialog(false))" />
+                                </div>
                             </MudItem>
                             <MudItem xs="12" sm="4">
                                 <MudAutocomplete T="Store" Label="Search Store"
@@ -877,10 +906,23 @@
                                 </MudSelect>
                             </MudItem>
                             <MudItem xs="12" sm="6" md="2">
-                                <MudDateRangePicker Label="Date Range"
-                                                    @bind-DateRange="_photoDateRange"
-                                                    @bind-DateRange:after="() => FilterPhotos(true)"
-                                                    Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="date-picker-desktop">
+                                    <MudDateRangePicker Label="Date Range"
+                                                        @bind-DateRange="_photoDateRange"
+                                                        @bind-DateRange:after="() => FilterPhotos(true)"
+                                                        Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </div>
+                                <div class="date-picker-mobile">
+                                    <MudTextField T="string"
+                                                  Label="Date Range"
+                                                  Value="@GetFormattedDateRange(_photoDateRange)"
+                                                  ReadOnly="true"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@Icons.Material.Filled.DateRange"
+                                                  @onclick="@(() => OpenGlassRangeCalendarDialog(true))" />
+                                </div>
                             </MudItem>
                         </MudGrid>
                         <MudGrid>
@@ -1085,9 +1127,22 @@
                         </MudButton>
                         <MudGrid Spacing="2">
                             <MudItem xs="12" sm="4">
-                                <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange"
-                                                    @bind-DateRange:after="FilterData"
-                                                    Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="date-picker-desktop">
+                                    <MudDateRangePicker Label="Date Range" @bind-DateRange="_dateRange"
+                                                        @bind-DateRange:after="FilterData"
+                                                        Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </div>
+                                <div class="date-picker-mobile">
+                                    <MudTextField T="string"
+                                                  Label="Date Range"
+                                                  Value="@GetFormattedDateRange(_dateRange)"
+                                                  ReadOnly="true"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@Icons.Material.Filled.DateRange"
+                                                  @onclick="@(() => OpenGlassRangeCalendarDialog(false))" />
+                                </div>
                             </MudItem>
                             <MudItem xs="12" sm="4">
                                 <MudAutocomplete T="Store" Label="Search Store"
@@ -1235,10 +1290,23 @@
                                 </MudSelect>
                             </MudItem>
                             <MudItem xs="12" sm="6" md="2">
-                                <MudDateRangePicker Label="Date Range"
-                                                    @bind-DateRange="_photoDateRange"
-                                                    @bind-DateRange:after="() => FilterPhotos(true)"
-                                                    Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                <div class="date-picker-desktop">
+                                    <MudDateRangePicker Label="Date Range"
+                                                        @bind-DateRange="_photoDateRange"
+                                                        @bind-DateRange:after="() => FilterPhotos(true)"
+                                                        Variant="Variant.Outlined" Margin="Margin.Dense" />
+                                </div>
+                                <div class="date-picker-mobile">
+                                    <MudTextField T="string"
+                                                  Label="Date Range"
+                                                  Value="@GetFormattedDateRange(_photoDateRange)"
+                                                  ReadOnly="true"
+                                                  Variant="Variant.Outlined"
+                                                  Margin="Margin.Dense"
+                                                  Adornment="Adornment.End"
+                                                  AdornmentIcon="@Icons.Material.Filled.DateRange"
+                                                  @onclick="@(() => OpenGlassRangeCalendarDialog(true))" />
+                                </div>
                             </MudItem>
                         </MudGrid>
                         <MudGrid>
@@ -1405,6 +1473,45 @@
 </div>
 
 @code {
+    private string GetFormattedDateRange(DateRange? range)
+    {
+        if (range == null || range.Start == null || range.End == null)
+            return "Select Date Range";
+        return $"{range.Start.Value:M/d/yyyy} - {range.End.Value:M/d/yyyy}";
+    }
+
+    private async Task OpenGlassRangeCalendarDialog(bool isPhoto)
+    {
+        var currentRange = isPhoto ? _photoDateRange : _dateRange;
+        var parameters = new DialogParameters<GlassDateRangeWrapperDialog>
+        {
+            { x => x.RangeStart, currentRange?.Start },
+            { x => x.RangeEnd, currentRange?.End }
+        };
+        var options = new DialogOptions
+        {
+            NoHeader = true,
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<GlassDateRangeWrapperDialog>("", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled && result.Data is DateRange selectedRange)
+        {
+            if (isPhoto) { _photoDateRange = selectedRange; await FilterPhotos(true); }
+            else { _dateRange = selectedRange; FilterData(); }
+            StateHasChanged();
+        }
+        else if (result != null && !result.Canceled && result.Data == null)
+        {
+            var defaultRange = new DateRange(DateTime.Today.AddDays(-30), DateTime.Today);
+            if (isPhoto) { _photoDateRange = defaultRange; await FilterPhotos(true); }
+            else { _dateRange = defaultRange; FilterData(); }
+            StateHasChanged();
+        }
+    }
+
     private bool _initialized = false;
     private int _avgProgress = 0;
     private int _activeOperations = 0;
