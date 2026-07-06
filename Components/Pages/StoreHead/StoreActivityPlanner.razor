@@ -1945,10 +1945,14 @@
             db.ActivityLogs.Add(activity);
             await db.SaveChangesAsync();
 
+            var descriptionSnippet = !string.IsNullOrWhiteSpace(issue.Description)
+                ? issue.Description
+                : "No description provided.";
+
             var notification = new Notification
             {
                 UserId = _store?.AreaHeadId ?? 0,
-                Message = $"New Issue Reported: {issue.Title} at {_store?.StoreName}",
+                Message = $"New Issue Reported: {issue.Title} at {_store?.StoreName} — {descriptionSnippet}",
                 Type = "Alert",
                 IsRead = false,
                 CreatedAt = DateTime.Now,

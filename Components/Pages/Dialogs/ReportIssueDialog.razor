@@ -261,7 +261,7 @@
 
         if (result is { Canceled: false, Data: not null })
         {
-            var (imageData, mimeType, lat, lng, timestamp) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp))result.Data;
+            var (imageData, mimeType, lat, lng, timestamp, locationName) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp, string? locationName))result.Data;
             _imageData = imageData;
             _mimeType = mimeType;
 
