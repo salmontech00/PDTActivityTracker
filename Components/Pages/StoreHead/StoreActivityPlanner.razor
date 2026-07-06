@@ -197,6 +197,21 @@
         max-width: 600px;
     }
 
+    .requirement-highlight {
+        animation: pulseHighlight 1.5s ease-in-out 2;
+        border: 1px solid var(--mud-palette-warning) !important;
+    }
+
+    @@keyframes pulseHighlight {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+        }
+
+        50% {
+            box-shadow: 0 0 0 8px rgba(255, 152, 0, 0);
+        }
+    }
+
     .manpower-input-container {
         margin-top: 8px;
         padding-left: 32px;
@@ -663,7 +678,7 @@
                                             lastSection = "";
                                         }
 
-                                        <div class="preview-task-card">
+                                        <div class="preview-task-card @(_highlightedTaskIds.Contains(task.Id) ? "requirement-highlight" : "")">
                                             <div class="preview-task-header">
                                                 <div class="preview-header-content-group">
                                                     <div class="preview-task-name-container">
@@ -951,6 +966,90 @@
     private bool _isSaving = false;
     // Tracks whether all tasks were complete the last time we checked — prevents duplicate notifications
     private bool _wasAllCompleted = false;
+    // Tracks which task cards should show the pulsing highlight right now
+    private HashSet<int> _highlightedTaskIds = new();
+
+    private bool HasStartedProgress(ChecklistItem task, TaskProgress prog)
+    {
+        if (task.IsPhotoRequired)
+        {
+            return GetPhotoCount(task.Id) > 0;
+        }
+        if (task.TaskType == "Manpower")
+        {
+            var positions = GetManpowerPositions(task);
+            if (positions.Any())
+            {
+                if (string.IsNullOrWhiteSpace(prog.PositionActuals)) return false;
+                try
+                {
+                    var actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals);
+                    return actuals != null && actuals.Any(a => a.HasValue);
+                }
+                catch { return false; }
+            }
+            return prog.ActualQuantity.HasValue;
+        }
+        return false;
+    }
+
+    private string? GetMissingRequirementText(ChecklistItem task, TaskProgress prog)
+    {
+        if (task.IsPhotoRequired)
+        {
+            var count = GetPhotoCount(task.Id);
+            var needed = task.NumberOfPhotos > 0 ? task.NumberOfPhotos - count : 1 - count;
+            return needed > 0 ? $"{needed} more photo(s) needed" : null;
+        }
+        if (task.TaskType == "Manpower")
+        {
+            var positions = GetManpowerPositions(task);
+            if (positions.Any())
+            {
+                List<int?> actuals = new();
+                if (!string.IsNullOrWhiteSpace(prog.PositionActuals))
+                {
+                    try { actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals) ?? new(); }
+                    catch { }
+                }
+                var missingNames = new List<string>();
+                for (int i = 0; i < positions.Count; i++)
+                {
+                    bool hasValue = i < actuals.Count && actuals[i].HasValue;
+                    if (!hasValue) missingNames.Add(positions[i].Name);
+                }
+                return missingNames.Any() ? $"still needs a value entered for: {string.Join(", ", missingNames)}" : null;
+            }
+        }
+        return null;
+    }
+
+    private async Task HighlightThenClear(int taskId)
+    {
+        await Task.Delay(3000);
+        _highlightedTaskIds.Remove(taskId);
+        StateHasChanged();
+    }
+
+    private void CheckAllPendingTaskRequirements()
+    {
+        foreach (var task in _checklistItems.Where(t => t.IsPhotoRequired || t.TaskType == "Manpower"))
+        {
+            var prog = GetTaskProgress(task.Id);
+            if (!prog.IsCompleted && HasStartedProgress(task, prog))
+            {
+                var missingText = GetMissingRequirementText(task, prog);
+                if (!string.IsNullOrEmpty(missingText))
+                {
+                    var taskLabel = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "This task";
+                    Snackbar.Add($"'{taskLabel}' {missingText}", Severity.Warning);
+
+                    _highlightedTaskIds.Add(task.Id);
+                    _ = HighlightThenClear(task.Id);
+                }
+            }
+        }
+    }
 
     protected override void OnInitialized()
     {
@@ -1733,6 +1832,7 @@
             await CreateManualActivityLog("PhotoUploaded", taskIdentifier, "TaskPhoto", photo.Id);
             await SaveCurrentProgress(); // Ensure progress status is saved
             await CheckAndAutoProgress();
+            CheckAllPendingTaskRequirements();
 
             Snackbar.Add($"Photo captured and saved ({imageData.Length / 1024}KB)", Severity.Success);
             StateHasChanged();
@@ -1758,6 +1858,7 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+        CheckAllPendingTaskRequirements();
 
         if (oldVal != newVal)
         {
@@ -1873,6 +1974,7 @@
                 await CreateManualActivityLog("PhotoRemoved", taskIdentifier, "TaskPhoto", photo.Id);
                 await CheckAndSyncTaskCompletion(task);
                 await SaveCurrentProgress();
+                CheckAllPendingTaskRequirements();
 
                 // If removing photo made tasks go from complete -> incomplete, notify Area Head
                 bool nowComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
@@ -2002,6 +2104,7 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+        CheckAllPendingTaskRequirements();
 
         // Notification only for new disparities, not for initial setup or empty
         await ValidateManpower(task, prog, positionIndex);
@@ -2012,6 +2115,7 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+        CheckAllPendingTaskRequirements();
     }
 
     private async Task ValidateManpower(ChecklistItem task, TaskProgress prog, int? positionIndex = null)
