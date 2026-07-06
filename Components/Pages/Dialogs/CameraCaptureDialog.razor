@@ -3,6 +3,7 @@
 @inject IJSRuntime JSRuntime
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @inject ISnackbar Snackbar
+@inject IHttpClientFactory HttpClientFactory
 @implements IAsyncDisposable
 
 <style>
@@ -252,6 +253,35 @@
     private double? _longitude;
     private DateTime? _captureTimestamp;
 
+    private string? _locationName;
+    private bool _isResolvingLocationName;
+
+    private async Task<string?> ReverseGeocodeAsync(double lat, double lng)
+    {
+        try
+        {
+            var client = HttpClientFactory.CreateClient();
+            client.Timeout = TimeSpan.FromSeconds(5);
+            // Nominatim requires a real identifying User-Agent — required by their usage policy
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("PDTActivityTracker/1.0 (contact: it@lccgroup.com)");
+
+            var url = $"https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat={lat}&lon={lng}&zoom=18&addressdetails=0";
+            var response = await client.GetFromJsonAsync<NominatimResponse>(url);
+            return response?.DisplayName;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Reverse geocode failed: {ex.Message}");
+            return null; // Fail silently — watermark falls back to raw coordinates
+        }
+    }
+
+    private class NominatimResponse
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("display_name")]
+        public string? DisplayName { get; set; }
+    }
+
     protected override void OnInitialized()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
@@ -279,6 +309,13 @@
             _latitude = location.Latitude;
             _longitude = location.Longitude;
             _isFetchingLocation = false;
+
+            // Resolve human-readable location name — non-blocking failure, falls back to raw GPS
+            _isResolvingLocationName = true;
+            StateHasChanged();
+            _locationName = await ReverseGeocodeAsync(_latitude.Value, _longitude.Value);
+            _isResolvingLocationName = false;
+
             await StartCamera();
         }
         catch (Exception ex)
@@ -343,7 +380,11 @@
         try
         {
             _captureTimestamp = DateTime.Now;
-            var watermarkText = $"GPS: {_latitude:F6}, {_longitude:F6} | Time: {_captureTimestamp:yyyy-MM-dd HH:mm:ss}";
+
+            var gpsLine = $"GPS: {_latitude:F6}, {_longitude:F6}";
+            var watermarkText = !string.IsNullOrWhiteSpace(_locationName)
+                ? $"{_locationName}\n{gpsLine}\n{_captureTimestamp:yyyy-MM-dd HH:mm:ss}"
+                : $"{gpsLine}\n{_captureTimestamp:yyyy-MM-dd HH:mm:ss}";
 
             _capturedImageBase64 = await JSRuntime.InvokeAsync<string>("cameraInterop.capturePhoto", "cameraVideo", "cameraCanvas", watermarkText);
             if (!string.IsNullOrEmpty(_capturedImageBase64))
@@ -377,7 +418,6 @@
     {
         if (!string.IsNullOrEmpty(_capturedImageBase64))
         {
-            // Remove the data area if present
             var base64Data = _capturedImageBase64;
             if (base64Data.Contains(","))
             {
@@ -385,7 +425,7 @@
             }
 
             var bytes = Convert.FromBase64String(base64Data);
-            MudDialog.Close(DialogResult.Ok((bytes, "image/jpeg", _latitude, _longitude, _captureTimestamp)));
+            MudDialog.Close(DialogResult.Ok((bytes, "image/jpeg", _latitude, _longitude, _captureTimestamp, _locationName)));
         }
     }
 

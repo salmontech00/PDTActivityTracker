@@ -158,7 +158,27 @@ window.cameraInterop = {
             const fontSize = Math.max(12, Math.round(height * 0.03));
             context.font = `bold ${fontSize}px Arial, sans-serif`;
 
-            const lines = watermarkText.split('|').map(s => s.trim());
+            // Split on actual newlines sent from C#, not '|'
+            const rawLines = watermarkText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+            // Word-wrap any line that's too wide for the canvas
+            const maxLineWidth = width - (padding * 2);
+            const lines = [];
+            rawLines.forEach(rawLine => {
+                const words = rawLine.split(' ');
+                let currentLine = '';
+                words.forEach(word => {
+                    const testLine = currentLine ? `${currentLine} ${word}` : word;
+                    if (context.measureText(testLine).width > maxLineWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = testLine;
+                    }
+                });
+                if (currentLine) lines.push(currentLine);
+            });
+
             const lineHeight = fontSize * 1.2;
             const boxHeight = (lines.length * lineHeight) + (padding * 2);
 

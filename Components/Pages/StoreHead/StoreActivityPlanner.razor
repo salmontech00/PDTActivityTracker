@@ -1701,7 +1701,12 @@
 
         if (result is { Canceled: false, Data: not null })
         {
-            var (imageData, mimeType, lat, lng, timestamp) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp))result.Data;
+            var (imageData, mimeType, lat, lng, timestamp, locationName) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp, string? locationName))result.Data;
+
+            var locationLabel = !string.IsNullOrWhiteSpace(locationName)
+                ? locationName
+                : $"GPS: {lat ?? _store?.GPSLatitude:F6}, {lng ?? _store?.GPSLongitude:F6}";
+
             var photo = new TaskPhoto
             {
                 StoreId = StoreId,
@@ -1715,7 +1720,7 @@
                 ImageMimeType = mimeType,
                 Latitude = lat ?? _store?.GPSLatitude,
                 Longitude = lng ?? _store?.GPSLongitude,
-                Description = $"GPS: {lat ?? _store?.GPSLatitude:F6}, {lng ?? _store?.GPSLongitude:F6} | Time: {timestamp ?? DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+                Description = $"{locationLabel} | Time: {timestamp ?? DateTime.Now:yyyy-MM-dd HH:mm:ss}"
             };
 
             using var db = await DbFactory.CreateDbContextAsync();
