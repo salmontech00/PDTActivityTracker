@@ -148,7 +148,11 @@
                                   RequiredError="Email is required"
                                   Validation="@(new Func<string, string?>(ValidateEmail))"
                                   Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
+                                  Margin="Margin.Dense"
+                                  ReadOnly="@(_editingUser.Password == "LDAP_AUTHENTICATED")"
+                                  Adornment="@(_editingUser.Password == "LDAP_AUTHENTICATED" ? Adornment.End : Adornment.None)"
+                                  AdornmentIcon="@Icons.Material.Filled.Lock"
+                                  AdornmentColor="MudBlazor.Color.Warning"/>
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
@@ -198,9 +202,9 @@
                             <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="3">
                                 <MudIcon Icon="@Icons.Material.Filled.LockPerson" Style="color: #ea580c; margin-top: 2px;" />
                                 <MudStack Spacing="1">
-                                    <MudText Typo="Typo.subtitle2" Style="color: #ea580c; font-weight: 700;">Company Account – Password Managed by IT</MudText>
+                                    <MudText Typo="Typo.subtitle2" Style="color: #ea580c; font-weight: 700;">Company Account – Email and Password Managed by IT</MudText>
                                     <MudText Typo="Typo.body2" Style="color: #f1f5f9; opacity: 0.9;">
-                                        This user authenticates via the <strong>Company Directory (LDAP)</strong>. Password changes must be submitted through the IT helpdesk.
+                                        This user authenticates via the <strong>Company Directory (LDAP)</strong>. Password and email changes must be submitted through the IT helpdesk.
                                     </MudText>
                                     <a href="https://helpdesk.lccgroup.com/" target="_blank"
                                        style="color: #f1f5f9; font-weight: 600; font-size: 0.85rem; text-decoration: none;">

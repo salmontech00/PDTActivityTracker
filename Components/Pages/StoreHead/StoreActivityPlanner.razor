@@ -2045,14 +2045,37 @@
                 if (notification.UserId > 0)
                 {
                     db.Notifications.Add(notification);
-                    await db.SaveChangesAsync(); // Save notification individually
+                    await db.SaveChangesAsync();
 
                     Snackbar.Add($"Missing manpower reported for {taskLabel}. {areaHeadName} has been notified.", Severity.Warning);
+                }
+            }
+            // Notify when manpower requirement is fully met (or exceeded)
+            else if (actual > 0 && actual >= expected)
+            {
+                var notification = new Notification
+                {
+                    UserId = _store?.AreaHeadId ?? 0,
+                    Message = $"{_store?.StoreName}: {taskLabel} - {name} manpower complete ({actual}/{expected})",
+                    Type = "Info",
+                    IsRead = false,
+                    CreatedAt = DateTime.Now,
+                    RelatedEntityId = StoreId,
+                    RelatedEntityType = "Store"
+                };
+
+                if (notification.UserId > 0)
+                {
+                    db.Notifications.Add(notification);
+                    await db.SaveChangesAsync();
+
+                    Snackbar.Add($"Manpower confirmed complete for {taskLabel}.", Severity.Success);
                 }
             }
         }
         catch { }
     }
+
     private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
     {
         // Only Manpower tasks have store-specific visibility logic

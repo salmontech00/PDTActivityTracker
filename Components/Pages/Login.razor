@@ -598,9 +598,11 @@
                     }
                     else if (user != null && ldapDetails != null)
                     {
-                        // Update existing user details from LDAP if they've changed
                         bool changed = false;
-                        if (user.Fullname != ldapDetails.DisplayName)
+
+                        // Only update Fullname from LDAP if it's currently empty or null
+                        // If the user already has a manually set name, preserve it
+                        if (string.IsNullOrWhiteSpace(user.Fullname) && !string.IsNullOrWhiteSpace(ldapDetails.DisplayName))
                         {
                             user.Fullname = ldapDetails.DisplayName;
                             changed = true;

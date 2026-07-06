@@ -84,6 +84,7 @@ namespace PDTActivityTracker.Components.Services
                 {
                     using var connection = CreateConnection();
                     connection.Bind(new NetworkCredential(email, password));
+                    _logger.LogInformation("LDAP search bind successful for {Email}", email);
 
                     var filter = $"(mail={email})";
                     var searchRequest = new SearchRequest(
@@ -94,32 +95,46 @@ namespace PDTActivityTracker.Components.Services
                     );
 
                     var response = (SearchResponse)connection.SendRequest(searchRequest);
+                    _logger.LogInformation("LDAP search for {Email} returned {Count} entries", email, response.Entries.Count);
 
                     if (response.Entries.Count > 0)
                     {
                         var entry = response.Entries[0];
 
+                        // Log every attribute the server actually returned, exactly as keyed
+                        var returnedAttrs = entry.Attributes.AttributeNames.Cast<string>().ToList();
+                        _logger.LogInformation("LDAP entry for {Email} has attributes: {Attrs}", email, string.Join(", ", returnedAttrs));
+
                         // 1. Try "name"
                         var displayName = entry.Attributes.Contains("name")
                             ? entry.Attributes["name"]?[0]?.ToString() ?? string.Empty
                             : string.Empty;
+                        if (!string.IsNullOrEmpty(displayName))
+                            _logger.LogInformation("FullName for {Email} resolved from 'name' = '{Value}'", email, displayName);
 
-                        // 2. Try "cn" / "cn"
+                        // 2. Try "cn"
                         if (string.IsNullOrEmpty(displayName))
                         {
                             displayName = entry.Attributes.Contains("cn")
                                 ? entry.Attributes["cn"]?[0]?.ToString() ?? string.Empty
                                 : string.Empty;
+                            if (!string.IsNullOrEmpty(displayName))
+                                _logger.LogInformation("FullName for {Email} resolved from 'cn' = '{Value}'", email, displayName);
                         }
 
                         // 3. Try "displayName" / "displayname"
                         if (string.IsNullOrEmpty(displayName))
                         {
-                            displayName = entry.Attributes.Contains("displayName") 
-                                ? entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty
-                                : entry.Attributes.Contains("displayname") 
-                                    ? entry.Attributes["displayname"]?[0]?.ToString() ?? string.Empty
-                                    : string.Empty;
+                            if (entry.Attributes.Contains("displayName"))
+                            {
+                                displayName = entry.Attributes["displayName"]?[0]?.ToString() ?? string.Empty;
+                                _logger.LogInformation("FullName for {Email} resolved from 'displayName' = '{Value}'", email, displayName);
+                            }
+                            else if (entry.Attributes.Contains("displayname"))
+                            {
+                                displayName = entry.Attributes["displayname"]?[0]?.ToString() ?? string.Empty;
+                                _logger.LogInformation("FullName for {Email} resolved from 'displayname' (lowercase) = '{Value}'", email, displayName);
+                            }
                         }
 
                         var samAccountName = entry.Attributes["sAMAccountName"]?[0]?.ToString() ?? email.Split('@')[0];
@@ -128,33 +143,46 @@ namespace PDTActivityTracker.Components.Services
                         // 4. Try givenName + sn
                         if (string.IsNullOrEmpty(displayName))
                         {
-                            var gn = entry.Attributes.Contains("givenName") 
+                            var gn = entry.Attributes.Contains("givenName")
                                 ? entry.Attributes["givenName"]?[0]?.ToString() ?? string.Empty
-                                : entry.Attributes.Contains("givenname") 
+                                : entry.Attributes.Contains("givenname")
                                     ? entry.Attributes["givenname"]?[0]?.ToString() ?? string.Empty
                                     : string.Empty;
 
-                            var sn = entry.Attributes.Contains("sn") 
+                            var sn = entry.Attributes.Contains("sn")
                                 ? entry.Attributes["sn"]?[0]?.ToString() ?? string.Empty
                                 : string.Empty;
 
                             displayName = $"{gn} {sn}".Trim();
+                            _logger.LogInformation("FullName for {Email} resolved from 'givenName+sn' = '{Value}' (gn='{Gn}', sn='{Sn}')", email, displayName, gn, sn);
                         }
+
+                        if (string.IsNullOrEmpty(displayName))
+                        {
+                            _logger.LogWarning("FullName for {Email} could not be resolved from any attribute — falling back to samAccountName '{Sam}'", email, samAccountName);
+                        }
+
+                        var finalDisplayName = string.IsNullOrEmpty(displayName) ? samAccountName : displayName;
+                        _logger.LogInformation("FINAL FullName for {Email} = '{Value}'", email, finalDisplayName);
 
                         return new LdapUser
                         {
                             Username = samAccountName,
                             Email = mail,
-                            DisplayName = string.IsNullOrEmpty(displayName) ? samAccountName : displayName
+                            DisplayName = finalDisplayName
                         };
                     }
+
+                    _logger.LogWarning("LDAP search for {Email} returned zero entries — check SearchBase/filter", email);
                     return null;
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching LDAP user details for {Email}", email);
+                _logger.LogError(ex, "Error fetching LDAP user details for {Email} — falling back to email-derived values", email);
             }
+
+            _logger.LogWarning("GetUserDetailsAsync FALLBACK triggered for {Email} — DisplayName will be set to '{Fallback}'", email, email.Split('@')[0]);
 
             return new LdapUser
             {

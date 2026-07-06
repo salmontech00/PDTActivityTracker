@@ -1,18 +1,32 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.SignalR;
 using Blazored.SessionStorage;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor;
 using MudBlazor.Services;
 using OfficeOpenXml;
 using PDTActivityTracker.Components;
+using PDTActivityTracker.Components.Model;
 using PDTActivityTracker.Components.Services;
 using PDTActivityTracker.Model;
-using PDTActivityTracker.Components.Model;
-using MudBlazor;
+using Serilog;
+using Serilog.Events;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}{NewLine}{Message:lj} {Properties:j}{NewLine}{Exception}{NewLine}"));
 
 #pragma warning disable CS0618
 ExcelPackage.License.SetNonCommercialPersonal("TuitionValidation");
@@ -56,22 +70,33 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 
 var app = builder.Build();
 
-await EnsureDefaultAdminAsync(app.Services);
-
-if (!app.Environment.IsDevelopment())
+try
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
+    await EnsureDefaultAdminAsync(app.Services);
+
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        app.UseHsts();
+    }
+
+    app.UseHttpsRedirection();
+    app.UseAntiforgery();
+
+    app.MapStaticAssets();
+    app.MapRazorComponents<App>()
+        .AddInteractiveServerRenderMode();
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 static async Task EnsureDefaultAdminAsync(IServiceProvider services)
 {

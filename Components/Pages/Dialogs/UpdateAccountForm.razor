@@ -163,15 +163,19 @@
                 </MudItem>
 
                 <MudItem xs="12">
-                    <MudTextField T="string"
-                                  Label="Email"
-                                  @bind-Value="_editingUser.Email"
-                                  Required="true"
-                                  RequiredError="Email is required"
-                                  Validation="@(new Func<string, string?>(ValidateEmail))"
-                                  Variant="Variant.Outlined"
-                                  Margin="Margin.Dense" />
-                </MudItem>
+    <MudTextField T="string"
+                  Label="Email"
+                  @bind-Value="_editingUser.Email"
+                  Required="true"
+                  RequiredError="Email is required"
+                  Validation="@(new Func<string, string?>(ValidateEmail))"
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  ReadOnly="@(_editingUser.Password == "LDAP_AUTHENTICATED")"
+                  Adornment="@(_editingUser.Password == "LDAP_AUTHENTICATED" ? Adornment.End : Adornment.None)"
+                  AdornmentIcon="@Icons.Material.Filled.Lock"
+                  AdornmentColor="MudBlazor.Color.Warning"/>
+</MudItem>
 
                 @if (_editingUser.Password == "LDAP_AUTHENTICATED")
                 {
@@ -180,9 +184,9 @@
                             <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="3">
                                 <MudIcon Icon="@Icons.Material.Filled.LockPerson" Style="color: #ea580c; margin-top: 2px;" />
                                 <MudStack Spacing="1">
-                                    <MudText Typo="Typo.subtitle2" Style="color: #ea580c; font-weight: 700;">Company Account – Password Managed by IT</MudText>
+                                    <MudText Typo="Typo.subtitle2" Style="color: #ea580c; font-weight: 700;">Company Account – Email and Password Managed by IT</MudText>
                                     <MudText Typo="Typo.body2" Style="color: #f1f5f9; opacity: 0.9;">
-                                        Your password is managed by the <strong>Company Directory (LDAP)</strong>. To change your password, please submit a helpdesk ticket.
+                                        Your credentials are managed by the <strong>Company Directory (LDAP)</strong>. To change your email or password, please submit a helpdesk ticket.
                                     </MudText>
                                     <a href="https://helpdesk.lccgroup.com/" target="_blank"
                                        style="color: #f1f5f9; font-weight: 600; font-size: 0.85rem; text-decoration: none;">

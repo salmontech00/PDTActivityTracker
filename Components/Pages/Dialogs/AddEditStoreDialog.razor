@@ -98,8 +98,6 @@
                 <MudItem xs="12" sm="6">
                     <MudSelect T="string" @bind-Value="_storeModel.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" PopoverClass="status-dropdown-popover">
                         <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                        <MudSelectItem Value="@("Under Renovation")">Under Renovation</MudSelectItem>
                         <MudSelectItem Value="@("Closed")">Closed</MudSelectItem>
                     </MudSelect>
                 </MudItem>
@@ -238,9 +236,9 @@
             {
                 using var db = await DbFactory.CreateDbContextAsync();
 
-                if (_storeModel.Status == "Inactive" && (_storeModel.StoreHeadId != null || _storeModel.AreaHeadId != null))
+                if (_storeModel.Status == "Closed" && (_storeModel.StoreHeadId != null || _storeModel.AreaHeadId != null))
                 {
-                    Snackbar.Add("Cannot set store status to Inactive while an Area Head or Store Head is assigned. Please unassign them first.", Severity.Warning);
+                    Snackbar.Add("Cannot set store status to Closed while an Area Head or Store Head is assigned. Please unassign them first.", Severity.Warning);
                     return;
                 }
 
