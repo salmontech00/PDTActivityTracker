@@ -434,7 +434,7 @@
             <div class="mobile-view">
                 @foreach (var group in _filteredTasks.GroupBy(t => _groupDefinition?.Selector?.Invoke(t) ?? "Other"))
                 {
-                    <div class="mobile-detail-header rounded-lg mb-2">@group.Key</div>
+                    <div class="mobile-detail-header rounded-lg mb-2" style="word-break: break-word; overflow-wrap: anywhere;">@group.Key</div>
                     @foreach (var task in group)
                     {
                         <MudPaper Class="@($"glass-panel mobile-detail-card pa-3 mb-3 {GetThemeClass()}")" Elevation="0">

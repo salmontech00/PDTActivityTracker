@@ -672,9 +672,9 @@
                             <MudExpansionPanel Class="@($"modern-expansion-panel")" MaxHeight="1000">
                                 <TitleContent>
                                     <div class="d-flex align-center py-2">
-                                        <MudIcon Icon="@category.Icon" Class="mr-3" Color="Color.Primary" />
-                                        <div class="flex-grow-1">
-                                            <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
+                                        <MudIcon Icon="@category.Icon" Class="mr-3 flex-shrink-0" Color="Color.Primary" />
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <MudText Typo="Typo.h6" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@category.Name</MudText>
                                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">@GetCategorySummary(category.Id)</MudText>
                                         </div>
                                     </div>

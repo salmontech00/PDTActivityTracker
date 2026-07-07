@@ -549,7 +549,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
     }
     else
     {
-        // Update existing categories if names match, or add missing ones
+        // Update existing categories if names match
         var existingCategories = await db.Categories.ToListAsync();
         foreach (var expected in expectedCategories)
         {
@@ -559,22 +559,6 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 existing.Icon = expected.Icon;
                 existing.ColorClass = expected.ColorClass;
                 existing.SortOrder = expected.SortOrder;
-            }
-            else
-            {
-                // Special case: Rename "Closing" to "Check Out" if it exists
-                var closing = existingCategories.FirstOrDefault(c => c.Name == "Closing");
-                if (closing != null && expected.Name == "Check Out")
-                {
-                    closing.Name = "Check Out";
-                    closing.Icon = expected.Icon;
-                    closing.ColorClass = expected.ColorClass;
-                    closing.SortOrder = expected.SortOrder;
-                }
-                else
-                {
-                    db.Categories.Add(expected);
-                }
             }
         }
         await db.SaveChangesAsync();

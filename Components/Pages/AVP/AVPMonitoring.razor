@@ -269,6 +269,8 @@
         background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
         color: white;
         font-size: 0.7rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     /* MOBILE CARDS */
@@ -1210,11 +1212,11 @@
                                     <MudGrid Spacing="1">
                                         <MudItem xs="12">
                                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store</MudText>
-                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName ?? "---")</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@(activity.Store?.StoreName ?? "---")</MudText>
                                         </MudItem>
                                         <MudItem xs="6">
                                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">Reviewed By</MudText>
-                                            <MudText Typo="Typo.body2">@(activity.Store?.AreaHead?.Fullname ?? "---")</MudText>
+                                            <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(activity.Store?.AreaHead?.Fullname ?? "---")</MudText>
                                         </MudItem>
                                         <MudItem xs="6">
                                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">Completed At</MudText>
@@ -1392,19 +1394,19 @@
                                 </MudChip>
                             </div>
                             <div class="mobile-card-content">
-                                <MudText Typo="Typo.body1" Style="font-weight: 700;" Class="mb-1">@store.StoreName</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;" Class="d-block mb-2">
+                                <MudText Typo="Typo.body1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;" Class="mb-1">@store.StoreName</MudText>
+                                <MudText Typo="Typo.caption" Style="opacity: 0.6; word-break: break-word; overflow-wrap: anywhere;" Class="d-block mb-2">
                                     <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Class="mr-1" />
                                     @store.Location
                                 </MudText>
                                 <MudGrid Spacing="1">
                                     <MudItem xs="6">
                                         <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store Head</MudText>
-                                        <MudText Typo="Typo.body2">@(store.StoreHead?.Fullname ?? "Unassigned")</MudText>
+                                        <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(store.StoreHead?.Fullname ?? "Unassigned")</MudText>
                                     </MudItem>
                                     <MudItem xs="6">
                                         <MudText Typo="Typo.caption" Style="opacity: 0.6;">Area Head</MudText>
-                                        <MudText Typo="Typo.body2">@(store.AreaHead?.Fullname ?? "Unassigned")</MudText>
+                                        <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(store.AreaHead?.Fullname ?? "Unassigned")</MudText>
                                     </MudItem>
                                 </MudGrid>
                             </div>

@@ -406,8 +406,8 @@
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
-                            <div class="d-flex align-center gap-2">
-                                <MudAvatar Color="@GetAvatarColor()" Size="Size.Small">
+                            <div class="d-flex align-center gap-2" style="min-width: 0; flex: 1;">
+                                <MudAvatar Color="@GetAvatarColor()" Size="Size.Small" Style="flex-shrink: 0;">
                                     @if (!string.IsNullOrEmpty(ah.ImagePath))
                                     {
                                         <img src="@ah.ImagePath" style="width: 100%; height: 100%; object-fit: cover;" />
@@ -417,9 +417,9 @@
                                         <MudIcon Icon="@Icons.Material.Filled.Person" Style="color: white !important;" />
                                     }
                                 </MudAvatar>
-                                <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">@ah.Name</MudText>
+                                <MudText Typo="Typo.subtitle2" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere; min-width: 0;">@ah.Name</MudText>
                             </div>
-                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(ah.ComplianceRate)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 80px;">
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(ah.ComplianceRate)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 80px; flex-shrink: 0; white-space: nowrap;">
                                 @GetStatusLabel(ah.ComplianceRate)
                             </MudChip>
                         </div>

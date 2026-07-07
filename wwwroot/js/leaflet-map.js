@@ -139,7 +139,7 @@ window.leafletMap = {
 
                 // Popup Content
                 var popupContent = `
-                    <div style="font-family: sans-serif; min-width: 150px;">
+                    <div style="font-family: sans-serif; min-width: 150px; max-width: 250px; word-break: break-word; overflow-wrap: anywhere;">
                         <h4 style="margin: 0 0 5px 0; color: #616161;">${store.storeName}</h4>
                         <div style="margin-bottom: 5px;">
                              ${isStoreHeadMode ? statusBadge : ''}

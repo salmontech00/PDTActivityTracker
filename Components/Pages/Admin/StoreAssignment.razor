@@ -857,30 +857,30 @@
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
-                            <div class="d-flex align-center gap-2">
+                            <div class="d-flex align-center gap-2" style="min-width: 0; flex: 1;">
                                 <MudCheckBox T="bool" Value="@_selectedStores.Contains(store)"
                                              ValueChanged="@((bool val) => { if(val) _selectedStores.Add(store); else _selectedStores.Remove(store); })"
                                              Color="Color.Primary" Dense="true" />
-                                <div>
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@store.StoreName</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@store.StoreCode</MudText>
+                                <div style="min-width: 0; word-break: break-word; overflow-wrap: anywhere;">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@store.StoreName</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.7; word-break: break-word; overflow-wrap: anywhere;">@store.StoreCode</MudText>
                                 </div>
                             </div>
                             <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
                                      Color="@GetStatusColor(store.Status ?? "Active")"
                                      Class="@($"role-chip {GetStatusChipClass(store.Status ?? "Active")}")">
-                                @(store.Status ?? "Active")
+                                 @(store.Status ?? "Active")
                             </MudChip>
                         </div>
                         <div class="mobile-card-content">
                             <MudGrid Spacing="1">
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Location</MudText>
-                                    <MudText Typo="Typo.body2">@store.Location</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@store.Location</MudText>
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Contact</MudText>
-                                    <MudText Typo="Typo.body2">@(string.IsNullOrWhiteSpace(store.ContactPhone) ? "N/A" : store.ContactPhone)</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrWhiteSpace(store.ContactPhone) ? "N/A" : store.ContactPhone)</MudText>
                                 </MudItem>
                                 <MudItem xs="12">
                                     <MudDivider Class="my-2" Style="opacity: 0.1" />
@@ -889,7 +889,7 @@
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store Head</MudText>
                                     @if (store.StoreHead != null)
                                     {
-                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.StoreHead.Fullname</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; word-break: break-word; overflow-wrap: anywhere;">@store.StoreHead.Fullname</MudText>
                                     }
                                     else
                                     {
@@ -900,7 +900,7 @@
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Area Head</MudText>
                                     @if (store.AreaHead != null)
                                     {
-                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.AreaHead.Fullname</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; word-break: break-word; overflow-wrap: anywhere;">@store.AreaHead.Fullname</MudText>
                                     }
                                     else
                                     {

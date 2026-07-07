@@ -605,7 +605,7 @@
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
-                            <div class="d-flex align-center gap-3">
+                            <div class="d-flex align-center gap-3" style="min-width: 0; flex: 1;">
                                 <MudAvatar Size="Size.Medium" Color="GetAvatarColor(user)">
                                     @if (!string.IsNullOrEmpty(GetUserImagePath(user)))
                                     {
@@ -616,9 +616,9 @@
                                         <MudIcon Icon="@Icons.Material.Filled.Person" />
                                     }
                                 </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@user.Fullname</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@user.Username</MudText>
+                                <div style="min-width: 0; word-break: break-word; overflow-wrap: anywhere;">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@user.Fullname</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.7; word-break: break-word; overflow-wrap: anywhere;">@user.Username</MudText>
                                 </div>
                             </div>
                             <MudChip T="string"
@@ -634,11 +634,11 @@
                             <MudGrid Spacing="1">
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Emp. No.</MudText>
-                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Designation</MudText>
-                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Status</MudText>

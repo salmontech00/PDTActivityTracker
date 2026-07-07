@@ -153,6 +153,8 @@
         background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
         color: white;
         font-size: 0.7rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     /* MODERN TABLE */
@@ -977,9 +979,9 @@
                                     <MudGrid Spacing="1">
                                         <MudItem xs="12">
                                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store</MudText>
-                                            <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName ?? "---")</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@(activity.Store?.StoreName ?? "---")</MudText>
                                         </MudItem>
-                                        <MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText><MudText Typo="Typo.body2">@(activity.StartedBy?.Fullname ?? "---")</MudText></MudItem><MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Completed At</MudText><MudText Typo="Typo.body2">@GetActivityCompletedAt(activity)</MudText></MudItem>
+                                        <MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText><MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(activity.StartedBy?.Fullname ?? "---")</MudText></MudItem><MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Completed At</MudText><MudText Typo="Typo.body2">@GetActivityCompletedAt(activity)</MudText></MudItem>
                                         <MudItem xs="12">
                                             <div class="d-flex align-center justify-space-between mb-1">
                                                 <MudText Typo="Typo.caption" Style="opacity: 0.6;">Progress</MudText>
@@ -1366,7 +1368,16 @@
                                         <MudText Typo="Typo.body2" Style="font-weight: 700;">@issue.Title</MudText>
                                         <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
                                     </div>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
+                                    <MudGrid Spacing="1" Class="mt-1">
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6; display: block;">Store</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@(issue.Store?.StoreName ?? "---")</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6; display: block;">By</MudText>
+                                            <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(issue.ReportedBy?.Fullname ?? "---")</MudText>
+                                        </MudItem>
+                                    </MudGrid>
                                     <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                                 </div>
                                 <div class="mobile-card-actions">
@@ -1589,9 +1600,9 @@
                                 <MudGrid Spacing="1">
                                     <MudItem xs="12">
                                         <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store</MudText>
-                                        <MudText Typo="Typo.body2" Style="font-weight: 700;">@(activity.Store?.StoreName ?? "---")</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@(activity.Store?.StoreName ?? "---")</MudText>
                                     </MudItem>
-                                    <MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText><MudText Typo="Typo.body2">@(activity.StartedBy?.Fullname ?? "---")</MudText></MudItem>
+                                    <MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Started By</MudText><MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(activity.StartedBy?.Fullname ?? "---")</MudText></MudItem>
                                     <MudItem xs="6"><MudText Typo="Typo.caption" Style="opacity: 0.6;">Completed At</MudText><MudText Typo="Typo.body2">@GetActivityCompletedAt(activity)</MudText></MudItem>
                                     <MudItem xs="12">
                                         <div class="d-flex align-center justify-space-between mb-1">
@@ -1634,8 +1645,8 @@
                                 {
                                     <div>
                                         <div class="d-flex justify-space-between mb-1">
-                                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@cat.CategoryName</MudText>
-                                            <MudText Typo="Typo.body2" Style="font-weight: 800;">@((int)cat.CompletionRate)%</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 600; min-width: 0; word-break: break-word; overflow-wrap: anywhere;">@cat.CategoryName</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 800; flex-shrink: 0; padding-left: 4px;">@((int)cat.CompletionRate)%</MudText>
                                         </div>
                                         <MudProgressLinear Color="@GetProgressColor(cat.CompletionRate)" Value="@cat.CompletionRate" Rounded="true" Size="Size.Medium" />
                                     </div>
@@ -1930,8 +1941,17 @@
                                     <MudText Typo="Typo.body2" Style="font-weight: 700;">@issue.Title</MudText>
                                     <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled">@issue.Priority</MudChip>
                                 </div>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store: @(issue.Store?.StoreName)</MudText>
-                                <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
+                                    <MudGrid Spacing="1" Class="mt-1">
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6; display: block;">Store</MudText>
+                                            <MudText Typo="Typo.body2" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@(issue.Store?.StoreName ?? "---")</MudText>
+                                        </MudItem>
+                                        <MudItem xs="6">
+                                            <MudText Typo="Typo.caption" Style="opacity: 0.6; display: block;">By</MudText>
+                                            <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(issue.ReportedBy?.Fullname ?? "---")</MudText>
+                                        </MudItem>
+                                    </MudGrid>
+                                    <MudText Typo="Typo.body2" Class="mt-2" Style="word-break: break-word; overflow-wrap: anywhere;">@issue.Description</MudText>
                             </div>
                             <div class="mobile-card-actions">
                                 <MudButton StartIcon="@Icons.Material.Filled.Delete"

@@ -65,12 +65,10 @@
         color: #0072cf !important;
     }
 
-    
 
     .glass-dialog.lightest .mud-input-outlined-border {
         border-color: rgba(0, 114, 207, 0.4) !important;
     }
-
     .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
     .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
         border-color: #0072cf !important;
@@ -80,6 +78,10 @@
         .glass-dialog {
             padding: 0px !important;
         }
+    }
+
+    .glass-dialog .remove-image-btn .mud-icon-root {
+        color: #ef4444 !important;
     }
 </style>
 
@@ -97,13 +99,22 @@
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; margin-bottom: 16px;">
                     @if (!string.IsNullOrEmpty(_imagePreviewUrl))
                     {
-                        <label for="upload-image" style="position: absolute; top: 10px; z-index: 2; opacity: 0.5; cursor: pointer;">
-                            <MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
-                        </label>
+                        <div style="position: relative; display: inline-block;">
+                            <label for="upload-image" style="position: absolute; top: 10px; left: 10px; z-index: 2; opacity: 0.5; cursor: pointer;">
+                                <MudIcon Icon="@Icons.Material.Filled.UploadFile" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Large" />
+                            </label>
 
-                        <img src="@_imagePreviewUrl"
-                             alt="Preview"
-                             style="max-height: 150px; max-width:150px; border-radius: 6px;" />
+                            <img src="@_imagePreviewUrl"
+                                 alt="Preview"
+                                 style="max-height: 150px; max-width:150px; border-radius: 6px; display: block;" />
+
+                            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                                           Class="remove-image-btn"
+                                           Color="MudBlazor.Color.Error"
+                                           Size="MudBlazor.Size.Small"
+                                           OnClick="RemoveImage"
+                                           Style="position: absolute; top: -10px; right: -10px; z-index: 10; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.25);" />
+                        </div>
                     }
                     else
                     {
@@ -479,7 +490,12 @@
                 userInDb.EmployeeNumber = _editingUser.EmployeeNumber;
                 userInDb.Designation = _editingUser.Designation;
 
-                if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
+                if (string.IsNullOrEmpty(_imagePreviewUrl))
+                {
+                    userInDb.ImageData = null;
+                    userInDb.ImageMimeType = null;
+                }
+                else if (_imageBytes != null && !string.IsNullOrEmpty(_imageMimeType))
                 {
                     userInDb.ImageData = _imageBytes;
                     userInDb.ImageMimeType = _imageMimeType;
@@ -550,6 +566,13 @@
         {
             Snackbar.Add($"Error processing image: {ex.Message}", Severity.Error);
         }
+    }
+
+    private void RemoveImage()
+    {
+        _imagePreviewUrl = null;
+        _imageBytes = null;
+        _imageMimeType = null;
     }
 
     private void Cancel() => MudDialog.Cancel();
