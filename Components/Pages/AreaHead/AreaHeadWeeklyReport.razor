@@ -17,6 +17,20 @@
 <PageTitle>Report Review - @(_store?.StoreName ?? "Loading...")</PageTitle>
 
 <style>
+    .date-picker-full-mobile {
+        max-width: 220px;
+        width: 100%;
+    }
+
+    /* ADD THESE — default (desktop) state */
+    .date-picker-desktop {
+        display: block;
+    }
+
+    .date-picker-mobile {
+        display: none;
+        width: 100%;
+    }
     .planner-container {
         padding: 1rem;
     }

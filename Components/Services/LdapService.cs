@@ -11,6 +11,7 @@ namespace PDTActivityTracker.Components.Services
         public string Domain { get; set; } = string.Empty;
         public string SearchBase { get; set; } = string.Empty;
         public bool UseSsl { get; set; } = false;
+        public bool BypassCertificateValidation { get; set; } = false;
     }
 
     public class LdapUser
@@ -60,18 +61,32 @@ namespace PDTActivityTracker.Components.Services
 
         private LdapConnection CreateConnection()
         {
-            var connection = new LdapConnection(new LdapDirectoryIdentifier(_settings.Server, _settings.Port));
+            var identifier = new LdapDirectoryIdentifier(_settings.Server, _settings.Port);
+            var connection = new LdapConnection(identifier);
+
+            // On Linux, these options are often required for Active Directory
             connection.SessionOptions.ProtocolVersion = 3;
+            connection.SessionOptions.ReferralChasing = ReferralChasingOptions.None;
 
             if (_settings.UseSsl)
             {
                 connection.SessionOptions.SecureSocketLayer = true;
-                // On Linux, you might need to ignore certificate errors for internal CAs
-                connection.SessionOptions.VerifyServerCertificate = (conn, cert) => true;
+                if (_settings.BypassCertificateValidation)
+                {
+                    try
+                    {
+                        connection.SessionOptions.VerifyServerCertificate = (conn, cert) => true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "BypassCertificateValidation is enabled, but custom certificate validation callback could not be set on this platform.");
+                    }
+                }
             }
 
             // Linux compatibility: Use Basic instead of Negotiate
             connection.AuthType = AuthType.Basic;
+            connection.Timeout = TimeSpan.FromSeconds(15);
 
             return connection;
         }
@@ -159,7 +174,7 @@ namespace PDTActivityTracker.Components.Services
 
                         if (string.IsNullOrEmpty(displayName))
                         {
-                            _logger.LogWarning("FullName for {Email} could not be resolved from any attribute — falling back to samAccountName '{Sam}'", email, samAccountName);
+                            _logger.LogWarning("FullName for {Email} could not be resolved from any attribute - falling back to samAccountName '{Sam}'", email, samAccountName);
                         }
 
                         var finalDisplayName = string.IsNullOrEmpty(displayName) ? samAccountName : displayName;
@@ -173,16 +188,16 @@ namespace PDTActivityTracker.Components.Services
                         };
                     }
 
-                    _logger.LogWarning("LDAP search for {Email} returned zero entries — check SearchBase/filter", email);
+                    _logger.LogWarning("LDAP search for {Email} returned zero entries - check SearchBase/filter", email);
                     return null;
                 });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching LDAP user details for {Email} — falling back to email-derived values", email);
+                _logger.LogError(ex, "Error fetching LDAP user details for {Email} - falling back to email-derived values", email);
             }
 
-            _logger.LogWarning("GetUserDetailsAsync FALLBACK triggered for {Email} — DisplayName will be set to '{Fallback}'", email, email.Split('@')[0]);
+            _logger.LogWarning("GetUserDetailsAsync FALLBACK triggered for {Email} - DisplayName will be set to '{Fallback}'", email, email.Split('@')[0]);
 
             return new LdapUser
             {
