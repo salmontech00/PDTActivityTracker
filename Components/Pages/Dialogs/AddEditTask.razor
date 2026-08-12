@@ -56,7 +56,7 @@
                     <MudTextField T="string" Label="Task Name (Optional)" @bind-Value="_model.TaskName" Variant="Variant.Outlined" Margin="Margin.Dense" AutoFocus="true" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Required="true" RequiredError="Description is required" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
                     <MudSelect T="int" Label="Category" @bind-Value="_model.CategoryId" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">

@@ -93,7 +93,7 @@
         <MudForm @ref="form" @bind-IsValid="@success">
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="_storeModel.StoreCode" Label="Store Code" Required="true" RequiredError="Store Code is required" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField T="string" Value="@_storeModel.StoreCode" ValueChanged="OnStoreCodeChanged" Label="Store Code" Required="true" RequiredError="Store Code is required" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Pattern="^[0-9]*$" Mask="@(new RegexMask(@"^\d*$"))" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
                     <MudSelect T="string" @bind-Value="_storeModel.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" PopoverClass="status-dropdown-popover">
@@ -218,6 +218,18 @@
     }
 
     private void OnThemeChanged() => StateHasChanged();
+
+    private void OnStoreCodeChanged(string value)
+    {
+        if (value != null)
+        {
+            _storeModel.StoreCode = new string(value.Where(char.IsDigit).ToArray());
+        }
+        else
+        {
+            _storeModel.StoreCode = string.Empty;
+        }
+    }
 
     public void Dispose() => ThemeService.OnThemeChanged -= OnThemeChanged;
 

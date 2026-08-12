@@ -493,6 +493,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                     FOREIGN KEY ([AreaHeadId]) REFERENCES [Users] ([Id]);
                 END
             END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'IsSubmitted' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [IsSubmitted] bit NOT NULL DEFAULT 0;
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'SubmittedAt' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [SubmittedAt] datetime2 NULL;
+            END
         END
 
         -- Create TaskProgresses Table

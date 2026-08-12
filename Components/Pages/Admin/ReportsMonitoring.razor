@@ -2738,14 +2738,20 @@
 
     private string GetActivityStatusLabel(StoreDailyActivity activity)
     {
-        if (activity.IsCompleted || GetCompletionProgress(activity.Id) >= 100) return "Completed";
+        bool isSubmitted = activity.IsSubmitted || activity.SubmittedAt.HasValue || activity.IsCompleted || activity.CompletedAt.HasValue;
+        double progress = GetCompletionProgress(activity.Id);
+        if (progress >= 100 && isSubmitted) return "Completed";
+        if (isSubmitted) return "Submitted";
         if (activity.Date.Date < DateTime.Today) return "Incomplete";
         return "In Progress";
     }
 
     private Color GetActivityStatusColor(StoreDailyActivity activity)
     {
-        if (activity.IsCompleted || GetCompletionProgress(activity.Id) >= 100) return Color.Success;
+        bool isSubmitted = activity.IsSubmitted || activity.SubmittedAt.HasValue || activity.IsCompleted || activity.CompletedAt.HasValue;
+        double progress = GetCompletionProgress(activity.Id);
+        if (progress >= 100 && isSubmitted) return Color.Success;
+        if (isSubmitted) return Color.Info;
         if (activity.Date.Date < DateTime.Today) return Color.Error;
         return Color.Warning;
     }

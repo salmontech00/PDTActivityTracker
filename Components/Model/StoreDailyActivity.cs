@@ -27,6 +27,10 @@ namespace PDTActivityTracker.Components.Model
 
         public DateTime? CompletedAt { get; set; }
 
+        public bool IsSubmitted { get; set; } = false;
+
+        public DateTime? SubmittedAt { get; set; }
+
         public int? StartedById { get; set; }
 
         [ForeignKey("StartedById")]

@@ -536,11 +536,7 @@
                                     <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                                 </div>
                                 <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
-                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_lastCategoryCompletedAt.HasValue ? "Completed " : (_derivedCheckInTime.HasValue ? "In Progress" : (_selectedStoreActivity != null ? _checkInStatus : "Not Started")))</MudText>
-                                @if (_lastCategoryCompletedAt.HasValue)
-                                {
-                                    <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@_lastCategoryCompletedAt.Value.ToString("hh:mm tt")</MudText>
-                                }
+                                <MudText Typo="Typo.caption" Style="opacity: 0.8;">@GetCheckInStatusLabel()</MudText>
                             </div>
                         </MudPaper>
 
@@ -666,11 +662,7 @@
                                         <MudText Typo="Typo.caption" Style="font-weight: 700; color: #4caf50;">CHECK IN</MudText>
                                     </div>
                                     <MudText Typo="Typo.h5" Style="font-weight: 700;">@(_derivedCheckInTime?.ToString("hh:mm tt") ?? "---")</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@(_lastCategoryCompletedAt.HasValue ? "Completed " : (_derivedCheckInTime.HasValue ? "In Progress" : (_selectedStoreActivity != null ? _checkInStatus : "Not Started")))</MudText>
-                                    @if (_lastCategoryCompletedAt.HasValue)
-                                    {
-                                        <MudText Typo="Typo.caption" Style="font-weight: 700; opacity: 0.85;">@_lastCategoryCompletedAt.Value.ToString("hh:mm tt")</MudText>
-                                    }
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">@GetCheckInStatusLabel()</MudText>
                                 </div>
                             </MudPaper>
 
@@ -1006,6 +998,26 @@
     }
 
     private int? _selectedStoreId;
+
+    private string GetCheckInStatusLabel()
+    {
+        if (_lastCategoryCompletedAt.HasValue)
+        {
+            return $"Completed {_lastCategoryCompletedAt.Value:hh:mm tt}";
+        }
+        var act = _selectedStoreActivity;
+        if (act != null)
+        {
+            bool submitted = act.IsSubmitted || act.SubmittedAt.HasValue || act.IsCompleted || act.CompletedAt.HasValue;
+            if (submitted)
+            {
+                var ts = act.SubmittedAt ?? act.CompletedAt;
+                return ts.HasValue ? $"Submitted {ts.Value:hh:mm tt}" : "Submitted";
+            }
+        }
+        if (_derivedCheckInTime.HasValue) return "In Progress";
+        return _selectedStoreActivity != null ? _checkInStatus : "Not Started";
+    }
 
     [JSInvokable("OnStorePinClicked")]
     public async Task OnStorePinClicked(int storeId)

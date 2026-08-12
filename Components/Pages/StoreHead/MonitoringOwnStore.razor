@@ -1233,9 +1233,9 @@
                                         @if (!string.IsNullOrEmpty(activity.AreaHeadRemark))
                                         {
                                             <MudItem xs="12">
-                                                <div class="mt-2 pa-2 rounded-lg" style="background: rgba(0, 114, 207, 0.05); border-left: 3px solid #0072cf;">
+                                                <div class="mt-2 pa-2 rounded-lg" style="background: rgba(0, 114, 207, 0.05); border-left: 3px solid #0072cf; word-break: break-word; overflow-wrap: anywhere;">
                                                     <MudText Typo="Typo.caption" Style="font-weight: 700; display: block;">AREA HEAD FEEDBACK</MudText>
-                                                    <MudText Typo="Typo.caption" Class="d-block">@activity.AreaHeadRemark</MudText>
+                                                    <MudText Typo="Typo.caption" Class="d-block" Style="word-break: break-word; overflow-wrap: anywhere;">@activity.AreaHeadRemark</MudText>
                                                 </div>
                                             </MudItem>
                                         }

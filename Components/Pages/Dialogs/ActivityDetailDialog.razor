@@ -535,7 +535,7 @@
                 }
                 else
                 {
-                    <MudText Typo="Typo.body2" Style="@(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "font-style: italic; opacity: 0.5;" : "")">
+                    <MudText Typo="Typo.body2" Style="@($"word-break: break-word; overflow-wrap: anywhere; {(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "font-style: italic; opacity: 0.5;" : "")}")">
                         @(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "No feedback provided yet." : Activity.AreaHeadRemark)
                     </MudText>
                 }

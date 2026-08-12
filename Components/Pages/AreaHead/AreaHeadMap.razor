@@ -1313,13 +1313,17 @@
     {
         if (_selectedStoreActivity == null) return Color.Default;
         if (_completionPercentage >= 100) return Color.Success;
-        return Color.Info;
+        bool isSubmitted = _selectedStoreActivity.IsSubmitted || _selectedStoreActivity.SubmittedAt.HasValue || _selectedStoreActivity.IsCompleted || _selectedStoreActivity.CompletedAt.HasValue;
+        if (isSubmitted) return Color.Info;
+        return Color.Warning;
     }
 
     private string GetStoreStatusText()
     {
         if (_selectedStoreActivity == null) return "Inactive";
-        if (_completionPercentage >= 100) return "Completed ";
+        if (_completionPercentage >= 100) return "Completed";
+        bool isSubmitted = _selectedStoreActivity.IsSubmitted || _selectedStoreActivity.SubmittedAt.HasValue || _selectedStoreActivity.IsCompleted || _selectedStoreActivity.CompletedAt.HasValue;
+        if (isSubmitted) return "Submitted";
         return "In Progress";
     }
 

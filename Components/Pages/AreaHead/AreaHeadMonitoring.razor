@@ -2595,17 +2595,29 @@
 
     private Color GetStoreStatusColor(int storeId)
     {
-        var progress = GetStoreProgress(storeId);
-        if (progress >= 100) return Color.Success;
-        if (progress > 0) return Color.Warning;
+        var activity = _todayActivities.GetValueOrDefault(storeId);
+        if (activity != null && _activityProgressCache.TryGetValue(activity.Id, out var val))
+        {
+            return val.StatusLabel switch
+            {
+                "Completed" => Color.Success,
+                "Submitted" => Color.Info,
+                "In Progress" => Color.Warning,
+                "Incomplete" => Color.Error,
+                _ => Color.Default
+            };
+        }
         return Color.Default;
     }
 
     private string GetStoreStatusText(int storeId)
     {
-        var progress = GetStoreProgress(storeId);
-        if (progress >= 100) return "Done Today";
-        if (progress > 0) return "In Progress";
+        var activity = _todayActivities.GetValueOrDefault(storeId);
+        if (activity != null && _activityProgressCache.TryGetValue(activity.Id, out var val))
+        {
+            if (val.StatusLabel == "Completed") return "Done Today";
+            return val.StatusLabel;
+        }
         return "Not Started";
     }
 

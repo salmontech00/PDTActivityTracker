@@ -155,14 +155,22 @@ namespace PDTActivityTracker.Components.Services
                     }
                 }
 
+                // Determine submission state
+                bool isSubmitted = activity.IsSubmitted || activity.SubmittedAt.HasValue || activity.IsCompleted || activity.CompletedAt.HasValue;
+
                 // Determine final Status Label and Color
                 string statusLabel = "Not Started";
                 string statusColor = "Default";
 
-                if (isFullyCompleted)
+                if (isFullyCompleted && isSubmitted)
                 {
                     statusLabel = "Completed";
                     statusColor = "Success";
+                }
+                else if (isSubmitted)
+                {
+                    statusLabel = "Submitted";
+                    statusColor = "Info";
                 }
                 else if (activityDate < DateTime.Today)
                 {

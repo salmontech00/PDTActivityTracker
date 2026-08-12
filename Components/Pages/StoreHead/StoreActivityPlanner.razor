@@ -1739,12 +1739,20 @@
                 }
             }
 
-            // Mark session as completed and locked
+            // Mark session as submitted and locked
             var session = await db.StoreDailyActivities.FindAsync(_currentSession!.Id);
             if (session != null)
             {
-                session.IsCompleted = true;
-                session.CompletedAt = DateTime.Now;
+                session.IsSubmitted = true;
+                session.SubmittedAt = DateTime.Now;
+
+                // Set IsCompleted only if fully completed
+                var progResult = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(new[] { session }, db);
+                if (progResult.TryGetValue(session.Id, out var p) && p.IsFullyCompleted)
+                {
+                    session.IsCompleted = true;
+                    session.CompletedAt = DateTime.Now;
+                }
             }
 
             await db.SaveChangesAsync();

@@ -47,11 +47,14 @@ namespace PDTActivityTracker.Components.Services
             {
                 var progress = await CalculateProgressAsync(activity.Id, db);
 
+                bool isSubmitted = activity.IsSubmitted || activity.SubmittedAt.HasValue || activity.IsCompleted || activity.CompletedAt.HasValue;
+                var status = (progress >= 100 && isSubmitted) ? "Completed" : (isSubmitted ? "Submitted" : (activity.Date.Date < DateTime.Today ? "Incomplete" : "In Progress"));
+
                 worksheet.Cells[row, 1].Value = activity.Date.ToString("yyyy-MM-dd");
                 worksheet.Cells[row, 2].Value = activity.Store?.StoreCode ?? "N/A";
                 worksheet.Cells[row, 3].Value = activity.Store?.StoreName ?? "N/A";
                 worksheet.Cells[row, 4].Value = activity.StartedBy?.Fullname ?? "N/A";
-                worksheet.Cells[row, 5].Value = activity.IsCompleted ? "Completed" : (activity.Date.Date < DateTime.Today ? "Incomplete" : "In Progress");
+                worksheet.Cells[row, 5].Value = status;
                 worksheet.Cells[row, 6].Value = activity.CompletedAt?.ToString("hh:mm tt") ?? "-";
                 worksheet.Cells[row, 7].Value = progress / 100;
                 worksheet.Cells[row, 7].Style.Numberformat.Format = "0%";
@@ -135,8 +138,9 @@ namespace PDTActivityTracker.Components.Services
                         foreach (var activity in activities)
                         {
                             var progress = progressData.TryGetValue(activity.Id, out var p) ? p : 0;
-                            var status = activity.IsCompleted ? "Completed" : (activity.Date.Date < DateTime.Today ? "Incomplete" : "In Progress");
-                            var statusColor = activity.IsCompleted ? Colors.Green.Medium : (activity.Date.Date < DateTime.Today ? Colors.Red.Medium : Colors.Orange.Medium);
+                            bool isSubmitted = activity.IsSubmitted || activity.SubmittedAt.HasValue || activity.IsCompleted || activity.CompletedAt.HasValue;
+                            var status = (progress >= 100 && isSubmitted) ? "Completed" : (isSubmitted ? "Submitted" : (activity.Date.Date < DateTime.Today ? "Incomplete" : "In Progress"));
+                            var statusColor = (progress >= 100 && isSubmitted) ? Colors.Green.Medium : (isSubmitted ? Colors.Blue.Medium : (activity.Date.Date < DateTime.Today ? Colors.Red.Medium : Colors.Orange.Medium));
 
                             table.Cell().Element(ValueStyle).Text(activity.Date.ToString("yyyy-MM-dd"));
                             table.Cell().Element(ValueStyle).Text(activity.Store?.StoreCode ?? "N/A");

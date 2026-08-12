@@ -313,6 +313,8 @@
 
         .preview-task-name-container {
             width: 100%;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .preview-description-row {
@@ -320,6 +322,8 @@
             padding-left: 0;
             margin-top: 8px;
             flex: 0 0 100%;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .preview-remarks-container {
@@ -677,7 +681,7 @@
                         @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                         {
                             var itemsInCategory = _checklistItems
-                            .Where(t => t.CategoryId == category.Id)
+                            .Where(t => t.CategoryId == category.Id && (!t.IsDeleted || _taskProgresses.Any(tp => tp.ChecklistItemId == t.Id)))
                             .OrderBy(t => t.SortOrder)
                             .ToList();
 
@@ -694,13 +698,6 @@
                                     </div>
                                 </TitleContent>
                                 <ChildContent>
-                                    @{
-                                        var itemsInCategory = _checklistItems
-                                        .Where(t => t.CategoryId == category.Id)
-                                        .OrderBy(t => t.SortOrder)
-                                        .ToList();
-                                    }
-
                                     @for (int i = 0; i < itemsInCategory.Count; i++)
                                     {
                                         var task = itemsInCategory[i];
@@ -712,12 +709,12 @@
                                                 <div class="preview-header-content-group">
                                                     <div class="preview-task-name-container">
                                                         <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
-                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">@taskNumber. @task.TaskName</MudText>
+                                                        <MudText Typo="Typo.body1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere; min-width: 0;">@taskNumber. @task.TaskName</MudText>
                                                     </div>
                                                     @if (!string.IsNullOrEmpty(task.Description))
                                                     {
                                                         <div class="preview-description-row">
-                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7; word-break: break-word; overflow-wrap: anywhere;">@task.Description</MudText>
                                                         </div>
                                                     }
                                                 </div>
@@ -788,8 +785,8 @@
 
                                             @if (!string.IsNullOrEmpty(progress.Remarks))
                                             {
-                                                <div class="preview-remarks-container">
-                                                    <MudText Typo="Typo.body2"><b>Remarks:</b> @progress.Remarks</MudText>
+                                                <div class="preview-remarks-container" style="word-break: break-word; overflow-wrap: anywhere;">
+                                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;"><b>Remarks:</b> @progress.Remarks</MudText>
                                                 </div>
                                             }
 
@@ -1073,8 +1070,19 @@
         public int TotalTasks { get; set; }
         public double CompletionPercentage { get; set; }
         public bool HasSession { get; set; }
-        public string StatusText => !HasSession ? "Inactive" : (CompletionPercentage >= 100 ? "Completed" : "In Progress");
-        public Color StatusColor => !HasSession ? Color.Default : (CompletionPercentage >= 100 ? Color.Success : Color.Info);
+        // Submission state carried from the session
+        public bool IsSubmitted { get; set; }
+        public bool IsCompleted { get; set; }
+        public DateTime? CompletedAt { get; set; }
+        private bool WasSubmitted => IsSubmitted || IsCompleted || CompletedAt.HasValue;
+        public string StatusText => !HasSession ? "Inactive"
+            : CompletionPercentage >= 100 ? "Completed"
+            : WasSubmitted ? "Submitted"
+            : "In Progress";
+        public Color StatusColor => !HasSession ? Color.Default
+            : CompletionPercentage >= 100 ? Color.Success
+            : WasSubmitted ? Color.Info
+            : Color.Warning;
     }
 
     protected override void OnInitialized()
@@ -1191,7 +1199,7 @@
         }
         else
         {
-            _dailyTotal = _checklistItems.Count(i => IsTaskAssignedToStore(i, StoreId));
+            _dailyTotal = _checklistItems.Count(i => !i.IsDeleted && IsTaskAssignedToStore(i, StoreId));
         }
 
         _initialized = true;
@@ -1216,7 +1224,7 @@
             .ToListAsync();
 
         var allPeriodProgress = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(sessions, db);
-        var defaultTotalTasks = _checklistItems.Count(i => IsTaskAssignedToStore(i, StoreId));
+        var defaultTotalTasks = _checklistItems.Count(i => !i.IsDeleted && IsTaskAssignedToStore(i, StoreId));
 
         // Build a row for each day in the range (up to today)
         for (var d = start; d <= DateTime.Today && d <= end; d = d.AddDays(1))
@@ -1243,7 +1251,10 @@
                 CheckInTime = checkIn,
                 CompletedTasks = completed,
                 TotalTasks = total,
-                CompletionPercentage = percentage
+                CompletionPercentage = percentage,
+                IsSubmitted = session?.IsSubmitted ?? false,
+                IsCompleted = session?.IsCompleted ?? false,
+                CompletedAt = session?.CompletedAt
             });
         }
 
@@ -1347,7 +1358,7 @@
 
     private string GetCategorySummary(int categoryId)
     {
-        var tasks = _checklistItems.Where(t => t.CategoryId == categoryId && IsTaskAssignedToStore(t, StoreId)).ToList();
+        var tasks = _checklistItems.Where(t => t.CategoryId == categoryId && IsTaskAssignedToStore(t, StoreId) && (!t.IsDeleted || _taskProgresses.Any(tp => tp.ChecklistItemId == t.Id))).ToList();
         var completed = _taskProgresses.Count(tp => tasks.Any(t => t.Id == tp.ChecklistItemId) && tp.IsCompleted);
         return $"{completed} / {tasks.Count} Completed";
     }
@@ -1447,13 +1458,19 @@
     private Color GetReportStatusColor()
     {
         if (_currentSession == null) return Color.Default;
-        return GetReportProgress() >= 100 ? Color.Success : Color.Info;
+        if (GetReportProgress() >= 100) return Color.Success;
+        bool isSubmitted = _currentSession.IsSubmitted || _currentSession.SubmittedAt.HasValue || _currentSession.IsCompleted || _currentSession.CompletedAt.HasValue;
+        if (isSubmitted) return Color.Info;
+        return Color.Warning;
     }
 
     private string GetReportStatusText()
     {
         if (_currentSession == null) return "Inactive";
-        return GetReportProgress() >= 100 ? "Completed" : "In Progress";
+        if (GetReportProgress() >= 100) return "Completed";
+        bool isSubmitted = _currentSession.IsSubmitted || _currentSession.SubmittedAt.HasValue || _currentSession.IsCompleted || _currentSession.CompletedAt.HasValue;
+        if (isSubmitted) return "Submitted";
+        return "In Progress";
     }
 
     private Color GetPriorityColor(string priority) => priority switch

@@ -201,6 +201,8 @@ window.cameraInterop = {
                 reject("Geolocation is not supported by this browser.");
                 return;
             }
+
+            // Attempt 1: Fast high-accuracy query
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     resolve({
@@ -209,15 +211,31 @@ window.cameraInterop = {
                     });
                 },
                 (error) => {
-                    let msg = "Unknown error";
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED: msg = "Location permission denied."; break;
-                        case error.POSITION_UNAVAILABLE: msg = "Location information is unavailable."; break;
-                        case error.TIMEOUT: msg = "Location request timed out."; break;
+                    // Fallback to low-accuracy if high accuracy fails or times out
+                    if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos2) => {
+                                resolve({
+                                    latitude: pos2.coords.latitude,
+                                    longitude: pos2.coords.longitude
+                                });
+                            },
+                            (err2) => {
+                                reject("Location request failed: " + err2.message);
+                            },
+                            { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                        );
+                    } else {
+                        let msg = "Unknown error";
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED: msg = "Location permission denied."; break;
+                            case error.POSITION_UNAVAILABLE: msg = "Location information is unavailable."; break;
+                            case error.TIMEOUT: msg = "Location request timed out."; break;
+                        }
+                        reject(msg);
                     }
-                    reject(msg);
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         });
     },
