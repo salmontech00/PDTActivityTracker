@@ -943,7 +943,8 @@
 
     private bool IsSessionLocked()
     {
-        return _currentSession?.IsCompleted == true;
+        if (_currentSession == null) return false;
+        return _currentSession.IsSubmitted || _currentSession.IsCompleted || _currentSession.SubmittedAt.HasValue || _currentSession.CompletedAt.HasValue;
     }
 
     private async Task ForceManualCompletion(ChecklistItem task, TaskProgress prog)
@@ -1753,6 +1754,12 @@
                     session.IsCompleted = true;
                     session.CompletedAt = DateTime.Now;
                 }
+
+                // Synchronize in-memory _currentSession state
+                _currentSession.IsSubmitted = session.IsSubmitted;
+                _currentSession.SubmittedAt = session.SubmittedAt;
+                _currentSession.IsCompleted = session.IsCompleted;
+                _currentSession.CompletedAt = session.CompletedAt;
             }
 
             await db.SaveChangesAsync();
