@@ -191,6 +191,10 @@
             text-align: right;
             opacity: 0.8;
             font-style: italic;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            min-width: 0;
+            flex: 1 1 auto;
         }
 
         .time-badge {
@@ -472,7 +476,7 @@
                                     }
                                 </div>
                                 <div class="remarks-container">
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic; word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
                                 </div>
                             </div>
                         </MudPaper>
