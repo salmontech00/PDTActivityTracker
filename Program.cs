@@ -1,24 +1,48 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.SignalR;
 using Blazored.SessionStorage;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using MudBlazor;
 using MudBlazor.Services;
 using OfficeOpenXml;
 using PDTActivityTracker.Components;
+using PDTActivityTracker.Components.Model;
 using PDTActivityTracker.Components.Services;
 using PDTActivityTracker.Model;
-using PDTActivityTracker.Components.Model;
-using MudBlazor;
+using Serilog;
+using Serilog.Events;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .MinimumLevel.Override("System.Net.Http.HttpClient", LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(
+        path: "logs/log-.txt",
+        rollingInterval: RollingInterval.Day,
+        retainedFileCountLimit: 14,
+        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext}{NewLine}{Message:lj} {Properties:j}{NewLine}{Exception}{NewLine}"));
 
 #pragma warning disable CS0618
 ExcelPackage.License.SetNonCommercialPersonal("TuitionValidation");
 #pragma warning restore CS0618
 
-builder.Services.AddMudServices();
+builder.Services.AddMudServices(config =>
+{
+    // Desktop keeps default bottom-left; mobile centering is handled via CSS
+    config.SnackbarConfiguration.PreventDuplicates = false;
+    config.SnackbarConfiguration.NewestOnTop = true;
+    config.SnackbarConfiguration.ShowCloseIcon = true;
+    config.SnackbarConfiguration.VisibleStateDuration = 4500;  // 4.5s — enough time to read errors on mobile
+    config.SnackbarConfiguration.HideTransitionDuration = 300;
+    config.SnackbarConfiguration.ShowTransitionDuration = 200;
+    config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
+});
 builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddScoped<PDTActivityTracker.Components.Services.ThemeService>();
 
@@ -46,22 +70,33 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 
 var app = builder.Build();
 
-await EnsureDefaultAdminAsync(app.Services);
-
-if (!app.Environment.IsDevelopment())
+try
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
+    await EnsureDefaultAdminAsync(app.Services);
+
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        app.UseHsts();
+    }
+
+    app.UseHttpsRedirection();
+    app.UseAntiforgery();
+
+    app.MapStaticAssets();
+    app.MapRazorComponents<App>()
+        .AddInteractiveServerRenderMode();
+
+    app.Run();
 }
-
-app.UseHttpsRedirection();
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-app.Run();
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 static async Task EnsureDefaultAdminAsync(IServiceProvider services)
 {
@@ -180,6 +215,11 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
             END
         END
 
+        IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'IsDeleted' AND Object_ID = Object_ID(N'ChecklistItems'))
+        BEGIN
+            ALTER TABLE [ChecklistItems] ADD [IsDeleted] bit NOT NULL DEFAULT 0;
+        END
+
         IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'Section' AND Object_ID = Object_ID(N'ChecklistItems'))
         BEGIN
             ALTER TABLE [ChecklistItems] ADD [Section] nvarchar(max) NULL;
@@ -204,12 +244,20 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [GPSLongitude] float NULL,
                 [ContactPhone] nvarchar(max) NULL,
                 [ContactEmail] nvarchar(max) NULL,
+                [IsDeleted] bit NOT NULL DEFAULT 0,
                 [StoreHeadId] int NULL,
                 [AreaHeadId] int NULL,
                 CONSTRAINT [PK_Stores] PRIMARY KEY ([Id]),
                 CONSTRAINT [FK_Stores_Users_StoreHeadId] FOREIGN KEY ([StoreHeadId]) REFERENCES [Users] ([Id]),
                 CONSTRAINT [FK_Stores_Users_AreaHeadId] FOREIGN KEY ([AreaHeadId]) REFERENCES [Users] ([Id])
             );
+        END
+        ELSE
+        BEGIN
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'IsDeleted' AND Object_ID = Object_ID(N'Stores'))
+            BEGIN
+                ALTER TABLE [Stores] ADD [IsDeleted] bit NOT NULL DEFAULT 0;
+            END
         END
 
         -- Create StoreAssignmentLogs Table
@@ -324,7 +372,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [Description] nvarchar(max) NULL,
                 [Priority] nvarchar(max) NOT NULL,
                 [Status] nvarchar(max) NOT NULL,
-                [ReportedById] int NOT NULL,
+                [ReportedById] int NULL,
                 [ReportedAt] datetime2 NOT NULL,
                 [ResolvedAt] datetime2 NULL,
                 CONSTRAINT [PK_Issues] PRIMARY KEY ([Id]),
@@ -334,6 +382,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         END
         ELSE
         BEGIN
+            IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'ReportedById' AND Object_ID = Object_ID(N'Issues') AND is_nullable = 0)
+            BEGIN
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Issues_Users_ReportedById')
+                BEGIN
+                    ALTER TABLE [Issues] DROP CONSTRAINT [FK_Issues_Users_ReportedById];
+                END
+                ALTER TABLE [Issues] ALTER COLUMN [ReportedById] int NULL;
+                ALTER TABLE [Issues] ADD CONSTRAINT [FK_Issues_Users_ReportedById] FOREIGN KEY ([ReportedById]) REFERENCES [Users] ([Id]);
+            END
+
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ImageData' AND Object_ID = Object_ID(N'Issues'))
             BEGIN
                 ALTER TABLE [Issues] ADD [ImageData] varbinary(max) NULL;
@@ -399,7 +457,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 [CurrentCategoryId] int NOT NULL,
                 [IsCompleted] bit NOT NULL,
                 [CompletedAt] datetime2 NULL,
-                [StartedById] int NOT NULL,
+                [StartedById] int NULL,
                 CONSTRAINT [PK_StoreDailyActivities] PRIMARY KEY ([Id]),
                 CONSTRAINT [FK_StoreDailyActivities_Stores_StoreId] FOREIGN KEY ([StoreId]) REFERENCES [Stores] ([Id]) ON DELETE CASCADE,
                 CONSTRAINT [FK_StoreDailyActivities_Categories_CurrentCategoryId] FOREIGN KEY ([CurrentCategoryId]) REFERENCES [Categories] ([Id]),
@@ -408,6 +466,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
         END
         ELSE
         BEGIN
+            IF EXISTS (SELECT * FROM sys.columns WHERE Name = N'StartedById' AND Object_ID = Object_ID(N'StoreDailyActivities') AND is_nullable = 0)
+            BEGIN
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_StoreDailyActivities_Users_StartedById')
+                BEGIN
+                    ALTER TABLE [StoreDailyActivities] DROP CONSTRAINT [FK_StoreDailyActivities_Users_StartedById];
+                END
+                ALTER TABLE [StoreDailyActivities] ALTER COLUMN [StartedById] int NULL;
+                ALTER TABLE [StoreDailyActivities] ADD CONSTRAINT [FK_StoreDailyActivities_Users_StartedById] FOREIGN KEY ([StartedById]) REFERENCES [Users] ([Id]);
+            END
+
             IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AreaHeadRemark' AND Object_ID = Object_ID(N'StoreDailyActivities'))
             BEGIN
                 ALTER TABLE [StoreDailyActivities] ADD [AreaHeadRemark] nvarchar(max) NULL;
@@ -424,6 +492,16 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                     ALTER TABLE [StoreDailyActivities] ADD CONSTRAINT [FK_StoreDailyActivities_Users_AreaHeadId] 
                     FOREIGN KEY ([AreaHeadId]) REFERENCES [Users] ([Id]);
                 END
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'IsSubmitted' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [IsSubmitted] bit NOT NULL DEFAULT 0;
+            END
+
+            IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'SubmittedAt' AND Object_ID = Object_ID(N'StoreDailyActivities'))
+            BEGIN
+                ALTER TABLE [StoreDailyActivities] ADD [SubmittedAt] datetime2 NULL;
             END
         END
 
@@ -481,7 +559,7 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
     }
     else
     {
-        // Update existing categories if names match, or add missing ones
+        // Update existing categories if names match
         var existingCategories = await db.Categories.ToListAsync();
         foreach (var expected in expectedCategories)
         {
@@ -491,22 +569,6 @@ static async Task EnsureDefaultAdminAsync(IServiceProvider services)
                 existing.Icon = expected.Icon;
                 existing.ColorClass = expected.ColorClass;
                 existing.SortOrder = expected.SortOrder;
-            }
-            else
-            {
-                // Special case: Rename "Closing" to "Check Out" if it exists
-                var closing = existingCategories.FirstOrDefault(c => c.Name == "Closing");
-                if (closing != null && expected.Name == "Check Out")
-                {
-                    closing.Name = "Check Out";
-                    closing.Icon = expected.Icon;
-                    closing.ColorClass = expected.ColorClass;
-                    closing.SortOrder = expected.SortOrder;
-                }
-                else
-                {
-                    db.Categories.Add(expected);
-                }
             }
         }
         await db.SaveChangesAsync();

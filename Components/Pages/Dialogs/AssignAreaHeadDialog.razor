@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
@@ -53,8 +53,10 @@
         color: #0072cf !important;
     }
 
+    
+
     .glass-dialog.lightest .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 1) !important;
+        border-color: rgba(0, 114, 207, 0.4) !important;
     }
 
     .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
@@ -265,23 +267,23 @@
 
         // Load stores currently assigned to this Area Head
         _currentStores = await db.Stores.AsNoTracking()
-            .Where(s => s.AreaHeadId == _selectedUser!.Id)
+            .Where(s => !s.IsDeleted && s.AreaHeadId == _selectedUser!.Id)
             .OrderBy(s => s.StoreCode)
             .ToListAsync();
 
         _originalStores = new List<Store>(_currentStores);
 
-        // Load all stores EXCEPT those already assigned to THIS Area Head
+        // Load all stores EXCEPT those already assigned to THIS Area Head and inactive stores
         _allAvailableStores = await db.Stores.AsNoTracking()
             .Include(s => s.AreaHead)
-            .Where(s => s.AreaHeadId != _selectedUser!.Id)
+            .Where(s => !s.IsDeleted && s.AreaHeadId != _selectedUser!.Id && s.Status != "Inactive")
             .OrderBy(s => s.StoreCode)
             .ToListAsync();
 
-        // Pre-select stores if passed via parameter
+        // Pre-select stores if passed via parameter (filter to active ones only)
         if (PreSelectedStores != null && PreSelectedStores.Any())
         {
-            var preSelectedIds = PreSelectedStores.Select(ps => ps.Id).ToHashSet();
+            var preSelectedIds = PreSelectedStores.Where(ps => ps.Status != "Inactive").Select(ps => ps.Id).ToHashSet();
             var toSelect = _allAvailableStores.Where(s => preSelectedIds.Contains(s.Id)).ToList();
             _selectedStoresToAdd = new HashSet<Store>(toSelect);
         }
@@ -376,7 +378,17 @@
         }
 
         await db.SaveChangesAsync();
-        MudDialog.Close(DialogResult.Ok(true));
+        MudDialog.Close(DialogResult.Ok(new AreaHeadAssignmentResult
+        {
+            HasAssigned = newStoresToAdd.Any(),
+            HasUnassigned = removedStoreIds.Any()
+        }));
+    }
+
+    public class AreaHeadAssignmentResult
+    {
+        public bool HasAssigned { get; set; }
+        public bool HasUnassigned { get; set; }
     }
 
     private void Cancel() => MudDialog.Cancel();
@@ -395,12 +407,12 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };

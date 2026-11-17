@@ -1,4 +1,4 @@
-﻿@page "/admin/checklist"
+@page "/admin/checklist"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -17,7 +17,7 @@
 
 <style>
     .checklist-container {
-        padding: 1rem;
+        padding: 1rem 1.25rem;
     }
 
     /* GLASS CONTAINER */
@@ -85,7 +85,10 @@
 
     .clear-filters-button.mud-button-root {
         font-weight: 700 !important;
-        border-radius: 12px !important;
+    }
+
+    .clear-filters-button .mud-button-label {
+        white-space: nowrap !important;
     }
 
     /* CATEGORY CHIPS */
@@ -95,6 +98,11 @@
         background-color: #0072cf !important; /* Solid Admin Blue */
         color: #ffffff !important;
         border: none !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+        height: auto !important;
+        min-height: 20px !important;
         text-transform: uppercase !important;
         letter-spacing: 0.5px !important;
     }
@@ -275,11 +283,18 @@
     .task-info {
         display: flex;
         flex-direction: column;
+        min-width: 0; /* Critical: prevents 1fr column from overflowing grid */
+        overflow: hidden;
     }
 
     .task-name {
         font-weight: 700;
         color: rgb(253, 212, 92);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     .lightest .task-name {
@@ -298,10 +313,11 @@
     }
 
     .task-description {
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         opacity: 0.7;
     }
 
+    
     /* FILTER SECTION */
     .filter-section {
         padding: 16px;
@@ -312,29 +328,6 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
         }
-
-    .lightest .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0) !important;
-    }
-
-    .light .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0) !important;
-    }
-
-    .light .filter-section .mud-input-label,
-    .light .filter-section .mud-input-adornment-start,
-    .light .filter-section .mud-select-input,
-    .light .filter-section .mud-input-slot {
-        color: #ffffff !important;
-    }
-
-    .light .filter-section .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
-        border-color: #ffffff !important;
-    }
 
     .filter-toggle-button {
         display: none;
@@ -654,6 +647,15 @@
         .desktop-only {
             display: none !important;
         }
+
+        /* Allow task name to wrap on mobile — long words break instead of being clipped */
+        .task-name {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            word-break: break-word !important;
+            overflow-wrap: anywhere !important;
+        }
     }
 
     @@media (min-width: 961px) {
@@ -662,11 +664,75 @@
         }
     }
 
+    @@media (max-width: 960px) {
+        .clear-filters-button.mud-button-root {
+            height: 24px !important;
+            font-size: 0.6rem !important;
+            padding: 0 4px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.5rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.75rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+        }
+
+            .filters-summary-row > div:first-child {
+                min-width: 0 !important;
+                flex: 1 1 0 !important;
+                overflow: hidden !important;
+            }
+    }
+
     @@media (max-width: 375px) {
+        .clear-filters-button.mud-button-root {
+            height: 20px !important;
+            font-size: 0.5rem !important;
+            padding: 0 3px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.5rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.4rem !important;
+            margin-inline-end: 1px !important;
+            margin-inline-start: -3px !important;
+        }
+
         .mud-main-content {
             padding-bottom: 0px !important;
-            padding-left: 0px !important;
-            padding-right: 0px !important;
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
         }
 
         .button-group {
@@ -708,6 +774,15 @@
             padding-left: 12px;
             padding-right: 12px;
         }
+    }
+    .filters-summary-row {
+        align-items: center;
+    }
+
+    .action-buttons-container {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
     }
 </style>
 
@@ -803,21 +878,23 @@
                 </MudItem>
             </MudGrid>
 
-            <div class="d-flex align-center justify-space-between">
-                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
+                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold filter-info-text")" Style="opacity: 0.8;">
                     Showing @_filteredTasks.Count of @_tasks.Count tasks
                 </MudText>
-                @if (HasActiveFilters())
-                {
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Clear"
-                               OnClick="ClearFilters"
-                               Class="modern-button clear-filters-button">
-                        Clear Filters
-                    </MudButton>
-                }
+                <div class="action-buttons-container">
+                    @if (HasActiveFilters())
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Secondary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Clear"
+                                   OnClick="ClearFilters"
+                                   Class="clear-filters-button">
+                            Clear Filters
+                        </MudButton>
+                    }
+                </div>
             </div>
         </MudPaper>
 
@@ -829,10 +906,10 @@
                 {
                     <div class="category-block">
                         <div class="d-flex align-center mb-2 px-2">
-                            <MudIcon Icon="@category.Icon" Class="mr-2 category-icon" />
-                            <MudText Typo="Typo.subtitle1" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase;">@category.Name</MudText>
+                            <MudIcon Icon="@category.Icon" Class="mr-2 category-icon flex-shrink-0" />
+                            <MudText Typo="Typo.subtitle1" Style="font-weight: 800; letter-spacing: 1px; text-transform: uppercase; word-break: break-word; overflow-wrap: anywhere; min-width: 0;">@category.Name</MudText>
                             <MudSpacer />
-                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {category.ColorClass}")">
+                            <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {category.ColorClass}")" Style="flex-shrink: 0; white-space: nowrap !important;">
                                 @_filteredTasks.Count(t => t.CategoryId == category.Id) Tasks
                             </MudChip>
                         </div>
@@ -863,10 +940,10 @@
                                             {
                                                 <MudText Typo="Typo.caption" Color="Color.Primary" Class="desktop-only" Style="font-weight: 600; line-height: 1;">@context.Section</MudText>
                                             }
-                                            <MudText Typo="Typo.body1" Class="task-name">@context.TaskName</MudText>
+                                            <MudText Typo="Typo.body1" Class="task-name">@FormatLongWords(context.TaskName)</MudText>
                                             @if (!string.IsNullOrEmpty(context.Description))
                                             {
-                                                <MudText Typo="Typo.caption" Class="task-description">@context.Description</MudText>
+                                                <MudText Typo="Typo.caption" Class="task-description">@FormatLongWords(context.Description)</MudText>
                                             }
                                         </div>
 
@@ -893,16 +970,18 @@
                                         </div>
 
                                         <div class="task-actions d-flex justify-center gap-1">
-                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                           Class="action-icon-circle action-btn-info"
-                                                           Size="Size.Small"
-                                                           OnClick="@(() => EditTask(context))"
-                                                           Title="Edit task" />
-                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                           Class="action-icon-circle action-btn-error"
-                                                           Size="Size.Small"
-                                                           OnClick="@(() => DeleteTask(context))"
-                                                           Title="Delete task" />
+                                            <MudTooltip Text="Edit Task">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                               Class="action-icon-circle action-btn-info"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => EditTask(context))" />
+                                            </MudTooltip>
+                                            <MudTooltip Text="Delete Task">
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                               Class="action-icon-circle action-btn-error"
+                                                               Size="Size.Small"
+                                                               OnClick="@(() => DeleteTask(context))" />
+                                            </MudTooltip>
                                         </div>
 
                                         <div class="mobile-only task-details-mobile">
@@ -956,13 +1035,18 @@
                 <MudChip T="string" Variant="Variant.Outlined" Color="Color.Success" Size="Size.Small">WEEKLY</MudChip>
                 <MudChip T="string" Variant="Variant.Outlined" Color="Color.Warning" Size="Size.Small">MONTHLY</MudChip>
             </div>
+            
+            <div class="d-flex justify-end mb-4 px-2">
+                <MudSwitch T="bool" @bind-Value="_previewAutoCompletedState" Color="Color.Success" Label="Preview Auto-Completed State (Weekly/Monthly)" />
+            </div>
 
             <MudExpansionPanels MultiExpansion="true" Class="modern-expansion-panels">
                 @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                 {
                     var itemsInCategory = _tasks.Where(t => t.CategoryId == category.Id).OrderBy(t => t.SortOrder).ToList();
-                    var isEmpty = !itemsInCategory.Any();
-                    var isLocked = isEmpty;
+                    if (!itemsInCategory.Any()) continue;
+                    
+                    var isLocked = false;
 
                     <MudExpansionPanel Class="@($"modern-expansion-panel {(isLocked ? "locked" : "active")}")"
                                        MaxHeight="600"
@@ -970,16 +1054,9 @@
                         <TitleContent>
                             <div class="d-flex align-center py-2">
                                 <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" Color="@(isLocked? Color.Default: Color.Primary)" />
-                                <div class="flex-grow-1">
-                                    <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
-                                    @if (isEmpty)
-                                    {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">(No Tasks - Disabled)</MudText>
-                                    }
-                                    else
-                                    {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.6;">0/@itemsInCategory.Count Completed</MudText>
-                                    }
+                                <div class="flex-grow-1" style="min-width: 0;">
+                                    <MudText Typo="Typo.h6" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@category.Name</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6;">0/@itemsInCategory.Count Completed</MudText>
                                 </div>
                                 <MudSpacer />
                                 @if (isLocked)
@@ -992,8 +1069,7 @@
                             </div>
                         </TitleContent>
                         <ChildContent>
-                            @if (!isEmpty)
-                            {
+                            @{
                                 var lastSection = "";
                                 @for (int i = 0; i < itemsInCategory.Count; i++)
                                 {
@@ -1029,7 +1105,7 @@
                                                         }
                                                         <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
                                                         <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                            @task.TaskName
+                                                            @FormatLongWords(task.TaskName)
                                                         </MudText>
                                                     </div>
                                                 </div>
@@ -1037,23 +1113,46 @@
                                                 @if (!string.IsNullOrEmpty(task.Description))
                                                 {
                                                     <div class="preview-description-row">
-                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                        <MudText Typo="Typo.body2" Style="opacity: 0.7;">@FormatLongWords(task.Description)</MudText>
                                                     </div>
                                                 }
                                             </div>
 
-                                            @if (task.IsPhotoRequired)
-                                            {
-                                                <MudButton Variant="Variant.Filled"
-                                                           StartIcon="@Icons.Material.Filled.PhotoCamera"
-                                                           Size="Size.Small"
-                                                           Color="Color.Primary"
-                                                           Class="preview-upload-btn"
-                                                           Style="border-radius: 8px; font-weight: bold;"
-                                                           Disabled="true">
-                                                    CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
-                                                </MudButton>
-                                            }
+                                                @if (task.IsPhotoRequired)
+                                                {
+                                                    var isAutoCompletedMock = _previewAutoCompletedState && (task.Frequency == "Weekly" || task.Frequency == "Monthly");
+                                                    if (isAutoCompletedMock)
+                                                    {
+                                                        <div class="d-flex align-center gap-1">
+                                                            <MudButton Variant="Variant.Filled"
+                                                                       Size="Size.Small"
+                                                                       Color="Color.Success"
+                                                                       Disabled="true"
+                                                                       Style="border-radius: 8px; font-weight: bold; opacity: 0.8;">
+                                                                Available @DateTime.Today.AddDays(7).ToString("MMM d")
+                                                            </MudButton>
+                                                            <MudTooltip Text="Force manual completion">
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                                                                               Variant="Variant.Filled"
+                                                                               Color="Color.Error" 
+                                                                               Size="Size.Small" 
+                                                                               Disabled="true" />
+                                                            </MudTooltip>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudButton Variant="Variant.Filled"
+                                                                   StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Primary"
+                                                                   Class="preview-upload-btn"
+                                                                   Style="border-radius: 8px; font-weight: bold;"
+                                                                   Disabled="true">
+                                                            CAPTURE (0/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                        </MudButton>
+                                                    }
+                                                }
                                         </div>
 
                                         @if (task.TaskType == "Manpower")
@@ -1102,7 +1201,7 @@
                                                             }
                                                             <div class="mt-2 pt-2 d-flex align-center gap-6" style="border-top: 1px solid rgba(255,255,255,0.05);">
                                                                 <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL EXPECTED: <b style="color: var(--mud-palette-primary);">@task.QuantityExpected</b></MudText>
-                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL ACTUAL: <b style="color: var(--mud-palette-success);">0</b></MudText>
+                                                                <MudText Typo="Typo.caption" Style="font-weight: 700;">TOTAL ACTUAL: <b style="color: var(--mud-palette-success);">@(_previewAutoCompletedState && (task.Frequency == "Weekly" || task.Frequency == "Monthly") ? task.QuantityExpected : 0)</b></MudText>
                                                             </div>
                                                         }
                                                         else
@@ -1141,12 +1240,6 @@
                                     </div>
                                 }
                             }
-                            else
-                            {
-                                <div class="pa-4 text-center">
-                                    <MudText Typo="Typo.body2" Style="opacity: 0.5;">This category will be hidden if it contains no tasks for the selected frequency.</MudText>
-                                </div>
-                            }
                         </ChildContent>
                     </MudExpansionPanel>
                 }
@@ -1165,6 +1258,7 @@
     private bool _showFilters = false;
     private bool _initialized = false;
     private bool _isPreviewMode = false;
+    private bool _previewAutoCompletedState = false;
 
     // JS Interop
     @inject IJSRuntime JS
@@ -1234,6 +1328,30 @@
                ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
     }
 
+    private string FormatLongWords(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var words = text.Split(' ');
+        for (int i = 0; i < words.Length; i++)
+        {
+            var word = words[i];
+            if (word.Length > 12)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int j = 0; j < word.Length; j++)
+                {
+                    sb.Append(word[j]);
+                    if ((j + 1) % 10 == 0 && j < word.Length - 1)
+                    {
+                        sb.Append("\u200B");
+                    }
+                }
+                words[i] = sb.ToString();
+            }
+        }
+        return string.Join(" ", words);
+    }
+
     private string GetButtonStyle()
     {
         if (ThemeService == null) return "border-radius: 12px;";
@@ -1293,7 +1411,7 @@
             }
         }
         await db.SaveChangesAsync();
-        Snackbar.Add("Order updated", Severity.Success);
+        Snackbar.Add("Order updated successfully!", Severity.Success);
     }
 
     private async Task LoadData()
@@ -1308,6 +1426,7 @@
 
         // Load all tasks
         _tasks = await db.ChecklistItems
+            .Where(t => !t.IsDeleted)
             .Include(t => t.Category)
             .OrderBy(t => t.SortOrder)
             .AsNoTracking()
@@ -1355,13 +1474,15 @@
     {
         _searchTerm = string.Empty;
         _categoryFilter = "All";
+        _frequencyFilter = "All";
         ApplyFilters();
     }
 
     private bool HasActiveFilters()
     {
         return !string.IsNullOrWhiteSpace(_searchTerm) ||
-               _categoryFilter != "All";
+               _categoryFilter != "All" ||
+               _frequencyFilter != "All";
     }
 
     private string GetCategoryClass(Category category) => category.ColorClass;
@@ -1442,31 +1563,33 @@
 
                 if (taskToDelete != null)
                 {
-                    // 1. Delete associated TaskProgresses first to avoid FK constraint error
-                    var progresses = await db.TaskProgresses
-                        .Where(tp => tp.ChecklistItemId == task.Id)
-                        .ToListAsync();
+                    // Check if there are any associated TaskProgresses
+                    var hasProgresses = await db.TaskProgresses.AnyAsync(tp => tp.ChecklistItemId == task.Id);
 
-                    if (progresses.Any())
+                    if (hasProgresses)
                     {
-                        db.TaskProgresses.RemoveRange(progresses);
+                        // Soft delete
+                        taskToDelete.IsDeleted = true;
+                        await db.SaveChangesAsync();
+                        Snackbar.Add("Task removed from active list (soft deleted due to existing history).", Severity.Success);
+                    }
+                    else
+                    {
+                        // Hard delete: no historical references exist, safe to delete completely
+                        var photos = await db.TaskPhotos
+                            .Where(tp => tp.ChecklistItemId == task.Id)
+                            .ToListAsync();
+
+                        if (photos.Any())
+                        {
+                            db.TaskPhotos.RemoveRange(photos);
+                        }
+
+                        db.ChecklistItems.Remove(taskToDelete);
+                        await db.SaveChangesAsync();
+                        Snackbar.Add("Task deleted successfully!", Severity.Success);
                     }
 
-                    // 2. Delete associated TaskPhotos
-                    var photos = await db.TaskPhotos
-                        .Where(tp => tp.ChecklistItemId == task.Id)
-                        .ToListAsync();
-
-                    if (photos.Any())
-                    {
-                        db.TaskPhotos.RemoveRange(photos);
-                    }
-
-                    // 3. Now safe to delete the task itself
-                    db.ChecklistItems.Remove(taskToDelete);
-                    await db.SaveChangesAsync();
-
-                    Snackbar.Add("Task deleted successfully!", Severity.Success);
                     await LoadTasks(); // Refresh list
                 }
             }

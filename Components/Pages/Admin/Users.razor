@@ -1,4 +1,4 @@
-﻿@page "/admin/users"
+@page "/admin/users"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -15,6 +15,14 @@
 <PageTitle>Users Management</PageTitle>
 
 <style>
+    .filters-summary-row {
+        align-items: center !important;
+    }
+
+    .action-buttons-container {
+        display: flex;
+        align-items: center;
+    }
     .users-container {
         padding: 1rem;
     }
@@ -125,7 +133,6 @@
 
     .clear-filters-button.mud-button-root {
         font-weight: 700 !important;
-        border-radius: 12px !important;
     }
 
     /* ROLE CHIPS */
@@ -264,6 +271,7 @@
         background: rgba(0, 114, 207, 0.03);
     }
 
+    
     /* FILTER SECTION */
     .filter-section {
         padding: 16px;
@@ -274,29 +282,6 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
         }
-
-    .lightest .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.8) !important;
-    }
-
-    .light .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .light .filter-section .mud-input-label,
-    .light .filter-section .mud-input-adornment-start,
-    .light .filter-section .mud-select-input,
-    .light .filter-section .mud-input-slot {
-        color: #ffffff !important;
-    }
-
-    .light .filter-section .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
-        border-color: #ffffff !important;
-    }
 
     .filter-toggle-button {
         display: none;
@@ -359,7 +344,57 @@
         }
     }
 
+    @@media (max-width: 960px) {
+        .clear-filters-button.mud-button-root {
+            height: 24px !important;
+            font-size: 0.6rem !important;
+            padding: 0 4px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.5rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.75rem !important;
+            white-space: nowrap !important;
+        }
+    }
+
     @@media (max-width: 375px) {
+        .clear-filters-button.mud-button-root {
+            height: 20px !important;
+            font-size: 0.5rem !important;
+            padding: 0 3px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.5rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.4rem !important;
+            margin-inline-end: 1px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+        }
+
         .mud-main-content {
             padding-bottom: 0px !important;
             padding-left: 0px !important;
@@ -450,21 +485,25 @@
                 </MudItem>
             </MudGrid>
 
-            <div class="d-flex align-center justify-space-between">
-                <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+            <div class="d-flex justify-space-between align-center px-1 filters-summary-row">
+                <MudText Typo="Typo.body2"
+                         Class="@($"{GetStatusTextColor()} font-weight-bold filter-info-text")"
+                         Style="opacity: 0.8;">
                     Showing @_filteredUsers.Count of @_allUsers.Count users
                 </MudText>
-                @if (HasActiveFilters())
-                {
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Secondary"
-                               Size="Size.Small"
-                               StartIcon="@Icons.Material.Filled.Clear"
-                               OnClick="ClearFilters"
-                               Class="modern-button clear-filters-button">
-                        Clear Filters
-                    </MudButton>
-                }
+                <div class="action-buttons-container">
+                    @if (HasActiveFilters())
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Secondary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Clear"
+                                   OnClick="ClearFilters"
+                                   Class="clear-filters-button">
+                            Clear Filters
+                        </MudButton>
+                    }
+                </div>
             </div>
         </MudPaper>
 
@@ -521,28 +560,31 @@
                         </MudTd>
                         <MudTd DataLabel="Action" Style="text-align: center;">
                             <div class="d-flex justify-center gap-2">
-                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                               Class="action-icon-circle action-btn-info"
-                                               Size="Size.Small"
-                                               OnClick="@(() => OpenViewUserDialog(context))"
-                                               Title="View user details" />
+                                <MudTooltip Text="View Details">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                   Class="action-icon-circle action-btn-info"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => OpenViewUserDialog(context))" />
+                                </MudTooltip>
 
                                 @if (UserState.Role == "Admin" || context.Username == UserState.Username)
                                 {
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                   Class="action-icon-circle action-btn-info"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => EditUser(context))"
-                                                   Title="Edit user" />
+                                    <MudTooltip Text="Edit User">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                       Class="action-icon-circle action-btn-info"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => EditUser(context))" />
+                                    </MudTooltip>
 
                                     @if (UserState.Role == "Admin")
                                     {
-                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                       Class="action-icon-circle action-btn-error"
-                                                       Size="Size.Small"
-                                                       OnClick="@(() => DeleteUser(context))"
-                                                       Disabled="@(context.Username == UserState.Username)"
-                                                       Title="Delete user" />
+                                        <MudTooltip Text="Delete User">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                           Class="action-icon-circle action-btn-error"
+                                                           Size="Size.Small"
+                                                           OnClick="@(() => DeleteUser(context))"
+                                                           Disabled="@(context.Username == UserState.Username)" />
+                                        </MudTooltip>
                                     }
                                 }
                             </div>
@@ -559,11 +601,11 @@
         <div class="mobile-view">
             @if (_filteredUsers.Any())
             {
-                @foreach (var user in _filteredUsers)
+                @foreach (var user in GetPagedUsers())
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
-                            <div class="d-flex align-center gap-3">
+                            <div class="d-flex align-center gap-3" style="min-width: 0; flex: 1;">
                                 <MudAvatar Size="Size.Medium" Color="GetAvatarColor(user)">
                                     @if (!string.IsNullOrEmpty(GetUserImagePath(user)))
                                     {
@@ -574,9 +616,9 @@
                                         <MudIcon Icon="@Icons.Material.Filled.Person" />
                                     }
                                 </MudAvatar>
-                                <div>
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@user.Fullname</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@user.Username</MudText>
+                                <div style="min-width: 0; word-break: break-word; overflow-wrap: anywhere;">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@user.Fullname</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.7; word-break: break-word; overflow-wrap: anywhere;">@user.Username</MudText>
                                 </div>
                             </div>
                             <MudChip T="string"
@@ -592,11 +634,11 @@
                             <MudGrid Spacing="1">
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Emp. No.</MudText>
-                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrEmpty(user.EmployeeNumber) ? "N/A" : user.EmployeeNumber)</MudText>
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Designation</MudText>
-                                    <MudText Typo="Typo.body2">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrEmpty(user.Designation) ? "N/A" : user.Designation)</MudText>
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Status</MudText>
@@ -613,32 +655,45 @@
                         </div>
 
                         <div class="mobile-card-actions">
-                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                           Class="action-icon-circle action-btn-info"
-                                           Size="Size.Small"
-                                           OnClick="@(() => OpenViewUserDialog(user))"
-                                           Title="View user details" />
+                            <MudTooltip Text="View Details">
+                                <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                               Class="action-icon-circle action-btn-info"
+                                               Size="Size.Small"
+                                               OnClick="@(() => OpenViewUserDialog(user))" />
+                            </MudTooltip>
 
                             @if (UserState.Role == "Admin" || user.Username == UserState.Username)
                             {
-                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                               Class="action-icon-circle action-btn-info"
-                                               Size="Size.Small"
-                                               OnClick="@(() => EditUser(user))"
-                                               Title="Edit user" />
+                                <MudTooltip Text="Edit User">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Class="action-icon-circle action-btn-info"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => EditUser(user))" />
+                                </MudTooltip>
 
                                 @if (UserState.Role == "Admin")
                                 {
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                   Class="action-icon-circle action-btn-error"
-                                                   Size="Size.Small"
-                                                   OnClick="@(() => DeleteUser(user))"
-                                                   Disabled="@(user.Username == UserState.Username)"
-                                                   Title="Delete user" />
+                                    <MudTooltip Text="Delete User">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Class="action-icon-circle action-btn-error"
+                                                       Size="Size.Small"
+                                                       OnClick="@(() => DeleteUser(user))"
+                                                       Disabled="@(user.Username == UserState.Username)" />
+                                    </MudTooltip>
                                 }
                             }
                         </div>
                     </MudPaper>
+                }
+                @if (_filteredUsers.Count > _userPageSize)
+                {
+                    <div class="d-flex justify-center mt-4">
+                        <MudPagination Color="Color.Primary"
+                                       Count="@((_filteredUsers.Count + _userPageSize - 1) / _userPageSize)"
+                                       Selected="@_userCurrentPage"
+                                       SelectedChanged="OnUserPageChanged"
+                                       Variant="Variant.Filled" />
+                    </div>
                 }
             }
             else
@@ -677,7 +732,7 @@
                                        Color="Color.Secondary"
                                        StartIcon="@Icons.Material.Filled.Clear"
                                        OnClick="ClearFilters"
-                                       Class="modern-button clear-filters-button">
+                                       Class="clear-filters-button">
                                 Clear Filters
                             </MudButton>
                         }
@@ -709,6 +764,20 @@
     private string _searchTerm = string.Empty;
     private string _roleFilter = "All";
     private string _statusFilter = "All";
+
+    private int _userPageSize = 10;
+    private int _userCurrentPage = 1;
+
+    private List<User> GetPagedUsers() =>
+        _filteredUsers
+            .Skip((_userCurrentPage - 1) * _userPageSize)
+            .Take(_userPageSize)
+            .ToList();
+
+    private void OnUserPageChanged(int page)
+    {
+        _userCurrentPage = page;
+    }
 
     protected override void OnInitialized()
     {
@@ -783,11 +852,22 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
 
-        // Load all users
-        _allUsers = await db.Users
-            .OrderBy(u => u.Fullname)
-            .AsNoTracking()
-            .ToListAsync();
+        // Load all users from the database
+        var rawUsers = await db.Users.AsNoTracking().ToListAsync();
+
+        // Sort in memory:
+        // 1. Users without employee number (null, empty, or whitespace) first (top)
+        // 2. Users with employee number sorted numerically ascending by their EmployeeNumber
+        // 3. For users with the same employee number (or both empty), sort alphabetically by Fullname
+        _allUsers = rawUsers
+            .OrderBy(u => string.IsNullOrWhiteSpace(u.EmployeeNumber) ? 0 : 1)
+            .ThenBy(u => {
+                if (string.IsNullOrWhiteSpace(u.EmployeeNumber))
+                    return 0L;
+                return long.TryParse(u.EmployeeNumber, out var val) ? val : long.MaxValue;
+            })
+            .ThenBy(u => u.Fullname)
+            .ToList();
 
         ApplyFilters();
     }
@@ -801,6 +881,7 @@
 
     private void ApplyFilters()
     {
+        _userCurrentPage = 1;
         _filteredUsers = _allUsers;
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))
@@ -969,7 +1050,33 @@
                 var userLogs = await db.StoreAssignmentLogs.Where(l => l.UserId == user.Id).ToListAsync();
                 foreach (var l in userLogs) l.UserId = null;
 
-                // 3. Delete the user
+                // 3. Handle foreign key constraints in Notifications (delete notifications targeted to the deleted user)
+                var userNotifications = await db.Notifications.Where(n => n.UserId == user.Id).ToListAsync();
+                db.Notifications.RemoveRange(userNotifications);
+
+                // 4. Handle foreign key constraints in ActivityLogs (preserve logs but nullify user reference)
+                var userActivityLogs = await db.ActivityLogs.Where(al => al.UserId == user.Id).ToListAsync();
+                foreach (var al in userActivityLogs) al.UserId = null;
+
+                // 5. Handle foreign key constraints in TaskPhotos
+                var userPhotos = await db.TaskPhotos.Where(p => p.UploadedById == user.Id).ToListAsync();
+                foreach (var p in userPhotos) p.UploadedById = null;
+
+                // 6. Handle foreign key constraints in Issues
+                var issuesAsReporter = await db.Issues.Where(i => i.ReportedById == user.Id).ToListAsync();
+                foreach (var i in issuesAsReporter) i.ReportedById = null;
+
+                var issuesAsReviewer = await db.Issues.Where(i => i.ReviewedById == user.Id).ToListAsync();
+                foreach (var i in issuesAsReviewer) i.ReviewedById = null;
+
+                // 7. Handle foreign key constraints in StoreDailyActivities
+                var activitiesAsStarter = await db.StoreDailyActivities.Where(a => a.StartedById == user.Id).ToListAsync();
+                foreach (var a in activitiesAsStarter) a.StartedById = null;
+
+                var activitiesAsArea = await db.StoreDailyActivities.Where(a => a.AreaHeadId == user.Id).ToListAsync();
+                foreach (var a in activitiesAsArea) a.AreaHeadId = null;
+
+                // 8. Delete the user
                 var userToDelete = await db.Users.FindAsync(user.Id);
                 if (userToDelete != null)
                 {

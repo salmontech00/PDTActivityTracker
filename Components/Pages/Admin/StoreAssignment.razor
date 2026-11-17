@@ -1,4 +1,4 @@
-﻿@page "/admin/store-assignment"
+@page "/admin/store-assignment"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using PDTActivityTracker.Components.Model
@@ -117,6 +117,10 @@
         border-radius: 12px !important;
     }
 
+    .clear-filters-button.mud-button-root {
+        font-weight: 700 !important;
+    }
+
     /* ROLE CHIPS */
     .role-chip {
         font-weight: 800 !important;
@@ -213,6 +217,7 @@
         background: rgba(0, 114, 207, 0.03);
     }
 
+    
     /* FILTER SECTION */
     .filter-section {
         padding: 16px;
@@ -223,29 +228,6 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
         }
-
-    .lightest .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.8) !important;
-    }
-
-    .light .filter-section .mud-input-root {
-        background: rgba(255, 255, 255, 0.1) !important;
-    }
-
-    .light .filter-section .mud-input-label,
-    .light .filter-section .mud-input-adornment-start,
-    .light .filter-section .mud-select-input,
-    .light .filter-section .mud-input-slot {
-        color: #ffffff !important;
-    }
-
-    .light .filter-section .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 0.5) !important;
-    }
-
-    .light .filter-section .mud-input-root:focus-within .mud-input-outlined-border {
-        border-color: #ffffff !important;
-    }
 
     .filter-toggle-button {
         display: none;
@@ -410,9 +392,14 @@
             justify-content: space-between;
         }
 
+            .button-group .d-flex {
+                width: 100%;
+            }
+
             .button-group .modern-button {
                 flex: 1;
                 font-size: 0.70rem !important;
+                padding: 6px !important;
             }
 
         .glass-panel:has(#map) {
@@ -448,10 +435,103 @@
         }
     }
 
+    @@media (max-width: 960px) {
+        .clear-filters-button.mud-button-root {
+            height: 24px !important;
+            font-size: 0.6rem !important;
+            padding: 0 4px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.6rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.5rem !important;
+            margin-inline-end: 2px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.75rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+        }
+
+        .action-buttons-container {
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 4px !important;
+        }
+
+        .filters-summary-row {
+            align-items: flex-start !important;
+        }
+
+            .filters-summary-row > div:first-child {
+                min-width: 0 !important;
+                flex: 1 1 0 !important;
+                overflow: hidden !important;
+            }
+    }
+
     @@media (max-width: 375px) {
+        .clear-filters-button.mud-button-root {
+            height: 20px !important;
+            font-size: 0.5rem !important;
+            padding: 0 3px !important;
+            min-width: unset !important;
+        }
+
+        .clear-filters-button .mud-button-label {
+            white-space: nowrap !important;
+            line-height: 1 !important;
+            font-size: 0.5rem !important;
+        }
+
+        .clear-filters-button .mud-button-icon-start {
+            font-size: 0.4rem !important;
+            margin-inline-end: 1px !important;
+            margin-inline-start: -3px !important;
+        }
+
+        .filter-info-text {
+            font-size: 0.65rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            min-width: 0 !important;
+            flex: 1 1 0 !important;
+        }
+
+        .filters-summary-row {
+            align-items: flex-start !important;
+        }
+
+        .action-buttons-container {
+            flex-direction: column !important;
+            align-items: flex-end !important;
+            gap: 4px !important;
+        }
+
+            .action-buttons-container .clear-filters-button {
+                order: 1 !important;
+            }
+
+            .action-buttons-container .mud-icon-button {
+                order: 2 !important;
+            }
+
         .button-group .modern-button {
             flex: 1;
-            font-size: 0.55rem !important;
+            font-size: 0.60rem !important;
+            padding: 4px !important;
         }
 
         .map-legend-overlay {
@@ -495,13 +575,13 @@
 
         <div class="button-group">
             <div class="d-flex gap-2">
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Secondary"
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Flaky"
                            OnClick="OpenBulkActionsDialog"
                            Class="@($"modern-button {GetThemeClass()}")"
                            Disabled="@(!_selectedStores.Any())"
-                           Style="@GetButtonStyle()">
+                           Style="@GetButtonStyle(!_selectedStores.Any())">
                     Bulk Actions (@_selectedStores.Count)
                 </MudButton>
                 <MudButton Variant="Variant.Filled"
@@ -589,7 +669,7 @@
                 </MudItem>
             </MudGrid>
 
-            <div class="d-flex align-center justify-space-between">
+            <div class="d-flex align-center justify-space-between filters-summary-row">
                 <div class="d-flex align-center">
                     <div class="mobile-view mr-3">
                         <div class="d-flex align-center">
@@ -598,25 +678,26 @@
                                          Style="@($"color: {GetTitleColor()} !important;")" />
                         </div>
                     </div>
-                    <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold")" Style="opacity: 0.8;">
+                    <MudText Typo="Typo.body2" Class="@($"{GetStatusTextColor()} font-weight-bold filter-info-text")" Style="opacity: 0.8;">
                         Showing @_filteredStores.Count of @_allStores.Count stores
                     </MudText>
                 </div>
-                <div class="d-flex align-center gap-2">
+                <div class="d-flex align-center gap-2 action-buttons-container">
                     @if (HasActiveFilters())
                     {
-                        <MudButton Variant="Variant.Text"
-                                   Color="Color.Error"
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Secondary"
                                    Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.RestartAlt"
+                                   StartIcon="@Icons.Material.Filled.Clear"
                                    OnClick="ClearFilters"
-                                   Class="modern-button">
-                            Reset Filters
+                                   Class="clear-filters-button mobile-clear-filter">
+                            Clear Filters
                         </MudButton>
                     }
                     <MudToggleIconButton Toggled="_isMapView" ToggledChanged="OnViewToggled"
                                          Icon="@Icons.Material.Filled.Map" Color="Color.Default" Title="@(_isMapView ? "List View" : "Map View")" Size="Size.Small"
-                                         ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Primary" />
+                                         ToggledIcon="@Icons.Material.Filled.List" ToggledColor="Color.Default"
+                                         Style="background: #1565C0; color: #ffffff; border-radius: 10px; padding: 6px;" />
                 </div>
             </div>
         </MudPaper>
@@ -670,14 +751,14 @@
                                 {
                                     <div class="d-flex flex-column">
                                         <span style="font-weight: 500">@context.StoreHead.Fullname</span>
-                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Change ▼</MudLink>
                                     </div>
                                 }
                                 else
                                 {
                                     <div class="d-flex flex-column">
                                         <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
-                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignStoreHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Assign ▼</MudLink>
                                     </div>
                                 }
                             </MudTd>
@@ -686,14 +767,14 @@
                                 {
                                     <div class="d-flex flex-column">
                                         <span style="font-weight: 500">@context.AreaHead.Fullname</span>
-                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Change ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Change ▼</MudLink>
                                     </div>
                                 }
                                 else
                                 {
                                     <div class="d-flex flex-column">
                                         <MudChip T="string" Color="Color.Error" Size="Size.Small" Variant="Variant.Filled" Class="ma-0 mb-1" Style="width: fit-content;">Unassigned</MudChip>
-                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary">Assign ▼</MudLink>
+                                        <MudLink OnClick="@(() => OpenAssignAreaHeadDialog(context))" Style="font-size: 11px;" Color="Color.Primary" Disabled="@(context.Status == "Inactive")">Assign ▼</MudLink>
                                     </div>
                                 }
                             </MudTd>
@@ -706,9 +787,15 @@
                             </MudTd>
                             <MudTd DataLabel="Action" Style="text-align: center;">
                                 <div class="d-flex justify-center gap-1">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                                    <MudTooltip Text="View Details">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenViewStoreDialog(context))" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="Edit Store">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Class="action-icon-circle action-btn-info" Size="Size.Small" OnClick="@(() => OpenEditStoreDialog(context))" />
+                                    </MudTooltip>
+                                    <MudTooltip Text="Delete Store">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Class="action-icon-circle action-btn-error" Size="Size.Small" OnClick="@(() => DeleteStore(context))" />
+                                    </MudTooltip>
                                 </div>
                             </MudTd>
                         </RowTemplate>
@@ -766,34 +853,34 @@
 
             <!-- Mobile View -->
             <div class="mobile-view">
-                @foreach (var store in _filteredStores)
+                @foreach (var store in GetPagedStores())
                 {
                     <MudPaper Class="@($"glass-panel mobile-card {GetThemeClass()}")" Elevation="0">
                         <div class="mobile-card-header">
-                            <div class="d-flex align-center gap-2">
+                            <div class="d-flex align-center gap-2" style="min-width: 0; flex: 1;">
                                 <MudCheckBox T="bool" Value="@_selectedStores.Contains(store)"
                                              ValueChanged="@((bool val) => { if(val) _selectedStores.Add(store); else _selectedStores.Remove(store); })"
                                              Color="Color.Primary" Dense="true" />
-                                <div>
-                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">@store.StoreName</MudText>
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.7;">@store.StoreCode</MudText>
+                                <div style="min-width: 0; word-break: break-word; overflow-wrap: anywhere;">
+                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@store.StoreName</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.7; word-break: break-word; overflow-wrap: anywhere;">@store.StoreCode</MudText>
                                 </div>
                             </div>
                             <MudChip T="string" Size="Size.Small" Variant="Variant.Filled"
                                      Color="@GetStatusColor(store.Status ?? "Active")"
                                      Class="@($"role-chip {GetStatusChipClass(store.Status ?? "Active")}")">
-                                @(store.Status ?? "Active")
+                                 @(store.Status ?? "Active")
                             </MudChip>
                         </div>
                         <div class="mobile-card-content">
                             <MudGrid Spacing="1">
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Location</MudText>
-                                    <MudText Typo="Typo.body2">@store.Location</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@store.Location</MudText>
                                 </MudItem>
                                 <MudItem xs="6">
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Contact</MudText>
-                                    <MudText Typo="Typo.body2">@(string.IsNullOrWhiteSpace(store.ContactPhone) ? "N/A" : store.ContactPhone)</MudText>
+                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrWhiteSpace(store.ContactPhone) ? "N/A" : store.ContactPhone)</MudText>
                                 </MudItem>
                                 <MudItem xs="12">
                                     <MudDivider Class="my-2" Style="opacity: 0.1" />
@@ -802,7 +889,7 @@
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Store Head</MudText>
                                     @if (store.StoreHead != null)
                                     {
-                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.StoreHead.Fullname</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; word-break: break-word; overflow-wrap: anywhere;">@store.StoreHead.Fullname</MudText>
                                     }
                                     else
                                     {
@@ -813,7 +900,7 @@
                                     <MudText Typo="Typo.caption" Style="opacity: 0.6;">Area Head</MudText>
                                     @if (store.AreaHead != null)
                                     {
-                                        <MudText Typo="Typo.body2" Style="font-weight: 600;">@store.AreaHead.Fullname</MudText>
+                                        <MudText Typo="Typo.body2" Style="font-weight: 600; word-break: break-word; overflow-wrap: anywhere;">@store.AreaHead.Fullname</MudText>
                                     }
                                     else
                                     {
@@ -827,10 +914,12 @@
                                 <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" FullWidth="true"
                                            StartIcon="@Icons.Material.Filled.Person"
                                            OnClick="@(() => OpenAssignStoreHeadDialog(store))"
+                                           Disabled="@(store.Status == "Inactive")"
                                            Class="modern-button">Assign SH</MudButton>
                                 <MudButton Variant="Variant.Filled" Color="Color.Secondary" Size="Size.Small" FullWidth="true"
                                            StartIcon="@Icons.Material.Filled.SupervisorAccount"
                                            OnClick="@(() => OpenAssignAreaHeadDialog(store))"
+                                           Disabled="@(store.Status == "Inactive")"
                                            Class="modern-button">Assign AH</MudButton>
                             </div>
                             <div class="d-flex justify-space-between align-center px-1">
@@ -847,6 +936,16 @@
                         </div>
                     </MudPaper>
                 }
+                @if (_filteredStores.Count > _storePageSize)
+                {
+                    <div class="d-flex justify-center mt-4">
+                        <MudPagination Color="Color.Primary"
+                                       Count="@((_filteredStores.Count + _storePageSize - 1) / _storePageSize)"
+                                       Selected="@_storeCurrentPage"
+                                       SelectedChanged="OnStorePageChanged"
+                                       Variant="Variant.Filled" />
+                    </div>
+                }
             </div>
         }
     }
@@ -861,6 +960,20 @@
     private HashSet<Store> _expandedRows = new();
 
     private bool IsAllSelected() => _filteredStores.Any() && _selectedStores.Count >= _filteredStores.Count;
+
+    private int _storePageSize = 10;
+    private int _storeCurrentPage = 1;
+
+    private List<Store> GetPagedStores() =>
+        _filteredStores
+            .Skip((_storeCurrentPage - 1) * _storePageSize)
+            .Take(_storePageSize)
+            .ToList();
+
+    private void OnStorePageChanged(int page)
+    {
+        _storeCurrentPage = page;
+    }
 
     private void HandleSelectAll(bool value)
     {
@@ -878,6 +991,8 @@
     private string _assignmentFilter = "All";
     private string _statusFilter = "All";
     private bool _isMapView = false;
+    private Store? _focusedStoreOnMap = null;
+    private bool _mapShouldFitBounds = true;
     private bool _showFilters = false;
 
     // ... existing initialization ...
@@ -922,7 +1037,7 @@
         }
         else
         {
-            // Map will be initialized in OnAfterRenderAsync
+            _mapShouldFitBounds = true;
         }
     }
 
@@ -940,13 +1055,15 @@
             areaHeadName = s.AreaHead?.Fullname
         }).ToList();
 
-        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = true });
+        await JSRuntime.InvokeVoidAsync("leafletMap.initialize", "map", mapData, new { fitBounds = _mapShouldFitBounds });
+        _mapShouldFitBounds = false;
     }
 
     private async Task LoadData()
     {
         using var db = await DbFactory.CreateDbContextAsync();
         _allStores = await db.Stores
+            .Where(s => !s.IsDeleted)
             .Include(s => s.StoreHead)
             .Include(s => s.AreaHead)
             .OrderBy(s => s.StoreCode)
@@ -967,6 +1084,7 @@
 
     private async Task ApplyFilters()
     {
+        _storeCurrentPage = 1;
         var query = _allStores.AsEnumerable();
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))
@@ -998,6 +1116,7 @@
 
         if (_isMapView)
         {
+            _mapShouldFitBounds = true;
             await UpdateMap();
         }
     }
@@ -1050,12 +1169,13 @@
                ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
     }
 
-    private string GetButtonStyle()
+    private string GetButtonStyle(bool isDisabled = false)
     {
         if (ThemeService == null) return "border-radius: 12px;";
+        var disabledStyle = isDisabled ? " opacity: 0.5; cursor: not-allowed;" : "";
         return ThemeService.CurrentTheme == ThemeMode.Light
-            ? "color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;"
-            : "border-radius: 12px; font-weight: bold;";
+            ? $"color: #0072cf !important; background-color: #ffffff !important; border-radius: 12px; font-weight: bold;{disabledStyle}"
+            : $"border-radius: 12px; font-weight: bold;{disabledStyle}";
     }
 
     private string GetFilterButtonStyle()
@@ -1080,9 +1200,67 @@
         _ => Color.Success
     };
 
+    private async Task<List<string>> ValidateDuplicateStore(string code, string name, int excludeId)
+    {
+        var errors = new List<string>();
+        var codeMatch = code?.Trim() ?? string.Empty;
+        var nameMatch = name?.Trim() ?? string.Empty;
+
+        // Perform memory-safe validation against the locally loaded stores
+        var codeDuplicate = _allStores.FirstOrDefault(s => s.Id != excludeId &&
+            string.Equals(s.StoreCode?.Trim(), codeMatch, StringComparison.OrdinalIgnoreCase));
+        
+        var nameDuplicate = _allStores.FirstOrDefault(s => s.Id != excludeId &&
+            string.Equals(s.StoreName?.Trim(), nameMatch, StringComparison.OrdinalIgnoreCase));
+
+        if (codeDuplicate != null)
+        {
+            errors.Add($"Store Code '{codeMatch}' already exists.");
+        }
+        if (nameDuplicate != null)
+        {
+            errors.Add($"Store Name '{nameMatch}' already exists.");
+        }
+
+        // If local matches already found both errors, return early
+        if (errors.Count == 2)
+        {
+            return errors;
+        }
+
+        // Secondary database check to prevent bypass in case local list is stale
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        if (codeDuplicate == null)
+        {
+            var dbCodeDuplicate = await db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.Id != excludeId &&
+                !s.IsDeleted && s.StoreCode.ToLower() == codeMatch.ToLower());
+            if (dbCodeDuplicate != null)
+            {
+                errors.Add($"Store Code '{codeMatch}' already exists in database.");
+            }
+        }
+
+        if (nameDuplicate == null)
+        {
+            var dbNameDuplicate = await db.Stores.AsNoTracking().FirstOrDefaultAsync(s => s.Id != excludeId &&
+                !s.IsDeleted && s.StoreName.ToLower() == nameMatch.ToLower());
+            if (dbNameDuplicate != null)
+            {
+                errors.Add($"Store Name '{nameMatch}' already exists in database.");
+            }
+        }
+
+        return errors;
+    }
+
     private async Task OpenAddStoreDialog()
     {
-        var parameters = new DialogParameters { ["Store"] = new Store() };
+        var parameters = new DialogParameters 
+        { 
+            ["Store"] = new Store(),
+            ["ValidateDuplicate"] = new Func<string, string, int, Task<List<string>>>(ValidateDuplicateStore)
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<AddEditStoreDialog>("Add Store", parameters, options);
@@ -1090,14 +1268,17 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store created successfully!", Severity.Success);
             await LoadData();
         }
     }
 
     private async Task OpenEditStoreDialog(Store store)
     {
-        var parameters = new DialogParameters { ["Store"] = store };
+        var parameters = new DialogParameters 
+        { 
+            ["Store"] = store,
+            ["ValidateDuplicate"] = new Func<string, string, int, Task<List<string>>>(ValidateDuplicateStore)
+        };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<AddEditStoreDialog>("Edit Store", parameters, options);
@@ -1105,13 +1286,17 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store updated successfully!", Severity.Success);
             await LoadData();
         }
     }
 
     private async Task OpenAssignStoreHeadDialog(Store store)
     {
+        if (store.Status == "Inactive")
+        {
+            Snackbar.Add("Cannot assign Store Head to an inactive store.", Severity.Warning);
+            return;
+        }
         var parameters = new DialogParameters { ["Store"] = store };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
@@ -1120,22 +1305,42 @@
 
         if (result != null && !result.Canceled)
         {
-            Snackbar.Add("Store Head assigned!", Severity.Success);
+            var action = result.Data as string;
+            var message = action == "Unassigned"
+                ? "Store Head unassigned successfully!"
+                : "Store Head assigned successfully!";
+            Snackbar.Add(message, Severity.Success);
             await LoadData();
         }
     }
 
     private async Task OpenAssignAreaHeadDialog(Store store)
     {
+        if (store.Status == "Inactive")
+        {
+            Snackbar.Add("Cannot assign Area Head to an inactive store.", Severity.Warning);
+            return;
+        }
         var parameters = new DialogParameters { ["PreSelectedStores"] = new List<Store> { store } };
         var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
 
         var dialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", parameters, options);
         var result = await dialog.Result;
 
-        if (result != null && !result.Canceled)
+        if (result != null && !result.Canceled && result.Data is AssignAreaHeadDialog.AreaHeadAssignmentResult assignmentResult)
         {
-            Snackbar.Add("Area Head assigned!", Severity.Success);
+            var msg = "Area Head assignment updated successfully!";
+            if (assignmentResult.HasAssigned && !assignmentResult.HasUnassigned)
+                msg = "Area Head assigned successfully!";
+            else if (!assignmentResult.HasAssigned && assignmentResult.HasUnassigned)
+                msg = "Area Head unassigned successfully!";
+            else if (!assignmentResult.HasAssigned && !assignmentResult.HasUnassigned)
+                msg = "No changes made";
+
+            if (msg != "No changes made")
+            {
+                Snackbar.Add(msg, Severity.Success);
+            }
             await LoadData();
         }
     }
@@ -1154,27 +1359,45 @@
             if (actionResult.Action == "AssignAreaHead")
             {
                 // Chain to Open Assign Area Head Dialog
-                var areaParams = new DialogParameters { ["PreSelectedStores"] = actionResult.Stores };
+                var activeSelectedStores = actionResult.Stores.Where(s => s.Status != "Inactive").ToList();
+                var inactiveCount = actionResult.Stores.Count - activeSelectedStores.Count;
+                if (inactiveCount > 0)
+                {
+                    Snackbar.Add($"{inactiveCount} inactive store(s) excluded from assignment.", Severity.Info);
+                }
+                if (!activeSelectedStores.Any())
+                {
+                    return;
+                }
+                var areaParams = new DialogParameters { ["PreSelectedStores"] = activeSelectedStores };
                 var areaOptions = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
                 var areaDialog = await DialogService.ShowAsync<AssignAreaHeadDialog>("Assign Area Head", areaParams, areaOptions);
 
                 var areaResult = await areaDialog.Result;
-                if (areaResult != null && !areaResult.Canceled)
+                if (areaResult != null && !areaResult.Canceled && areaResult.Data is AssignAreaHeadDialog.AreaHeadAssignmentResult bulkResult)
                 {
-                    Snackbar.Add("Area Head assigned to selected stores!", Severity.Success);
+                    var msg = "Area Head assignment updated for selected stores";
+                    if (bulkResult.HasAssigned && !bulkResult.HasUnassigned)
+                        msg = "Area Head assigned to selected stores";
+                    else if (!bulkResult.HasAssigned && bulkResult.HasUnassigned)
+                        msg = "Area Head unassigned from selected stores";
+                    else if (!bulkResult.HasAssigned && !bulkResult.HasUnassigned)
+                        msg = "No changes made";
+
+                    Snackbar.Add(msg, Severity.Success);
                     await LoadData();
                     _selectedStores.Clear();
                 }
             }
             else if (actionResult.Action == "StatusChanged")
             {
-                Snackbar.Add("Status updated for selected stores!", Severity.Success);
+                Snackbar.Add("Status updated successfully!", Severity.Success);
                 await LoadData();
                 _selectedStores.Clear();
             }
             else if (actionResult.Action == "Export")
             {
-                Snackbar.Add("Export feature coming soon!", Severity.Info);
+                Snackbar.Add("Export feature coming soon", Severity.Info);
             }
         }
     }
@@ -1203,12 +1426,13 @@
     {
         var parameters = new DialogParameters
         {
-            ["ContentText"] = $"Are you sure you want to delete {store.StoreName} ({store.StoreCode})? This action cannot be undone.",
+            ["ContentText"] = $"Are you sure you want to delete {store.StoreName} ({store.StoreCode})? Historical records will be preserved.",
             ["ButtonText"] = "Delete",
             ["Color"] = Color.Error
         };
 
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Store", parameters);
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete Store", parameters, options);
         var result = await dialog.Result;
 
         if (result != null && !result.Canceled)
@@ -1217,7 +1441,10 @@
             var s = await db.Stores.FindAsync(store.Id);
             if (s != null)
             {
-                db.Stores.Remove(s);
+                s.IsDeleted = true;
+                s.Status = "Deleted";
+                s.StoreHeadId = null;
+                s.AreaHeadId = null;
                 await db.SaveChangesAsync();
                 Snackbar.Add("Store deleted successfully!", Severity.Success);
                 await LoadData();
@@ -1233,12 +1460,20 @@
             return;
         }
 
+        // Start zoomed out to show all stores first
+        _mapShouldFitBounds = true;
         _isMapView = true;
         StateHasChanged();
 
-        // Wait a bit for map to render
-        await Task.Delay(300);
-        await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", store.GPSLatitude, store.GPSLongitude, 18);
+        // Wait for map to fully initialize at zoomed-out view
+        await Task.Delay(400);
+
+        // Now smoothly fly into the target store (animated zoom-in effect)
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("leafletMap.focusMarker", store.GPSLatitude, store.GPSLongitude, 19);
+        }
+        catch { }
     }
 
     private async Task ViewFullHistory(Store store)

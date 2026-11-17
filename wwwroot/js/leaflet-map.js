@@ -1,4 +1,4 @@
-﻿var mapInstance = null;
+var mapInstance = null;
 var markersLayer = null;
 var userLocationMarker = null;
 
@@ -15,12 +15,22 @@ window.leafletMap = {
         // If map is already initialized and valid, just update data
         if (mapInstance) {
             this.updateMarkers(stores, options);
+            if (options && options.focusOn) {
+                this.focusMarker(options.focusOn.lat, options.focusOn.lng, options.focusOn.zoom);
+            }
             return;
         }
 
-        // Initialize map centered on a default location (e.g., Philippines mostly central)
-        // Adjust center and zoom based on your actual data or preference
-        mapInstance = L.map(elementId).setView([12.8797, 121.7740], 6);
+        // Determine initial view center and zoom
+        var initialCenter = [12.8797, 121.7740];
+        var initialZoom = 6;
+        if (options && options.focusOn) {
+            initialCenter = [options.focusOn.lat, options.focusOn.lng];
+            initialZoom = options.focusOn.zoom || 18;
+        }
+
+        // Initialize map centered on the determined location
+        mapInstance = L.map(elementId).setView(initialCenter, initialZoom);
 
         // Add OpenStreetMap tiles
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -32,9 +42,16 @@ window.leafletMap = {
 
         this.updateMarkers(stores, options);
 
+        if (options && options.focusOn) {
+            // Open popup and trigger flash animation
+            this.focusMarker(options.focusOn.lat, options.focusOn.lng, options.focusOn.zoom);
+        }
+
         // Force a resize calculation after a short delay to ensure correct rendering if container was hidden
         setTimeout(() => {
-            mapInstance.invalidateSize();
+            if (mapInstance) {
+                mapInstance.invalidateSize();
+            }
         }, 100);
     },
 
@@ -90,6 +107,10 @@ window.leafletMap = {
                 }
 
                 // Render SVG Pin
+                var alertDotHtml = (isStoreHeadMode && store.hasAlert)
+                    ? `<div class="alert-dot" style="position: absolute; top: 1px; right: 1px; width: 10px; height: 10px; background: #f44336; border: 2px solid #fff; border-radius: 50%; z-index: 10; animation: alertPulse 1.2s ease-in-out infinite;"></div>`
+                    : '';
+
                 var iconHtml = `
                     <div style="position: relative; width: 32px; height: 32px;">
                         ${pulseHtml}
@@ -97,6 +118,7 @@ window.leafletMap = {
                             <path d="M12 21C16.5 17.5 19 14.1667 19 11C19 7.13401 15.866 4 12 4C8.13401 4 5 7.13401 5 11C5 14.1667 7.5 17.5 12 21Z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
                             <circle cx="12" cy="11" r="2.5" fill="#fff"/>
                         </svg>
+                        ${alertDotHtml}
                     </div>
                 `;
 
@@ -117,7 +139,7 @@ window.leafletMap = {
 
                 // Popup Content
                 var popupContent = `
-                    <div style="font-family: sans-serif; min-width: 150px;">
+                    <div style="font-family: sans-serif; min-width: 150px; max-width: 250px; word-break: break-word; overflow-wrap: anywhere;">
                         <h4 style="margin: 0 0 5px 0; color: #616161;">${store.storeName}</h4>
                         <div style="margin-bottom: 5px;">
                              ${isStoreHeadMode ? statusBadge : ''}
@@ -149,6 +171,7 @@ window.leafletMap = {
                     // Admin: Default popup behavior (handled by Leaflet auto-open)
                 });
 
+                marker.storeId = store.id;
                 markersLayer.addLayer(marker);
 
                 bounds.extend(marker.getLatLng());
@@ -166,14 +189,31 @@ window.leafletMap = {
 
     focusMarker: function (lat, lng, zoom) {
         if (!mapInstance) return;
-        mapInstance.setView([lat, lng], zoom || 15);
+        mapInstance.flyTo([lat, lng], zoom || 15, { animate: true, duration: 1.8 });
 
         if (markersLayer) {
             markersLayer.eachLayer(function (layer) {
                 if (layer instanceof L.Marker) {
                     var pos = layer.getLatLng();
-                    if (pos.lat === lat && pos.lng === lng) {
+                    if (Math.abs(pos.lat - lat) < 0.00001 && Math.abs(pos.lng - lng) < 0.00001) {
                         layer.openPopup();
+                        if (layer._icon) {
+                            var pinElement = layer._icon.querySelector('svg');
+                            layer._icon.style.zIndex = 99999;
+                            if (pinElement) {
+                                pinElement.classList.remove('focused-marker-flash');
+                                void pinElement.offsetWidth; // force reflow
+                                pinElement.classList.add('focused-marker-flash');
+                                setTimeout(() => {
+                                    if (pinElement) {
+                                        pinElement.classList.remove('focused-marker-flash');
+                                    }
+                                    if (layer._icon) {
+                                        layer._icon.style.zIndex = '';
+                                    }
+                                }, 1500);
+                            }
+                        }
                     }
                 }
             });
@@ -234,6 +274,7 @@ window.leafletMap = {
         }
     },
 
+
     destroy: function () {
         if (mapInstance) {
             mapInstance.remove();
@@ -242,5 +283,15 @@ window.leafletMap = {
             userLocationMarker = null;
             this.personnelMarkers = {};
         }
+    },
+
+    removeAlertFromMarker: function (storeId) {
+        if (!markersLayer) return;
+        markersLayer.eachLayer(function (layer) {
+            if (layer._icon && layer.storeId === storeId) {
+                var dot = layer._icon.querySelector('.alert-dot');
+                if (dot) dot.remove();
+            }
+        });
     }
 };

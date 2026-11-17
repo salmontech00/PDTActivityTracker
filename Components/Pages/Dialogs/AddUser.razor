@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Model
 @using PDTActivityTracker.Components.Services
 @using System.Security.Cryptography
@@ -57,8 +57,10 @@
         color: #0072cf !important;
     }
 
+    
+
     .glass-dialog.lightest .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 1) !important;
+        border-color: rgba(0, 114, 207, 0.4) !important;
     }
 
     .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
@@ -89,8 +91,8 @@
                     <MudTextField T="string"
                                   Label="Employee Number"
                                   @bind-Value="_newUser.EmployeeNumber"
-                                  Required="true"
-                                  RequiredError="Employee number is required"
+                                  Validation="@(new Func<string?, string?>(ValidateEmployeeNumber))"
+                                  Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -99,8 +101,6 @@
                     <MudTextField T="string"
                                   Label="Designation"
                                   @bind-Value="_newUser.Designation"
-                                  Required="true"
-                                  RequiredError="Designation is required"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense" />
                 </MudItem>
@@ -162,6 +162,7 @@
                                   @bind-Value="_newUser.Password"
                                   Required="true"
                                   RequiredError="Password is required"
+                                  Validation="@(new Func<string, string?>(ValidatePassword))"
                                   Adornment="Adornment.End"
                                   AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
                                   OnAdornmentClick="TogglePasswordVisibility"
@@ -191,6 +192,7 @@
     </DialogContent>
 
     <DialogActions>
+        @*<MudButton OnClick="OpenTestCalendar" Style="@GetCancelButtonStyle()">Test Calendar</MudButton>*@
         <MudButton OnClick="Cancel" Style="@GetCancelButtonStyle()">Cancel</MudButton>
         <MudButton Color="MudBlazor.Color.Primary" Variant="Variant.Filled" OnClick="Submit" Disabled="@_isSaving" Class="rounded-lg px-6" Style="@GetButtonStyle()">
             @if (_isSaving)
@@ -214,6 +216,14 @@
     private bool _showPassword = false;
     private bool _showConfirmPassword = false;
 
+    @*[Inject]
+    private IDialogService DialogService { get; set; } = default!;
+
+    private async Task OpenTestCalendar()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+        await DialogService.ShowAsync<GlassCalendarDemoDialog>("Test Calendar", options);
+    }*@
 
     [CascadingParameter]
     private IMudDialogInstance MudDialog { get; set; } = default!;
@@ -232,12 +242,12 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };
@@ -278,6 +288,31 @@
     }
 
 
+    private string? ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            return "Password is required";
+
+        var errors = new List<string>();
+        if (password.Length < 8)
+            errors.Add("at least 8 characters");
+        if (!Regex.IsMatch(password, @"[A-Z]"))
+            errors.Add("an uppercase letter");
+        if (!Regex.IsMatch(password, @"[a-z]"))
+            errors.Add("a lowercase letter");
+        if (!Regex.IsMatch(password, @"[0-9]"))
+            errors.Add("a number");
+        if (!Regex.IsMatch(password, @"[^a-zA-Z0-9]"))
+            errors.Add("a special character");
+
+        if (errors.Any())
+        {
+            return $"Password requires: {string.Join(", ", errors)}";
+        }
+
+        return null;
+    }
+
     private string? ValidateConfirmPassword(string confirmPassword)
     {
         if (confirmPassword != _newUser.Password)
@@ -294,6 +329,15 @@
         if (!Regex.IsMatch(email, emailPattern, RegexOptions.IgnoreCase))
             return "Enter a valid email address";
 
+        return null;
+    }
+
+    private string? ValidateEmployeeNumber(string? employeeNumber)
+    {
+        if (!string.IsNullOrEmpty(employeeNumber) && !Regex.IsMatch(employeeNumber, "^[0-9]*$"))
+        {
+            return "Employee number must contain only numerical values.";
+        }
         return null;
     }
 
@@ -324,6 +368,19 @@
                 Snackbar.Add("Username already exists.", Severity.Warning);
                 _isSaving = false;
                 return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(_newUser.EmployeeNumber))
+            {
+                var existingEmployeeNumber = Db.Users
+                    .FirstOrDefault(u => u.EmployeeNumber != null && u.EmployeeNumber == _newUser.EmployeeNumber);
+
+                if (existingEmployeeNumber != null)
+                {
+                    Snackbar.Add("Employee number already exists.", Severity.Warning);
+                    _isSaving = false;
+                    return;
+                }
             }
 
             var existingEmail = Db.Users

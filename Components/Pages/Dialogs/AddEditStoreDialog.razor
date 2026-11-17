@@ -1,4 +1,4 @@
-﻿@using System.ComponentModel.DataAnnotations
+@using System.ComponentModel.DataAnnotations
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
@@ -57,17 +57,35 @@
         color: #0072cf !important;
     }
 
+    /* Keep avatar icons white */
+    .glass-dialog.lightest .mud-avatar .mud-icon-root {
+        color: #ffffff !important;
+    }
+
+    
+
     .glass-dialog.lightest .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 1) !important;
+        border-color: rgba(0, 114, 207, 0.4) !important;
     }
 
     .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
     .glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border {
         border-color: #0072cf !important;
     }
+
+    /* Scoped Status Select Popover styles for text wrapping and mobile font-size */
+    .status-dropdown-popover {
+        max-width: 280px !important;
+    }
+
+        .status-dropdown-popover .mud-list-item-text {
+            white-space: normal !important;
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+        }
 </style>
 
-<MudDialog MaxWidth="MaxWidth.Medium" FullWidth="true" Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+<MudDialog Class="@($"rounded-xl pa-2 glass-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
     <TitleContent>
         <MudText Typo="Typo.h6" Style="@($"color: {GetTitleColor()}; font-weight: 700;")">@(_isEdit ? "Edit Store" : "Add Store")</MudText>
     </TitleContent>
@@ -75,21 +93,19 @@
         <MudForm @ref="form" @bind-IsValid="@success">
             <MudGrid Spacing="2">
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Store.StoreCode" Label="Store Code" Required="true" RequiredError="Store Code is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField T="string" Value="@_storeModel.StoreCode" ValueChanged="OnStoreCodeChanged" Label="Store Code" Required="true" RequiredError="Store Code is required" Variant="Variant.Outlined" Margin="Margin.Dense" Immediate="true" Pattern="^[0-9]*$" Mask="@(new RegexMask(@"^\d*$"))" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="string" @bind-Value="Store.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" AnchorOrigin="Origin.BottomCenter">
+                    <MudSelect T="string" @bind-Value="_storeModel.Status" Label="Status" Variant="Variant.Outlined" Margin="Margin.Dense" PopoverClass="status-dropdown-popover">
                         <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                        <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                        <MudSelectItem Value="@("Under Renovation")">Under Renovation</MudSelectItem>
                         <MudSelectItem Value="@("Closed")">Closed</MudSelectItem>
                     </MudSelect>
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="Store.StoreName" Label="Store Name" Required="true" RequiredError="Store Name is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="_storeModel.StoreName" Label="Store Name" Required="true" RequiredError="Store Name is required" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="Store.Location" Label="Location / Region" Required="true" RequiredError="Location is required!" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="_storeModel.Location" Label="Location / Region" Required="true" RequiredError="Location is required" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
 
                 <MudItem xs="12">
@@ -97,10 +113,10 @@
                     <MudDivider Class="mb-3" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Store.ContactPhone" Label="Phone Number" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="_storeModel.ContactPhone" Label="Phone Number" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudTextField @bind-Value="Store.ContactEmail" Label="Email Address" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField @bind-Value="_storeModel.ContactEmail" Label="Email Address" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="12" Class="d-flex align-center">
                     <MudTooltip Text="Get Current Location">
@@ -122,10 +138,10 @@
                     </MudTooltip>
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudNumericField @bind-Value="Store.GPSLatitude" Label="GPS Latitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />
+                    <MudNumericField @bind-Value="_storeModel.GPSLatitude" Label="GPS Latitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />
                 </MudItem>
                 <MudItem xs="12" sm="6">
-                    <MudNumericField @bind-Value="Store.GPSLongitude" Label="GPS Longitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />
+                    <MudNumericField @bind-Value="_storeModel.GPSLongitude" Label="GPS Longitude" Variant="Variant.Outlined" Margin="Margin.Dense" Step="0.000001" />
                 </MudItem>
 
             </MudGrid>
@@ -141,7 +157,9 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
     [Parameter] public Store Store { get; set; } = new();
+    [Parameter] public Func<string, string, int, Task<List<string>>>? ValidateDuplicate { get; set; }
 
+    private Store _storeModel = new();
     private bool success;
     private MudForm form = default!;
     private bool _isEdit;
@@ -154,9 +172,9 @@
         try
         {
             var location = await JSRuntime.InvokeAsync<LocationCoords>("cameraInterop.getCurrentLocation");
-            Store.GPSLatitude = location.Latitude;
-            Store.GPSLongitude = location.Longitude;
-            Snackbar.Add("Location captured successfully!", Severity.Success);
+            _storeModel.GPSLatitude = location.Latitude;
+            _storeModel.GPSLongitude = location.Longitude;
+            Snackbar.Add("Location captured", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -179,32 +197,147 @@
     protected override void OnInitialized()
     {
         _isEdit = Store.Id != 0;
+
+        // Clone properties to keep the form isolated from parent's model reference in real-time
+        _storeModel = new Store
+        {
+            Id = Store.Id,
+            StoreCode = Store.StoreCode,
+            StoreName = Store.StoreName,
+            Location = Store.Location,
+            Status = Store.Status,
+            GPSLatitude = Store.GPSLatitude,
+            GPSLongitude = Store.GPSLongitude,
+            ContactPhone = Store.ContactPhone,
+            ContactEmail = Store.ContactEmail,
+            StoreHeadId = Store.StoreHeadId,
+            AreaHeadId = Store.AreaHeadId
+        };
+
         ThemeService.OnThemeChanged += OnThemeChanged;
     }
 
     private void OnThemeChanged() => StateHasChanged();
 
+    private void OnStoreCodeChanged(string value)
+    {
+        if (value != null)
+        {
+            _storeModel.StoreCode = new string(value.Where(char.IsDigit).ToArray());
+        }
+        else
+        {
+            _storeModel.StoreCode = string.Empty;
+        }
+    }
+
     public void Dispose() => ThemeService.OnThemeChanged -= OnThemeChanged;
+
+    private bool _isSubmitting = false;
 
     private async Task Submit()
     {
-        await form.Validate();
+        if (_isSubmitting) return; // Prevent double-submission
+        _isSubmitting = true;
 
-        if (form.IsValid)
+        try
         {
-            using var db = await DbFactory.CreateDbContextAsync();
+            await form.Validate();
 
-            if (_isEdit)
+            if (form.IsValid)
             {
-                db.Stores.Update(Store);
-            }
-            else
-            {
-                db.Stores.Add(Store);
-            }
+                using var db = await DbFactory.CreateDbContextAsync();
 
-            await db.SaveChangesAsync();
-            MudDialog.Close(DialogResult.Ok(Store.Id));
+                if (_storeModel.Status == "Closed" && (_storeModel.StoreHeadId != null || _storeModel.AreaHeadId != null))
+                {
+                    Snackbar.Add("Cannot set store status to Closed while an Area Head or Store Head is assigned. Please unassign them first.", Severity.Warning);
+                    return;
+                }
+
+                // Trim inputs before saving so we don't save trailing spaces
+                _storeModel.StoreCode = _storeModel.StoreCode?.Trim();
+                _storeModel.StoreName = _storeModel.StoreName?.Trim();
+
+                var codeToMatch = _storeModel.StoreCode ?? string.Empty;
+                var nameToMatch = _storeModel.StoreName ?? string.Empty;
+
+                if (ValidateDuplicate != null)
+                {
+                    var errors = await ValidateDuplicate(codeToMatch, nameToMatch, Store.Id);
+                    if (errors != null && errors.Any())
+                    {
+                        foreach (var error in errors)
+                        {
+                            Snackbar.Add(error, Severity.Warning);
+                        }
+                        return;
+                    }
+                }
+
+                // Fetch all to memory for foolproof string matching in C# as a secondary local fallback check
+                var allStores = await db.Stores.Where(s => !s.IsDeleted).AsNoTracking().ToListAsync();
+                var codeDuplicateLocal = allStores.FirstOrDefault(s => s.Id != Store.Id && string.Equals(s.StoreCode?.Trim(), codeToMatch, StringComparison.OrdinalIgnoreCase));
+                var nameDuplicateLocal = allStores.FirstOrDefault(s => s.Id != Store.Id && string.Equals(s.StoreName?.Trim(), nameToMatch, StringComparison.OrdinalIgnoreCase));
+
+                if (codeDuplicateLocal != null || nameDuplicateLocal != null)
+                {
+                    if (codeDuplicateLocal != null)
+                    {
+                        Snackbar.Add($"Store Code '{codeToMatch}' already exists.", Severity.Warning);
+                    }
+                    if (nameDuplicateLocal != null)
+                    {
+                        Snackbar.Add($"Store Name '{nameToMatch}' already exists.", Severity.Warning);
+                    }
+                    return;
+                }
+
+                if (_isEdit)
+                {
+                    var dbStore = await db.Stores.FindAsync(Store.Id);
+                    if (dbStore != null)
+                    {
+                        dbStore.StoreCode = _storeModel.StoreCode;
+                        dbStore.StoreName = _storeModel.StoreName;
+                        dbStore.Location = _storeModel.Location;
+                        dbStore.Status = _storeModel.Status;
+                        dbStore.GPSLatitude = _storeModel.GPSLatitude;
+                        dbStore.GPSLongitude = _storeModel.GPSLongitude;
+                        dbStore.ContactPhone = _storeModel.ContactPhone;
+                        dbStore.ContactEmail = _storeModel.ContactEmail;
+
+                        db.Stores.Update(dbStore);
+                    }
+                }
+                else
+                {
+                    db.Stores.Add(_storeModel);
+                }
+
+                await db.SaveChangesAsync();
+
+                // Sync values back to original parameter reference for caller
+                Store.StoreCode = _storeModel.StoreCode;
+                Store.StoreName = _storeModel.StoreName;
+                Store.Location = _storeModel.Location;
+                Store.Status = _storeModel.Status;
+                Store.GPSLatitude = _storeModel.GPSLatitude;
+                Store.GPSLongitude = _storeModel.GPSLongitude;
+                Store.ContactPhone = _storeModel.ContactPhone;
+                Store.ContactEmail = _storeModel.ContactEmail;
+
+                if (_isEdit) {
+                    Snackbar.Add("Store updated successfully!", Severity.Success);
+                } else {
+                    Snackbar.Add("Store added successfully!", Severity.Success);
+                }
+
+                MudDialog.Close(DialogResult.Ok(Store.Id));
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
         }
     }
 
@@ -218,12 +351,12 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px);";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };

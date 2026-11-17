@@ -1,4 +1,4 @@
-﻿window.themeStorage = {
+window.themeStorage = {
     setTheme: function (theme) {
         localStorage.setItem('theme', theme);
         applyTheme(theme);
@@ -68,12 +68,26 @@ window.cameraInterop = {
             return false;
         }
     },
-    stopVideo: function (videoElementId) {
+    stopVideo: async function (videoElementId) {
         const video = document.getElementById(videoElementId);
         if (video && video.srcObject) {
             const stream = video.srcObject;
             const tracks = stream.getTracks();
-            tracks.forEach(track => track.stop());
+            for (const track of tracks) {
+                if (track.kind === 'video') {
+                    try {
+                        const capabilities = track.getCapabilities();
+                        if (capabilities && capabilities.torch) {
+                            await track.applyConstraints({
+                                advanced: [{ torch: false }]
+                            });
+                        }
+                    } catch (err) {
+                        console.warn("Could not turn off flash before stopping:", err);
+                    }
+                }
+                track.stop();
+            }
             video.srcObject = null;
         }
     },
@@ -144,7 +158,27 @@ window.cameraInterop = {
             const fontSize = Math.max(12, Math.round(height * 0.03));
             context.font = `bold ${fontSize}px Arial, sans-serif`;
 
-            const lines = watermarkText.split('|').map(s => s.trim());
+            // Split on actual newlines sent from C#, not '|'
+            const rawLines = watermarkText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+
+            // Word-wrap any line that's too wide for the canvas
+            const maxLineWidth = width - (padding * 2);
+            const lines = [];
+            rawLines.forEach(rawLine => {
+                const words = rawLine.split(' ');
+                let currentLine = '';
+                words.forEach(word => {
+                    const testLine = currentLine ? `${currentLine} ${word}` : word;
+                    if (context.measureText(testLine).width > maxLineWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = testLine;
+                    }
+                });
+                if (currentLine) lines.push(currentLine);
+            });
+
             const lineHeight = fontSize * 1.2;
             const boxHeight = (lines.length * lineHeight) + (padding * 2);
 
@@ -167,6 +201,8 @@ window.cameraInterop = {
                 reject("Geolocation is not supported by this browser.");
                 return;
             }
+
+            // Attempt 1: Fast high-accuracy query
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     resolve({
@@ -175,16 +211,52 @@ window.cameraInterop = {
                     });
                 },
                 (error) => {
-                    let msg = "Unknown error";
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED: msg = "Location permission denied."; break;
-                        case error.POSITION_UNAVAILABLE: msg = "Location information is unavailable."; break;
-                        case error.TIMEOUT: msg = "Location request timed out."; break;
+                    // Fallback to low-accuracy if high accuracy fails or times out
+                    if (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE) {
+                        navigator.geolocation.getCurrentPosition(
+                            (pos2) => {
+                                resolve({
+                                    latitude: pos2.coords.latitude,
+                                    longitude: pos2.coords.longitude
+                                });
+                            },
+                            (err2) => {
+                                reject("Location request failed: " + err2.message);
+                            },
+                            { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+                        );
+                    } else {
+                        let msg = "Unknown error";
+                        switch (error.code) {
+                            case error.PERMISSION_DENIED: msg = "Location permission denied."; break;
+                            case error.POSITION_UNAVAILABLE: msg = "Location information is unavailable."; break;
+                            case error.TIMEOUT: msg = "Location request timed out."; break;
+                        }
+                        reject(msg);
                     }
-                    reject(msg);
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
         });
+    },
+    // OTP Helpers
+    setupOtpPaste: function (dotNetHelper) {
+        const container = document.querySelector('.otp-container');
+        if (!container) return;
+
+        const pasteHandler = (e) => {
+            const text = (e.clipboardData || window.clipboardData).getData('text');
+            if (text && text.length === 4 && /^\d+$/.test(text)) {
+                e.preventDefault();
+                dotNetHelper.invokeMethodAsync('HandlePasteJS', text);
+            }
+        };
+
+        container.addEventListener('paste', pasteHandler);
+
+        // Return a way to cleanup if needed (though not strictly necessary for this use case)
+        return {
+            dispose: () => container.removeEventListener('paste', pasteHandler)
+        };
     }
 };

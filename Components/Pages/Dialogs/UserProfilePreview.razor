@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Services
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
@@ -246,7 +246,7 @@
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
             ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0); border: 1px solid rgba(255,255,255,0);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0); border: 1px solid rgba(255,255,255,0);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0);"

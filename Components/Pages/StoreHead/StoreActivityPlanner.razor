@@ -1,4 +1,4 @@
-﻿@page "/store-head/planner"
+@page "/store-head/planner"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using System.Text.Json
@@ -195,6 +195,21 @@
         padding-left: 32px;
         width: 100%;
         max-width: 600px;
+    }
+
+    .requirement-highlight {
+        animation: pulseHighlight 1.5s ease-in-out 2;
+        border: 1px solid var(--mud-palette-warning) !important;
+    }
+
+    @@keyframes pulseHighlight {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4);
+        }
+
+        50% {
+            box-shadow: 0 0 0 8px rgba(255, 152, 0, 0);
+        }
     }
 
     .manpower-input-container {
@@ -546,10 +561,11 @@
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.Save"
-                       OnClick="SaveCurrentProgress"
+                       OnClick="ConfirmSaveProgress"
+                       Disabled="@IsSessionLocked()"
                        Class="@($"modern-button {GetThemeClass()}")"
                        Style="@GetButtonStyle()">
-                SAVE PROGRESS
+                SUBMIT PROGRESS
             </MudButton>
         </div>
     </div>
@@ -599,25 +615,28 @@
                 <MudExpansionPanels MultiExpansion="true" Class="modern-expansion-panels">
                     @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                     {
-                        var isLocked = category.SortOrder > _currentCategoryOrder || _categories.Any(c => c.SortOrder < category.SortOrder && !CanCompleteCategory(c.Id));
+                        var isLocked = _categories
+                            .Where(c => c.SortOrder < category.SortOrder)
+                            .Where(c => _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)))
+                            .Any(c => !CanCompleteCategory(c.Id));
                         var isActive = category.Id == _currentCategoryId;
-                        var isCompleted = category.SortOrder < _currentCategoryOrder && CanCompleteCategory(category.Id);
+                        var isCompleted = !isLocked && CanCompleteCategory(category.Id);
                         var itemsInCategory = _checklistItems
                         .Where(t => t.CategoryId == category.Id)
                         .Where(t => _frequencyFilter == "All" || t.Frequency == _frequencyFilter)
                         .OrderBy(t => t.SortOrder)
                         .ToList();
 
-                        if (!itemsInCategory.Any() && _frequencyFilter != "All") continue;
+                        if (!itemsInCategory.Any()) continue;
 
                         <MudExpansionPanel Class="@($"modern-expansion-panel {(isActive ? "active" : "")} {(isLocked ? "locked" : "")}")"
                                            MaxHeight="600"
                                            IsInitiallyExpanded="@isActive">
                             <TitleContent>
                                 <div class="d-flex align-center py-2">
-                                    <MudIcon Icon="@category.Icon" Class="mr-3 category-icon" Color="@(isCompleted? Color.Success: (isActive ? Color.Primary : Color.Default))" />
-                                    <div class="flex-grow-1">
-                                        <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
+                                    <MudIcon Icon="@category.Icon" Class="mr-3 category-icon flex-shrink-0" Color="@(isCompleted? Color.Success: (isActive ? Color.Primary : Color.Default))" />
+                                    <div class="flex-grow-1" style="min-width: 0;">
+                                        <MudText Typo="Typo.h6" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@category.Name</MudText>
                                         <MudText Typo="Typo.caption" Style="opacity: 0.6;">@(GetCategoryCompletionStatus(category.Id))</MudText>
                                     </div>
                                     <MudSpacer />
@@ -629,7 +648,7 @@
                                     {
                                         <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-2" />
                                     }
-                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {category.ColorClass}")">
+                                    <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Class="@($"category-chip {category.ColorClass}")" Style="flex-shrink: 0; white-space: nowrap !important;">
                                         @itemsInCategory.Count() Tasks
                                     </MudChip>
                                 </div>
@@ -659,7 +678,7 @@
                                             lastSection = "";
                                         }
 
-                                        <div class="preview-task-card">
+                                        <div class="preview-task-card @(_highlightedTaskIds.Contains(task.Id) ? "requirement-highlight" : "")">
                                             <div class="preview-task-header">
                                                 <div class="preview-header-content-group">
                                                     <div class="preview-task-name-container">
@@ -669,7 +688,7 @@
                                                                      ValueChanged="@((bool val) => ToggleManualTask(task, progress, val))"
                                                                      Color="Color.Primary"
                                                                      Dense="true"
-                                                                     Disabled="@(task.IsPhotoRequired || task.TaskType == "Manpower")"
+                                                                     Disabled="@(IsSessionLocked() || task.IsPhotoRequired || task.TaskType == "Manpower" || IsAutoCompletedPreviousDay(progress, task))"
                                                                      Class="pa-0" />
 
                                                         <div class="d-flex align-center flex-wrap gap-2">
@@ -679,7 +698,7 @@
                                                             }
                                                             <MudChip T="string" Size="Size.Small" Variant="Variant.Filled" Color="Color.Primary" Class="py-0 px-2" Style="height: 18px; font-size: 0.6rem; font-weight: 700;">@task.Frequency</MudChip>
                                                             <MudText Typo="Typo.body1" Class="@(GetThemeClass() == "lightest" ? "text-dark" : "text-white")" Style="font-weight: 600;">
-                                                                @task.TaskName
+                                                                @FormatLongWords(task.TaskName)
                                                             </MudText>
                                                         </div>
                                                     </div>
@@ -687,23 +706,45 @@
                                                     @if (!string.IsNullOrEmpty(task.Description))
                                                     {
                                                         <div class="preview-description-row">
-                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@FormatLongWords(task.Description)</MudText>
                                                         </div>
                                                     }
                                                 </div>
 
                                                 @if (task.IsPhotoRequired)
                                                 {
-                                                    <MudButton Variant="Variant.Filled"
-                                                               StartIcon="@Icons.Material.Filled.PhotoCamera"
-                                                               Size="Size.Small"
-                                                               Color="Color.Primary"
-                                                               OnClick="@(() => CapturePhoto(task))"
-                                                               Class="preview-upload-btn"
-                                                               Disabled="@(task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos)"
-                                                               Style="border-radius: 8px; font-weight: bold;">
-                                                        CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
-                                                    </MudButton>
+                                                    @if (IsAutoCompletedPreviousDay(progress, task))
+                                                    {
+                                                        <div class="d-flex align-center gap-1">
+                                                            <MudButton Variant="Variant.Filled"
+                                                                       Size="Size.Small"
+                                                                       Color="Color.Success"
+                                                                       Disabled="true"
+                                                                       Style="border-radius: 8px; font-weight: bold; opacity: 0.8;">
+                                                                @GetRemainingDaysText(task, progress)
+                                                            </MudButton>
+                                                            <MudTooltip Text="Force manual task refresh">
+                                                                <MudIconButton Icon="@Icons.Material.Filled.Refresh" 
+                                                                               Variant="Variant.Filled"
+                                                                               Color="Color.Error" 
+                                                                               Size="Size.Small" 
+                                                                               OnClick="@(() => ForceManualCompletion(task, progress))" />
+                                                            </MudTooltip>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <MudButton Variant="Variant.Filled"
+                                                                   StartIcon="@Icons.Material.Filled.PhotoCamera"
+                                                                   Size="Size.Small"
+                                                                   Color="Color.Primary"
+                                                                   OnClick="@(() => CapturePhoto(task))"
+                                                                   Class="preview-upload-btn"
+                                                                   Disabled="@(IsSessionLocked() || (task.NumberOfPhotos > 0 && GetPhotoCount(task.Id) >= task.NumberOfPhotos))"
+                                                                   Style="border-radius: 8px; font-weight: bold;">
+                                                            CAPTURE (@(GetPhotoCount(task.Id))/@(task.NumberOfPhotos == 0 ? "∞" : task.NumberOfPhotos))
+                                                        </MudButton>
+                                                    }
                                                 }
                                             </div>
 
@@ -738,6 +779,7 @@
                                                                                                  ValueChanged="@((int? val) => UpdatePositionExpected(task, progress, index, val))"
                                                                                                  Variant="Variant.Outlined"
                                                                                                  Margin="Margin.Dense"
+                                                                                                 Disabled="@(IsSessionLocked() || IsAutoCompletedPreviousDay(progress, task))"
                                                                                                  HideSpinButtons="true"
                                                                                                  Class="manpower-input center-input" />
                                                                             </div>
@@ -748,6 +790,7 @@
                                                                                                  ValueChanged="@((int? val) => UpdatePositionActual(task, progress, index, val))"
                                                                                                  Variant="Variant.Outlined"
                                                                                                  Margin="Margin.Dense"
+                                                                                                 Disabled="@(IsSessionLocked() || IsAutoCompletedPreviousDay(progress, task))"
                                                                                                  HideSpinButtons="true"
                                                                                                  Class="manpower-input center-input" />
                                                                             </div>
@@ -770,6 +813,7 @@
                                                                                          ValueChanged="@((int? val) => { progress.ActualQuantity = val; _ = OnManpowerChanged(task, progress); })"
                                                                                          Variant="Variant.Outlined"
                                                                                          Margin="Margin.Dense"
+                                                                                         Disabled="@(IsSessionLocked() || IsAutoCompletedPreviousDay(progress, task))"
                                                                                          HideSpinButtons="true"
                                                                                          Class="manpower-input center-input" />
                                                                     </div>
@@ -806,6 +850,7 @@
                                                                   Margin="Margin.Dense"
                                                                   Dense="true"
                                                                   Placeholder="Enter remarks here..."
+                                                                  Disabled="@(IsSessionLocked() || IsAutoCompletedPreviousDay(progress, task))"
                                                                   Class="rounded-lg"
                                                                   @bind-Value:after="@(() => OnRemarksChanged(task))" />
                                                 </div>
@@ -818,7 +863,10 @@
                                                     {
                                                         <div class="photo-thumb-wrapper">
                                                             <img src="data:@photo.ImageMimeType;base64,@Convert.ToBase64String(photo.ImageData!)" />
-                                                            <button class="photo-remove-btn" @onclick="@(() => RemovePhoto(photo))" title="Remove">✕</button>
+                                                            @if (!IsSessionLocked())
+                                                            {
+                                                                <button class="photo-remove-btn" @onclick="@(() => RemovePhoto(photo))" title="Remove">✕</button>
+                                                            }
                                                         </div>
                                                     }
                                                 </div>
@@ -854,6 +902,61 @@
     private List<TaskProgress> _taskProgresses = new();
     private List<TaskPhoto> _loadedPhotos = new();
 
+    private bool IsAutoCompletedPreviousDay(TaskProgress prog, ChecklistItem task)
+    {
+        return prog.IsCompleted && 
+               prog.CompletedAt.HasValue && 
+               prog.CompletedAt.Value.Date < DateTime.Today && 
+               (task.Frequency == "Weekly" || task.Frequency == "Monthly");
+    }
+
+    private string GetRemainingDaysText(ChecklistItem task, TaskProgress prog)
+    {
+        if (!prog.CompletedAt.HasValue) return "";
+        var today = DateTime.Today;
+        var completedDate = prog.CompletedAt.Value.Date;
+        
+        DateTime expirationDate;
+        if (task.Frequency == "Weekly")
+        {
+            expirationDate = completedDate.AddDays(7);
+        }
+        else if (task.Frequency == "Monthly")
+        {
+            expirationDate = completedDate.AddMonths(1);
+        }
+        else
+        {
+            return "";
+        }
+
+        int daysLeft = (expirationDate - today).Days;
+        
+        if (daysLeft <= 1)
+        {
+            return "Available tomorrow";
+        }
+        
+        // Example: "Available Jun 5"
+        return $"Available {expirationDate:MMM d}";
+    }
+
+    private bool IsSessionLocked()
+    {
+        if (_currentSession == null) return false;
+        return _currentSession.IsSubmitted || _currentSession.IsCompleted || _currentSession.SubmittedAt.HasValue || _currentSession.CompletedAt.HasValue;
+    }
+
+    private async Task ForceManualCompletion(ChecklistItem task, TaskProgress prog)
+    {
+        prog.IsCompleted = false;
+        prog.CompletedAt = null;
+        await CheckAndSyncTaskCompletion(task);
+        await SaveCurrentProgress();
+        await CheckAndAutoProgress();
+        StateHasChanged();
+    }
+
     private int _currentCategoryId;
     private int _currentCategoryOrder = 0;
 
@@ -862,6 +965,92 @@
     private int _completedCount = 0;
     private int _totalTasksCount = 0;
     private bool _isSaving = false;
+    // Tracks whether all tasks were complete the last time we checked — prevents duplicate notifications
+    private bool _wasAllCompleted = false;
+    // Tracks which task cards should show the pulsing highlight right now
+    private HashSet<int> _highlightedTaskIds = new();
+
+    private bool HasStartedProgress(ChecklistItem task, TaskProgress prog)
+    {
+        if (task.IsPhotoRequired)
+        {
+            return GetPhotoCount(task.Id) > 0;
+        }
+        if (task.TaskType == "Manpower")
+        {
+            var positions = GetManpowerPositions(task);
+            if (positions.Any())
+            {
+                if (string.IsNullOrWhiteSpace(prog.PositionActuals)) return false;
+                try
+                {
+                    var actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals);
+                    return actuals != null && actuals.Any(a => a.HasValue);
+                }
+                catch { return false; }
+            }
+            return prog.ActualQuantity.HasValue;
+        }
+        return false;
+    }
+
+    private string? GetMissingRequirementText(ChecklistItem task, TaskProgress prog)
+    {
+        if (task.IsPhotoRequired)
+        {
+            var count = GetPhotoCount(task.Id);
+            var needed = task.NumberOfPhotos > 0 ? task.NumberOfPhotos - count : 1 - count;
+            return needed > 0 ? $"{needed} more photo(s) needed" : null;
+        }
+        if (task.TaskType == "Manpower")
+        {
+            var positions = GetManpowerPositions(task);
+            if (positions.Any())
+            {
+                List<int?> actuals = new();
+                if (!string.IsNullOrWhiteSpace(prog.PositionActuals))
+                {
+                    try { actuals = JsonSerializer.Deserialize<List<int?>>(prog.PositionActuals) ?? new(); }
+                    catch { }
+                }
+                var missingNames = new List<string>();
+                for (int i = 0; i < positions.Count; i++)
+                {
+                    bool hasValue = i < actuals.Count && actuals[i].HasValue;
+                    if (!hasValue) missingNames.Add(positions[i].Name);
+                }
+                return missingNames.Any() ? $"still needs a value entered for: {string.Join(", ", missingNames)}" : null;
+            }
+        }
+        return null;
+    }
+
+    private async Task HighlightThenClear(int taskId)
+    {
+        await Task.Delay(3000);
+        _highlightedTaskIds.Remove(taskId);
+        StateHasChanged();
+    }
+
+    private void CheckAllPendingTaskRequirements()
+    {
+        foreach (var task in _checklistItems.Where(t => t.IsPhotoRequired || t.TaskType == "Manpower"))
+        {
+            var prog = GetTaskProgress(task.Id);
+            if (!prog.IsCompleted && HasStartedProgress(task, prog))
+            {
+                var missingText = GetMissingRequirementText(task, prog);
+                if (!string.IsNullOrEmpty(missingText))
+                {
+                    var taskLabel = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "This task";
+                    Snackbar.Add($"'{taskLabel}' {missingText}", Severity.Warning);
+
+                    _highlightedTaskIds.Add(task.Id);
+                    _ = HighlightThenClear(task.Id);
+                }
+            }
+        }
+    }
 
     protected override void OnInitialized()
     {
@@ -930,6 +1119,7 @@
         }
 
         _store = await db.Stores
+            .Where(s => !s.IsDeleted)
             .Include(s => s.AreaHead)
             .FirstOrDefaultAsync(s => s.Id == StoreId);
         if (_store == null)
@@ -940,7 +1130,7 @@
 
 
         _categories = await db.Categories.AsNoTracking().OrderBy(c => c.SortOrder).ToListAsync();
-        var allItems = await db.ChecklistItems.AsNoTracking().ToListAsync();
+        var allItems = await db.ChecklistItems.Where(t => !t.IsDeleted).AsNoTracking().ToListAsync();
         _checklistItems = allItems.Where(t => IsTaskAssignedToStore(t, StoreId)).ToList();
         // Total count based on filter
 
@@ -974,6 +1164,16 @@
 
         _currentCategoryId = _currentSession.CurrentCategoryId;
         var currentCat = _categories.FirstOrDefault(c => c.Id == _currentCategoryId);
+
+        while (currentCat != null && !_checklistItems.Any(t => t.CategoryId == currentCat.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)))
+        {
+            currentCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > currentCat.SortOrder && _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)));
+            if (currentCat != null)
+            {
+                _currentCategoryId = currentCat.Id;
+            }
+        }
+
         _currentCategoryOrder = currentCat?.SortOrder ?? 0;
 
         _taskProgresses = await db.TaskProgresses
@@ -998,6 +1198,38 @@
                 _taskProgresses.Add(prog);
             }
             await CheckAndSyncTaskCompletion(task, true); // initialSync = true to skip DB saves during load
+        }
+
+        await LoadPeriodProgress(db);
+
+        // Auto-advance category pointer if the current category is already completed (e.g., from weekly/monthly auto-fills)
+        var activeCat = _categories.FirstOrDefault(c => c.Id == _currentCategoryId);
+        bool categoryChanged = false;
+
+        while (activeCat != null && CanCompleteCategory(activeCat.Id))
+        {
+            var nextCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > activeCat.SortOrder && _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)));
+            if (nextCat != null)
+            {
+                _currentCategoryId = nextCat.Id;
+                _currentCategoryOrder = nextCat.SortOrder;
+                activeCat = nextCat;
+                categoryChanged = true;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        if (categoryChanged)
+        {
+            var sessionToUpdate = await db.StoreDailyActivities.FindAsync(_currentSession!.Id);
+            if (sessionToUpdate != null)
+            {
+                sessionToUpdate.CurrentCategoryId = _currentCategoryId;
+                await db.SaveChangesAsync();
+            }
         }
 
         UpdateCompletedCount();
@@ -1106,12 +1338,67 @@
                 prog.CompletedAt = DateTime.Now;
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
                 await CreateManualActivityLog("TaskCompleted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // Check if this is the very first task accomplished for the day
+                int completedTodayBefore = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today && tp.ChecklistItemId != task.Id);
+                if (completedTodayBefore == 0)
+                {
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        try
+                        {
+                            using var db = await DbFactory.CreateDbContextAsync();
+                            db.Notifications.Add(new Notification
+                            {
+                                UserId = _store.AreaHeadId.Value,
+                                Message = $"{_store.StoreName} has started their tasks today (First task accomplished: {taskIdentifier}).",
+                                Type = "Info",
+                                IsRead = false,
+                                CreatedAt = DateTime.Now,
+                                RelatedEntityId = StoreId,
+                                RelatedEntityType = "Store"
+                            });
+                            await db.SaveChangesAsync();
+                            UserState.NotifyDashboardRefresh();
+                        }
+                        catch { }
+                    }
+                }
             }
             else
             {
                 prog.CompletedAt = null;
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
-                if (!initialSync) await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+                if (!initialSync)
+                {
+                    await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                    // Check if all tasks are now incomplete (meaning the last completed task was reverted)
+                    int completedTodayNow = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today);
+                    if (completedTodayNow == 0)
+                    {
+                        if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                        {
+                            try
+                            {
+                                using var db = await DbFactory.CreateDbContextAsync();
+                                db.Notifications.Add(new Notification
+                                {
+                                    UserId = _store.AreaHeadId.Value,
+                                    Message = $"{_store.StoreName} checklist progress has been reverted (no tasks completed yet).",
+                                    Type = "Warning",
+                                    IsRead = false,
+                                    CreatedAt = DateTime.Now,
+                                    RelatedEntityId = StoreId,
+                                    RelatedEntityType = "Store"
+                                });
+                                await db.SaveChangesAsync();
+                                UserState.NotifyDashboardRefresh();
+                            }
+                            catch { }
+                        }
+                    }
+                }
 
                 // If the entire session was completed, revert it
                 if (_currentSession != null && _currentSession.IsCompleted)
@@ -1200,61 +1487,95 @@
             .ToList();
 
         _totalTasksCount = filteredItems.Count;
-        _completedCount = filteredItems.Count(t => GetTaskProgress(t.Id).IsCompleted);
+
+        int completedCount = 0;
+        bool stopCounting = false;
+
+        foreach (var category in _categories.OrderBy(c => c.SortOrder))
+        {
+            var catItems = filteredItems.Where(t => t.CategoryId == category.Id).ToList();
+            if (!catItems.Any()) continue;
+
+            if (stopCounting) break;
+
+            int catCompleted = catItems.Count(t => GetTaskProgress(t.Id).IsCompleted);
+            completedCount += catCompleted;
+
+            if (catCompleted < catItems.Count)
+            {
+                stopCounting = true;
+            }
+        }
+
+        _completedCount = completedCount;
     }
 
     private async Task LoadPeriodProgress(PDTActivityTracker.Model.AppDbContext db)
     {
         var today = DateTime.Today;
-        var startOfWeek = today.AddDays(-(int)today.DayOfWeek);
-        var startOfMonth = new DateTime(today.Year, today.Month, 1);
 
-        // Fetch Weekly tasks progress in current week
+        // Fetch Weekly tasks progress in the last 7 days
         var weeklyTasks = _checklistItems.Where(t => t.Frequency == "Weekly").Select(t => t.Id).ToList();
         if (weeklyTasks.Any())
         {
+            var sevenDaysAgo = today.AddDays(-7);
             var weeklyProgress = await db.TaskProgresses
                 .Include(tp => tp.StoreDailyActivity)
                 .Where(tp => weeklyTasks.Contains(tp.ChecklistItemId))
-                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= startOfWeek)
-                .Where(tp => tp.IsCompleted)
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= sevenDaysAgo)
+                .Where(tp => tp.IsCompleted && tp.CompletedAt != null)
                 .OrderByDescending(tp => tp.CompletedAt)
                 .ToListAsync();
 
-            foreach (var prog in weeklyProgress)
+            foreach (var taskId in weeklyTasks)
             {
-                var currentProg = GetTaskProgress(prog.ChecklistItemId);
-                if (!currentProg.IsCompleted)
+                var mostRecent = weeklyProgress.FirstOrDefault(p => p.ChecklistItemId == taskId);
+                if (mostRecent != null && mostRecent.CompletedAt.HasValue)
                 {
-                    currentProg.IsCompleted = true;
-                    currentProg.CompletedAt = prog.CompletedAt;
-                    currentProg.Remarks = prog.Remarks;
-                    currentProg.ActualQuantity = prog.ActualQuantity;
+                    if (mostRecent.CompletedAt.Value.Date.AddDays(7) > today)
+                    {
+                        var currentProg = GetTaskProgress(taskId);
+                        if (!currentProg.IsCompleted)
+                        {
+                            currentProg.IsCompleted = true;
+                            currentProg.CompletedAt = mostRecent.CompletedAt;
+                            currentProg.Remarks = mostRecent.Remarks;
+                            currentProg.ActualQuantity = mostRecent.ActualQuantity;
+                        }
+                    }
                 }
             }
         }
 
-        // Fetch Monthly tasks progress in current month
+        // Fetch Monthly tasks progress in the last 1 month
         var monthlyTasks = _checklistItems.Where(t => t.Frequency == "Monthly").Select(t => t.Id).ToList();
         if (monthlyTasks.Any())
         {
+            var oneMonthAgo = today.AddMonths(-1);
             var monthlyProgress = await db.TaskProgresses
                 .Include(tp => tp.StoreDailyActivity)
                 .Where(tp => monthlyTasks.Contains(tp.ChecklistItemId))
-                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= startOfMonth)
-                .Where(tp => tp.IsCompleted)
+                .Where(tp => tp.StoreDailyActivity != null && tp.StoreDailyActivity.StoreId == StoreId && tp.StoreDailyActivity.Date >= oneMonthAgo)
+                .Where(tp => tp.IsCompleted && tp.CompletedAt != null)
                 .OrderByDescending(tp => tp.CompletedAt)
                 .ToListAsync();
 
-            foreach (var prog in monthlyProgress)
+            foreach (var taskId in monthlyTasks)
             {
-                var currentProg = GetTaskProgress(prog.ChecklistItemId);
-                if (!currentProg.IsCompleted)
+                var mostRecent = monthlyProgress.FirstOrDefault(p => p.ChecklistItemId == taskId);
+                if (mostRecent != null && mostRecent.CompletedAt.HasValue)
                 {
-                    currentProg.IsCompleted = true;
-                    currentProg.CompletedAt = prog.CompletedAt;
-                    currentProg.Remarks = prog.Remarks;
-                    currentProg.ActualQuantity = prog.ActualQuantity;
+                    if (mostRecent.CompletedAt.Value.Date.AddMonths(1) > today)
+                    {
+                        var currentProg = GetTaskProgress(taskId);
+                        if (!currentProg.IsCompleted)
+                        {
+                            currentProg.IsCompleted = true;
+                            currentProg.CompletedAt = mostRecent.CompletedAt;
+                            currentProg.Remarks = mostRecent.Remarks;
+                            currentProg.ActualQuantity = mostRecent.ActualQuantity;
+                        }
+                    }
                 }
             }
         }
@@ -1262,14 +1583,15 @@
 
     private string GetCategoryCompletionStatus(int categoryId)
     {
-        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId).ToList();
+        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)).ToList();
         var completed = _taskProgresses.Where(p => categoryTasks.Any(t => t.Id == p.ChecklistItemId) && p.IsCompleted).Count();
         return $"{completed}/{categoryTasks.Count} tasks completed";
     }
 
     private bool CanCompleteCategory(int categoryId)
     {
-        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId).ToList();
+        var categoryTasks = _checklistItems.Where(t => t.CategoryId == categoryId && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)).ToList();
+        if (!categoryTasks.Any()) return true;
         return categoryTasks.All(t => GetTaskProgress(t.Id).IsCompleted);
     }
 
@@ -1280,7 +1602,7 @@
         using var db = await DbFactory.CreateDbContextAsync();
         await SaveCurrentProgress();
 
-        var nextCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > currentCat.SortOrder);
+        var nextCat = _categories.OrderBy(c => c.SortOrder).FirstOrDefault(c => c.SortOrder > currentCat.SortOrder && _checklistItems.Any(t => t.CategoryId == c.Id && (_frequencyFilter == "All" || t.Frequency == _frequencyFilter)));
 
         if (nextCat != null)
         {
@@ -1298,19 +1620,29 @@
         }
         else
         {
-            var session = await db.StoreDailyActivities.FindAsync(_currentSession!.Id);
-            if (session != null)
-            {
-                session.IsCompleted = true;
-                session.CompletedAt = DateTime.Now;
-                await db.SaveChangesAsync();
-            }
-
-            Snackbar.Add("Daily operations completed successfully!", Severity.Success);
-            NavigationManager.NavigateTo("/store-head/map");
+            Snackbar.Add("All daily tasks completed successfully!", Severity.Success);
         }
 
         StateHasChanged();
+    }
+
+    private async Task ConfirmSaveProgress()
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = "Are you sure you want to submit? Once submitted, you will no longer be able to edit this activity planner for today.",
+            ["ButtonText"] = "Submit",
+            ["Color"] = Color.Primary
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+        var dialog = await DialogService.ShowAsync<PDTActivityTracker.Components.Pages.Dialogs.ConfirmDialog>("Submit Progress", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled)
+        {
+            await SubmitAndLockProgress();
+        }
     }
 
     private async Task SaveCurrentProgress()
@@ -1334,7 +1666,137 @@
             }
 
             await db.SaveChangesAsync();
+
+            // Check if all tasks are completed — only fire notification on state transition (incomplete -> complete)
+            try
+            {
+                var allCompleted = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+                if (allCompleted && !_wasAllCompleted)
+                {
+                    // Remove old AllTasksCompleted log for today so we can re-insert fresh
+                    var oldLog = await db.ActivityLogs
+                        .Where(l => l.StoreId == StoreId
+                            && l.Action == "AllTasksCompleted"
+                            && l.Timestamp >= DateTime.Today)
+                        .ToListAsync();
+                    if (oldLog.Any())
+                        db.ActivityLogs.RemoveRange(oldLog);
+
+                    db.ActivityLogs.Add(new ActivityLog
+                    {
+                        StoreId = StoreId,
+                        UserId = UserState.UserId,
+                        Action = "AllTasksCompleted",
+                        Details = $"{_store?.StoreName} has completed all assigned checklist tasks.",
+                        Timestamp = DateTime.Now
+                    });
+
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        db.Notifications.Add(new Notification
+                        {
+                            UserId = _store.AreaHeadId.Value,
+                            Message = $"{_store.StoreName} has completed all checklist tasks.",
+                            Type = "Info",
+                            IsRead = false,
+                            CreatedAt = DateTime.Now,
+                            RelatedEntityId = StoreId,
+                            RelatedEntityType = "Store"
+                        });
+                    }
+                    await db.SaveChangesAsync();
+                }
+                // Update tracked state
+                _wasAllCompleted = allCompleted;
+            }
+            catch { }
+
             UserState.NotifyDashboardRefresh();
+        }
+        catch { }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private async Task SubmitAndLockProgress()
+    {
+        if (_isSaving) return;
+        _isSaving = true;
+        try
+        {
+            using var db = await DbFactory.CreateDbContextAsync();
+
+            foreach (var prog in _taskProgresses)
+            {
+                if (prog.Id == 0)
+                {
+                    db.TaskProgresses.Add(prog);
+                }
+                else
+                {
+                    db.Entry(prog).State = EntityState.Modified;
+                }
+            }
+
+            // Mark session as submitted and locked
+            var session = await db.StoreDailyActivities.FindAsync(_currentSession!.Id);
+            if (session != null)
+            {
+                session.IsSubmitted = true;
+                session.SubmittedAt = DateTime.Now;
+
+                // Set IsCompleted only if fully completed
+                var progResult = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(new[] { session }, db);
+                if (progResult.TryGetValue(session.Id, out var p) && p.IsFullyCompleted)
+                {
+                    session.IsCompleted = true;
+                    session.CompletedAt = DateTime.Now;
+                }
+
+                // Synchronize in-memory _currentSession state
+                _currentSession.IsSubmitted = session.IsSubmitted;
+                _currentSession.SubmittedAt = session.SubmittedAt;
+                _currentSession.IsCompleted = session.IsCompleted;
+                _currentSession.CompletedAt = session.CompletedAt;
+            }
+
+            await db.SaveChangesAsync();
+
+            // Notify Area Head of submission
+            try
+            {
+                db.ActivityLogs.Add(new ActivityLog
+                {
+                    StoreId = StoreId,
+                    UserId = UserState.UserId,
+                    Action = "ProgressSubmitted",
+                    Details = $"{_store?.StoreName} submitted and locked their progress.",
+                    Timestamp = DateTime.Now
+                });
+
+                if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                {
+                    db.Notifications.Add(new Notification
+                    {
+                        UserId = _store.AreaHeadId.Value,
+                        Message = $"{_store.StoreName} has submitted and locked progress.",
+                        Type = "Info",
+                        IsRead = false,
+                        CreatedAt = DateTime.Now,
+                        RelatedEntityId = StoreId,
+                        RelatedEntityType = "Store"
+                    });
+                }
+                await db.SaveChangesAsync();
+            }
+            catch { }
+
+            UserState.NotifyDashboardRefresh();
+
+            Snackbar.Add("Activity planner submitted and locked successfully!", Severity.Success);
+            NavigationManager.NavigateTo("/store-head/map");
         }
         catch { }
         finally
@@ -1353,7 +1815,12 @@
 
         if (result is { Canceled: false, Data: not null })
         {
-            var (imageData, mimeType, lat, lng, timestamp) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp))result.Data;
+            var (imageData, mimeType, lat, lng, timestamp, locationName) = ((byte[] imageData, string mimeType, double? lat, double? lng, DateTime? timestamp, string? locationName))result.Data;
+
+            var locationLabel = !string.IsNullOrWhiteSpace(locationName)
+                ? locationName
+                : $"GPS: {lat ?? _store?.GPSLatitude:F6}, {lng ?? _store?.GPSLongitude:F6}";
+
             var photo = new TaskPhoto
             {
                 StoreId = StoreId,
@@ -1367,7 +1834,7 @@
                 ImageMimeType = mimeType,
                 Latitude = lat ?? _store?.GPSLatitude,
                 Longitude = lng ?? _store?.GPSLongitude,
-                Description = $"GPS: {lat ?? _store?.GPSLatitude:F6}, {lng ?? _store?.GPSLongitude:F6} | Time: {timestamp ?? DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+                Description = $"{locationLabel} | Time: {timestamp ?? DateTime.Now:yyyy-MM-dd HH:mm:ss}"
             };
 
             using var db = await DbFactory.CreateDbContextAsync();
@@ -1380,6 +1847,7 @@
             await CreateManualActivityLog("PhotoUploaded", taskIdentifier, "TaskPhoto", photo.Id);
             await SaveCurrentProgress(); // Ensure progress status is saved
             await CheckAndAutoProgress();
+            CheckAllPendingTaskRequirements();
 
             Snackbar.Add($"Photo captured and saved ({imageData.Length / 1024}KB)", Severity.Success);
             StateHasChanged();
@@ -1388,6 +1856,10 @@
 
     private async Task ToggleManualTask(ChecklistItem task, TaskProgress prog, bool newVal)
     {
+        // Capture state before toggling
+        bool wasComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+        bool oldVal = prog.IsCompleted;
+
         prog.IsCompleted = newVal;
         if (newVal)
         {
@@ -1401,6 +1873,97 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+        CheckAllPendingTaskRequirements();
+
+        if (oldVal != newVal)
+        {
+            var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+            if (newVal)
+            {
+                await CreateManualActivityLog("TaskCompleted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // Check if this is the very first task accomplished for the day
+                int completedTodayBefore = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today && tp.ChecklistItemId != task.Id);
+                if (completedTodayBefore == 0)
+                {
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        try
+                        {
+                            using var db = await DbFactory.CreateDbContextAsync();
+                            db.Notifications.Add(new Notification
+                            {
+                                UserId = _store.AreaHeadId.Value,
+                                Message = $"{_store.StoreName} has started their tasks today (First task accomplished: {taskIdentifier}).",
+                                Type = "Info",
+                                IsRead = false,
+                                CreatedAt = DateTime.Now,
+                                RelatedEntityId = StoreId,
+                                RelatedEntityType = "Store"
+                            });
+                            await db.SaveChangesAsync();
+                            UserState.NotifyDashboardRefresh();
+                        }
+                        catch { }
+                    }
+                }
+            }
+            else
+            {
+                await CreateManualActivityLog("TaskReverted", taskIdentifier, "TaskProgress", prog.Id > 0 ? prog.Id : null);
+
+                // Check if all tasks are now incomplete (meaning the last completed task was reverted)
+                int completedTodayNow = _taskProgresses.Count(tp => tp.IsCompleted && tp.CompletedAt.HasValue && tp.CompletedAt.Value.Date == DateTime.Today);
+                if (completedTodayNow == 0)
+                {
+                    if (_store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                    {
+                        try
+                        {
+                            using var db = await DbFactory.CreateDbContextAsync();
+                            db.Notifications.Add(new Notification
+                            {
+                                UserId = _store.AreaHeadId.Value,
+                                Message = $"{_store.StoreName} checklist progress has been reverted (no tasks completed yet).",
+                                Type = "Warning",
+                                IsRead = false,
+                                CreatedAt = DateTime.Now,
+                                RelatedEntityId = StoreId,
+                                RelatedEntityType = "Store"
+                            });
+                            await db.SaveChangesAsync();
+                            UserState.NotifyDashboardRefresh();
+                        }
+                        catch { }
+                    }
+                }
+            }
+        }
+
+        // If unchecking caused a complete -> incomplete transition, notify Area Head
+        bool nowComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+        if (wasComplete && !nowComplete && !newVal && _store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+        {
+            _wasAllCompleted = false; // Reset so re-completion fires a new notification
+            try
+            {
+                using var db = await DbFactory.CreateDbContextAsync();
+                db.Notifications.Add(new Notification
+                {
+                    UserId = _store.AreaHeadId.Value,
+                    Message = $"{_store.StoreName} checklist is now incomplete (a task was unchecked).",
+                    Type = "Warning",
+                    IsRead = false,
+                    CreatedAt = DateTime.Now,
+                    RelatedEntityId = StoreId,
+                    RelatedEntityType = "Store"
+                });
+                await db.SaveChangesAsync();
+                UserState.NotifyDashboardRefresh();
+            }
+            catch { }
+        }
+
         StateHasChanged();
     }
 
@@ -1421,9 +1984,36 @@
             if (task != null)
             {
                 var taskIdentifier = (string.IsNullOrEmpty(task.TaskName) ? task.Description : task.TaskName) ?? "Unknown Task";
+                // Check if tasks WERE fully complete before this removal
+                bool wasComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
                 await CreateManualActivityLog("PhotoRemoved", taskIdentifier, "TaskPhoto", photo.Id);
                 await CheckAndSyncTaskCompletion(task);
-                await SaveCurrentProgress(); // Ensure progress status is saved
+                await SaveCurrentProgress();
+                CheckAllPendingTaskRequirements();
+
+                // If removing photo made tasks go from complete -> incomplete, notify Area Head
+                bool nowComplete = _checklistItems.All(t => GetTaskProgress(t.Id).IsCompleted);
+                if (wasComplete && !nowComplete && _store?.AreaHeadId.HasValue == true && _store.AreaHeadId.Value > 0)
+                {
+                    _wasAllCompleted = false; // Reset so re-completion fires a new notification
+                    try
+                    {
+                        using var dbNotif = await DbFactory.CreateDbContextAsync();
+                        dbNotif.Notifications.Add(new Notification
+                        {
+                            UserId = _store.AreaHeadId.Value,
+                            Message = $"{_store.StoreName} checklist is now incomplete (a photo was removed).",
+                            Type = "Warning",
+                            IsRead = false,
+                            CreatedAt = DateTime.Now,
+                            RelatedEntityId = StoreId,
+                            RelatedEntityType = "Store"
+                        });
+                        await dbNotif.SaveChangesAsync();
+                        UserState.NotifyDashboardRefresh();
+                    }
+                    catch { }
+                }
             }
 
             StateHasChanged();
@@ -1472,13 +2062,19 @@
             db.ActivityLogs.Add(activity);
             await db.SaveChangesAsync();
 
+            var descriptionSnippet = !string.IsNullOrWhiteSpace(issue.Description)
+                ? issue.Description
+                : "No description provided.";
+
             var notification = new Notification
             {
                 UserId = _store?.AreaHeadId ?? 0,
-                Message = $"New Issue Reported: {issue.Title} at {_store?.StoreName}",
+                Message = $"New Issue Reported: {issue.Title} at {_store?.StoreName} — {descriptionSnippet}",
                 Type = "Alert",
                 IsRead = false,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                RelatedEntityId = StoreId,
+                RelatedEntityType = "Store"
             };
             if (notification.UserId > 0)
             {
@@ -1494,11 +2090,36 @@
 
     private List<TaskPhoto> GetStoredPhotos(int taskId) => _loadedPhotos.Where(p => p.ChecklistItemId == taskId).ToList();
 
+    private string FormatLongWords(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var words = text.Split(' ');
+        for (int i = 0; i < words.Length; i++)
+        {
+            var word = words[i];
+            if (word.Length > 12)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int j = 0; j < word.Length; j++)
+                {
+                    sb.Append(word[j]);
+                    if ((j + 1) % 10 == 0 && j < word.Length - 1)
+                    {
+                        sb.Append("\u200B");
+                    }
+                }
+                words[i] = sb.ToString();
+            }
+        }
+        return string.Join(" ", words);
+    }
+
     private async Task OnManpowerChanged(ChecklistItem task, TaskProgress prog, int? positionIndex = null)
     {
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+        CheckAllPendingTaskRequirements();
 
         // Notification only for new disparities, not for initial setup or empty
         await ValidateManpower(task, prog, positionIndex);
@@ -1509,6 +2130,7 @@
         await CheckAndSyncTaskCompletion(task);
         await SaveCurrentProgress();
         await CheckAndAutoProgress();
+        CheckAllPendingTaskRequirements();
     }
 
     private async Task ValidateManpower(ChecklistItem task, TaskProgress prog, int? positionIndex = null)
@@ -1540,23 +2162,48 @@
                 var notification = new Notification
                 {
                     UserId = _store?.AreaHeadId ?? 0,
-                    Message = $"⚠️ {_store?.StoreName}: {taskLabel} – {name} lacking {missing} staff",
+                    Message = $"{_store?.StoreName}: {taskLabel} - {name} lacking {missing} staff",
                     Type = "Alert",
                     IsRead = false,
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    RelatedEntityId = StoreId,
+                    RelatedEntityType = "Store"
                 };
 
                 if (notification.UserId > 0)
                 {
                     db.Notifications.Add(notification);
-                    await db.SaveChangesAsync(); // Save notification individually
+                    await db.SaveChangesAsync();
 
                     Snackbar.Add($"Missing manpower reported for {taskLabel}. {areaHeadName} has been notified.", Severity.Warning);
+                }
+            }
+            // Notify when manpower requirement is fully met (or exceeded)
+            else if (actual > 0 && actual >= expected)
+            {
+                var notification = new Notification
+                {
+                    UserId = _store?.AreaHeadId ?? 0,
+                    Message = $"{_store?.StoreName}: {taskLabel} - {name} manpower complete ({actual}/{expected})",
+                    Type = "Info",
+                    IsRead = false,
+                    CreatedAt = DateTime.Now,
+                    RelatedEntityId = StoreId,
+                    RelatedEntityType = "Store"
+                };
+
+                if (notification.UserId > 0)
+                {
+                    db.Notifications.Add(notification);
+                    await db.SaveChangesAsync();
+
+                    Snackbar.Add($"Manpower confirmed complete for {taskLabel}.", Severity.Success);
                 }
             }
         }
         catch { }
     }
+
     private bool IsTaskAssignedToStore(ChecklistItem task, int storeId)
     {
         // Only Manpower tasks have store-specific visibility logic

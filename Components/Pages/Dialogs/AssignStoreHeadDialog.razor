@@ -1,8 +1,9 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
 @inject UserStateService UserState
+@inject IDialogService DialogService
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
 @implements IDisposable
 
@@ -54,8 +55,10 @@
         color: #0072cf !important;
     }
 
+    
+
     .glass-dialog.lightest .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 1) !important;
+        border-color: rgba(0, 114, 207, 0.4) !important;
     }
 
     .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
@@ -64,7 +67,24 @@
     }
 
     /* MOBILE RESPONSIVE DIALOG */
-    @@media (max-width: 600px) {
+    @@media (max-width: 960px) {
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
+
+        .mud-picker-paper {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-popover {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+
         .glass-dialog .mud-dialog-actions {
             flex-direction: row;
             justify-content: flex-end;
@@ -114,6 +134,67 @@
                     font-size: 0.70rem !important;
                     padding: 6px 10px !important;
                 }
+
+        /* Shrink datepicker contents to fit 375px screens */
+        .mud-picker-paper {
+            padding: 0px !important;
+            min-width: unset !important;
+            width: min(280px, calc(100vw - 20px)) !important;
+            max-width: calc(100vw - 20px) !important;
+        }
+
+        .mud-picker-calendar-container {
+            padding: 0px !important;
+            width: 90% !important;
+        }
+
+        .mud-day {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.75rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-day {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.75rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week-day {
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.75rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week {
+            justify-content: center !important;
+        }
+
+        .mud-picker-calendar-header {
+            justify-content: center !important;
+        }
+    }
+
+    .date-picker-desktop {
+        display: block;
+    }
+    .date-picker-mobile {
+        display: none;
+        width: 100%;
+    }
+
+    @@media (max-width: 960px) {
+        .date-picker-desktop {
+            display: none !important;
+        }
+        .date-picker-mobile {
+            display: block !important;
+            margin-top: 12px;
+            margin-bottom: 12px;
+        }
     }
 </style>
 
@@ -146,7 +227,21 @@
             </MudAlert>
         }
 
-        <MudDatePicker Label="Effective Date" @bind-Date="_effectiveDate" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3" />
+        <div class="date-picker-desktop">
+            <MudDatePicker Label="Effective Date" @bind-Date="_effectiveDate" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3" />
+        </div>
+
+        <div class="date-picker-mobile mt-3">
+            <MudTextField T="string"
+                          Label="Effective Date"
+                          Value="@(_effectiveDate?.ToString("M/d/yyyy") ?? "Select Date")"
+                          ReadOnly="true"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.CalendarToday"
+                          @onclick="OpenGlassCalendarDialog" />
+        </div>
 
         <MudTextField Label="Remarks (Optional)" @bind-Value="_remarks" Variant="Variant.Outlined" Margin="Margin.Dense" Lines="2" Class="mt-3" />
 
@@ -168,11 +263,61 @@
 
     private User? _selectedUser;
     private DateTime? _effectiveDate = DateTime.Today;
+
+    private async Task OpenGlassCalendarDialog()
+    {
+        var parameters = new DialogParameters<GlassCalendarWrapperDialog>
+        {
+            { x => x.SelectedDate, _effectiveDate }
+        };
+
+        var options = new DialogOptions
+        {
+            NoHeader = true,
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await DialogService.ShowAsync<GlassCalendarWrapperDialog>("", parameters, options);
+        var result = await dialog.Result;
+
+        if (result != null && !result.Canceled && result.Data is DateTime selectedDate)
+        {
+            _effectiveDate = selectedDate;
+            StateHasChanged();
+        }
+    }
     private string? _remarks;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         ThemeService.OnThemeChanged += OnThemeChanged;
+
+        if (Store != null)
+        {
+            _selectedUser = Store.StoreHead;
+
+            if (Store.StoreHeadId.HasValue)
+            {
+                using var db = await DbFactory.CreateDbContextAsync();
+                var latestLog = await db.StoreAssignmentLogs
+                    .AsNoTracking()
+                    .Where(l => l.StoreId == Store.Id && l.UserId == Store.StoreHeadId && l.Action == "Assigned")
+                    .OrderByDescending(l => l.Timestamp)
+                    .FirstOrDefaultAsync();
+
+                if (latestLog != null && !string.IsNullOrEmpty(latestLog.Remarks) && latestLog.Remarks.StartsWith("Effective: "))
+                {
+                    var parts = latestLog.Remarks.Split('.');
+                    var dateStr = parts[0].Replace("Effective: ", "").Trim();
+                    if (DateTime.TryParse(dateStr, out var parsedDate))
+                    {
+                        _effectiveDate = parsedDate;
+                    }
+                }
+            }
+        }
     }
 
     private void OnThemeChanged() => StateHasChanged();
@@ -182,15 +327,24 @@
     private async Task<IEnumerable<User>> SearchEmployees(string value, CancellationToken token)
     {
         using var db = await DbFactory.CreateDbContextAsync();
-        // Strictly filter by Role = "Store Head"
-        var query = db.Users.AsNoTracking().Where(u => u.Status == "Active" && u.Role == "Store Head");
+
+        // Get all StoreHeadIds already assigned to OTHER stores (not this one)
+        var alreadyAssignedIds = await db.Stores
+            .AsNoTracking()
+            .Where(s => !s.IsDeleted && s.StoreHeadId != null && s.Id != Store.Id)
+            .Select(s => s.StoreHeadId!.Value)
+            .ToListAsync(token);
+
+        // Strictly filter by Role = "Store Head", exclude those already assigned elsewhere
+        var query = db.Users.AsNoTracking()
+            .Where(u => u.Status == "Active" && u.Role == "Store Head" && !alreadyAssignedIds.Contains(u.Id));
 
         if (!string.IsNullOrEmpty(value))
         {
             query = query.Where(u => u.Fullname.Contains(value) || (u.EmployeeNumber != null && u.EmployeeNumber.Contains(value)));
         }
 
-        return await query.ToListAsync();
+        return await query.ToListAsync(token);
     }
 
     private async Task Submit()
@@ -214,7 +368,7 @@
             });
 
             await db.SaveChangesAsync();
-            MudDialog.Close(DialogResult.Ok(true));
+            MudDialog.Close(DialogResult.Ok("Assigned"));
         }
     }
 
@@ -239,7 +393,7 @@
                 Remarks = string.IsNullOrEmpty(_remarks) ? "Manual unassignment by admin." : _remarks
             });
             await db.SaveChangesAsync();
-            MudDialog.Close(DialogResult.Ok(true));
+            MudDialog.Close(DialogResult.Ok("Unassigned"));
         }
     }
 
@@ -253,12 +407,12 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };

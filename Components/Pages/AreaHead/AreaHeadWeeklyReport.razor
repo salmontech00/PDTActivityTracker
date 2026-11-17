@@ -1,4 +1,4 @@
-﻿@page "/area-head/weekly-report/{StoreId:int}"
+@page "/area-head/weekly-report/{StoreId:int}"
 @layout PDTActivityTracker.Components.Layout.MainLayout
 @using Microsoft.EntityFrameworkCore
 @using System.Text.Json
@@ -17,6 +17,20 @@
 <PageTitle>Report Review - @(_store?.StoreName ?? "Loading...")</PageTitle>
 
 <style>
+    .date-picker-full-mobile {
+        max-width: 220px;
+        width: 100%;
+    }
+
+    /* ADD THESE — default (desktop) state */
+    .date-picker-desktop {
+        display: block;
+    }
+
+    .date-picker-mobile {
+        display: none;
+        width: 100%;
+    }
     .planner-container {
         padding: 1rem;
     }
@@ -250,8 +264,44 @@
         color: #0072cf !important;
     }
 
+    .issue-card-desktop {
+        display: block;
+    }
+
+    .issue-card-mobile {
+        display: none;
+    }
+
+    .stat-number {
+        font-weight: 800;
+    }
+
+    .stat-label {
+        opacity: 0.7;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
     /* RESPONSIVE */
     @@media (max-width: 600px) {
+        .stat-number {
+            font-size: 1.5rem !important;
+        }
+
+        .stat-label {
+            font-size: 0.65rem !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        .issue-card-desktop {
+            display: none;
+        }
+
+        .issue-card-mobile {
+            display: block;
+        }
+
         .preview-task-header {
             flex-wrap: wrap;
         }
@@ -263,6 +313,8 @@
 
         .preview-task-name-container {
             width: 100%;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .preview-description-row {
@@ -270,6 +322,8 @@
             padding-left: 0;
             margin-top: 8px;
             flex: 0 0 100%;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .preview-remarks-container {
@@ -319,9 +373,43 @@
             font-size: 0.7rem !important;
             padding: 4px 8px !important;
         }
+
+        .date-picker-desktop {
+            display: block;
+        }
+
+        .date-picker-mobile {
+            display: none;
+            width: 100%;
+        }
     }
 
     @@media (max-width: 960px) {
+        .date-picker-desktop {
+            display: none !important;
+        }
+
+        .date-picker-mobile {
+            display: block !important;
+        }
+
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
+
+        .mud-picker-paper {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-popover {
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+        }
+
         .page-header-row {
             flex-direction: column;
             gap: 16px;
@@ -367,9 +455,66 @@
             padding-left: 0px !important;
             padding-right: 0px !important;
         }
+        /* ── Date Range Picker / Calendar: fit 375px ── */
+        .mud-picker-datepicker-toolbar {
+            display: none !important;
+        }
+
+        .mud-picker-paper {
+            padding: 0 !important;
+            min-width: unset !important;
+            width: min(280px, calc(100vw - 20px)) !important;
+            max-width: calc(100vw - 20px) !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            right: auto !important;
+            max-height: calc(100vh - 100px) !important;
+            overflow-y: auto !important;
+        }
+
+        .mud-picker-calendar-container {
+            padding: 0 !important;
+            width: 90% !important;
+        }
+
+        .mud-day,
+        .mud-picker-calendar-day {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.72rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week-day {
+            width: 30px !important;
+            height: 30px !important;
+            font-size: 0.72rem !important;
+            margin: 1px !important;
+        }
+
+        .mud-picker-calendar-week {
+            justify-content: center !important;
+        }
+
+        .mud-picker-calendar-header {
+            justify-content: center !important;
+        }
+
+        .mud-picker-calendar-container .mud-picker-calendar {
+            width: 100% !important;
+        }
 
         .page-header-row {
             margin-bottom: 8px !important;
+        }
+
+        .stat-number {
+            font-size: 1.25rem !important;
+        }
+
+        .stat-label {
+            font-size: 0.52rem !important;
+            letter-spacing: 0px !important;
         }
     }
 </style>
@@ -444,13 +589,26 @@
                 <MudItem xs="12" sm="3" Class="d-flex align-center justify-center justify-sm-end">
                     @if (_viewMode == "Daily")
                     {
-                        <MudDatePicker Label="Select Date"
-                                       Date="_selectedDate"
-                                       DateChanged="OnDateChanged"
-                                       MaxDate="DateTime.Today"
-                                       Variant="Variant.Outlined"
-                                       Margin="Margin.Dense"
-                                       Class="rounded-lg date-picker-full-mobile" />
+                        <div class="date-picker-desktop">
+                            <MudDatePicker Label="Select Date"
+                                           Date="_selectedDate"
+                                           DateChanged="OnDateChanged"
+                                           MaxDate="DateTime.Today"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           Class="rounded-lg date-picker-full-mobile" />
+                        </div>
+                        <div class="date-picker-mobile">
+                            <MudTextField T="string"
+                                          Label="Select Date"
+                                          Value="@(_selectedDate?.ToString("M/d/yyyy") ?? "Select Date")"
+                                          ReadOnly="true"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Adornment="Adornment.End"
+                                          AdornmentIcon="@Icons.Material.Filled.CalendarToday"
+                                          @onclick="OpenGlassCalendarDialog" />
+                        </div>
                     }
                     else
                     {
@@ -523,7 +681,7 @@
                         @foreach (var category in _categories.OrderBy(c => c.SortOrder))
                         {
                             var itemsInCategory = _checklistItems
-                            .Where(t => t.CategoryId == category.Id)
+                            .Where(t => t.CategoryId == category.Id && (!t.IsDeleted || _taskProgresses.Any(tp => tp.ChecklistItemId == t.Id)))
                             .OrderBy(t => t.SortOrder)
                             .ToList();
 
@@ -532,21 +690,14 @@
                             <MudExpansionPanel Class="@($"modern-expansion-panel")" MaxHeight="1000">
                                 <TitleContent>
                                     <div class="d-flex align-center py-2">
-                                        <MudIcon Icon="@category.Icon" Class="mr-3" Color="Color.Primary" />
-                                        <div class="flex-grow-1">
-                                            <MudText Typo="Typo.h6" Style="font-weight: 700;">@category.Name</MudText>
+                                        <MudIcon Icon="@category.Icon" Class="mr-3 flex-shrink-0" Color="Color.Primary" />
+                                        <div class="flex-grow-1" style="min-width: 0;">
+                                            <MudText Typo="Typo.h6" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere;">@category.Name</MudText>
                                             <MudText Typo="Typo.caption" Style="opacity: 0.6;">@GetCategorySummary(category.Id)</MudText>
                                         </div>
                                     </div>
                                 </TitleContent>
                                 <ChildContent>
-                                    @{
-                                        var itemsInCategory = _checklistItems
-                                        .Where(t => t.CategoryId == category.Id)
-                                        .OrderBy(t => t.SortOrder)
-                                        .ToList();
-                                    }
-
                                     @for (int i = 0; i < itemsInCategory.Count; i++)
                                     {
                                         var task = itemsInCategory[i];
@@ -558,12 +709,12 @@
                                                 <div class="preview-header-content-group">
                                                     <div class="preview-task-name-container">
                                                         <MudCheckBox T="bool" Value="@progress.IsCompleted" Color="Color.Primary" Disabled="true" Dense="true" Class="pa-0" />
-                                                        <MudText Typo="Typo.body1" Style="font-weight: 700;">@taskNumber. @task.TaskName</MudText>
+                                                        <MudText Typo="Typo.body1" Style="font-weight: 700; word-break: break-word; overflow-wrap: anywhere; min-width: 0;">@taskNumber. @task.TaskName</MudText>
                                                     </div>
                                                     @if (!string.IsNullOrEmpty(task.Description))
                                                     {
                                                         <div class="preview-description-row">
-                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7;">@task.Description</MudText>
+                                                            <MudText Typo="Typo.body2" Style="opacity: 0.7; word-break: break-word; overflow-wrap: anywhere;">@task.Description</MudText>
                                                         </div>
                                                     }
                                                 </div>
@@ -634,8 +785,8 @@
 
                                             @if (!string.IsNullOrEmpty(progress.Remarks))
                                             {
-                                                <div class="preview-remarks-container">
-                                                    <MudText Typo="Typo.body2"><b>Remarks:</b> @progress.Remarks</MudText>
+                                                <div class="preview-remarks-container" style="word-break: break-word; overflow-wrap: anywhere;">
+                                                    <MudText Typo="Typo.body2" Style="word-break: break-word; overflow-wrap: anywhere;"><b>Remarks:</b> @progress.Remarks</MudText>
                                                 </div>
                                             }
 
@@ -692,23 +843,23 @@
                 <MudPaper Class="@($"pa-4 glass-panel {GetThemeClass()} mb-4")" Elevation="0">
                     <MudGrid>
                         <MudItem xs="4" Class="text-center">
-                            <MudText Typo="Typo.h4" Style="font-weight: 800; color: #0072cf;">@_periodRows.Count(r => r.HasSession)</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Active Days</MudText>
+                            <MudText Typo="Typo.h4" Class="stat-number" Style="color: #0072cf;">@_periodRows.Count(r => r.HasSession)</MudText>
+                            <MudText Typo="Typo.caption" Class="stat-label">Active Days</MudText>
                         </MudItem>
                         <MudItem xs="4" Class="text-center">
-                            <MudText Typo="Typo.h4" Style="font-weight: 800; color: #4caf50;">@_periodRows.Count(r => r.CompletionPercentage >= 100)</MudText>
-                            <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Completed</MudText>
+                            <MudText Typo="Typo.h4" Class="stat-number" Style="color: #4caf50;">@_periodRows.Count(r => r.CompletionPercentage >= 100)</MudText>
+                            <MudText Typo="Typo.caption" Class="stat-label">Completed</MudText>
                         </MudItem>
                         <MudItem xs="4" Class="text-center">
-                            <MudText Typo="Typo.h4" Style="font-weight: 800; color: #9c27b0;">
+                            <MudText Typo="Typo.h4" Class="stat-number" Style="color: #9c27b0;">
                                 @(_periodRows.Where(r => r.HasSession).Any()
                                                         ? (int)_periodRows.Where(r => r.HasSession).Average(r => r.CompletionPercentage)
                                                         : 0)%
-                    </MudText>
-                    <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Avg. Progress</MudText>
-                </MudItem>
-            </MudGrid>
-        </MudPaper>
+                            </MudText>
+                            <MudText Typo="Typo.caption" Class="stat-label">Avg. Progress</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
 
                 <!-- Day rows -->
         @foreach (var row in _periodRows)
@@ -800,28 +951,60 @@
                             @foreach (var issue in _issues)
                             {
                                 <MudPaper Class="pa-4 mb-3 rounded-lg" Elevation="0" Style="@GetIssueCardStyle(issue)">
-                                    <div class="d-flex justify-space-between align-start">
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-center gap-2 mb-1">
-                                                <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.2;">@issue.Title</MudText>
-                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 70px;">@issue.Priority</MudChip>
-                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700; min-width: 70px;">@issue.Status</MudChip>
+                                    <!-- DESKTOP VIEW (hidden on mobile via CSS) -->
+                                    <div class="issue-card-desktop">
+                                        <div class="d-flex justify-space-between align-start">
+                                            <div class="flex-grow-1" style="min-width: 0;">
+                                                <div class="d-flex align-center gap-2 mb-1">
+                                                    <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.3; word-break: break-word; overflow-wrap: anywhere; flex: 1; min-width: 0;">@issue.Title</MudText>
+                                                    <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700;">@issue.Priority</MudChip>
+                                                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700;">@issue.Status</MudChip>
+                                                </div>
+                                                <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;" Class="mb-2">@issue.Description</MudText>
+                                                <div class="d-flex align-center gap-2 mt-2" style="opacity: 0.6;">
+                                                    <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                                    <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
+                                                </div>
                                             </div>
-                                            <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap;">@issue.Description</MudText>
-                                            <div class="d-flex align-center gap-2 mt-3" style="opacity: 0.6;">
-                                                <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
-                                                <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
-                                            </div>
+                                            @if (issue.ImageData != null)
+                                            {
+                                                <div class="ml-4" style="cursor: pointer; flex-shrink: 0;" @onclick="@(() => OpenIssuePhoto(issue))">
+                                                    <img src="@GetIssueImageSource(issue)" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.15);" alt="Evidence" />
+                                                </div>
+                                            }
                                         </div>
+                                    </div>
+
+                                    <!-- MOBILE VIEW (hidden on desktop via CSS) -->
+                                    <div class="issue-card-mobile">
+                                        <div class="d-flex flex-column align-start mb-1">
+                                            <div class="d-flex gap-1 mb-1">
+                                                <MudChip T="string" Size="Size.Small" Color="@GetPriorityColor(issue.Priority)" Variant="Variant.Filled" Style="font-weight: 700; margin: 0;">@issue.Priority</MudChip>
+                                                <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(issue.Status)" Variant="Variant.Filled" Style="font-weight: 700; margin: 0;">@issue.Status</MudChip>
+                                            </div>
+                                            <MudText Typo="Typo.subtitle1" Style="font-weight: 700; line-height: 1.3; word-break: break-word; overflow-wrap: anywhere;" Class="mb-1">@issue.Title</MudText>
+                                        </div>
+                                        @* Description *@
+                                        <MudText Typo="Typo.body2" Style="opacity: 0.8; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;" Class="mb-2">@issue.Description</MudText>
+                                        @* Evidence photo attachment style *@
                                         @if (issue.ImageData != null)
                                         {
-                                            <div class="ml-4" style="cursor: pointer;" @onclick="@(() => OpenIssuePhoto(issue))">
-                                                <img src="@GetIssueImageSource(issue)"
-                                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);"
-                                                     alt="Evidence" />
-                                                <MudText Typo="Typo.caption" Align="Align.Center" Style="display: block; opacity: 0.6;">View Photo</MudText>
+                                            <div class="mt-2 mb-2 d-flex justify-start">
+                                                <div style="cursor: pointer; max-width: 160px; width: 100%; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 8px rgba(0,0,0,0.15); background: rgba(0,0,0,0.2);" @onclick="@(() => OpenIssuePhoto(issue))">
+                                                    <img src="@GetIssueImageSource(issue)"
+                                                         style="width: 100%; height: 100px; object-fit: cover;"
+                                                         alt="Evidence" />
+                                                    <div style="padding: 4px; background: rgba(0,0,0,0.5); text-align: center;">
+                                                        <MudText Typo="Typo.caption" Style="color: #ffffff; opacity: 0.9; font-size: 0.7rem; font-weight: 600; display: block;">Tap to view photo</MudText>
+                                                    </div>
+                                                </div>
                                             </div>
                                         }
+                                        @* Reporter info *@
+                                        <div class="d-flex align-center gap-2 mt-2" style="opacity: 0.6;">
+                                            <MudIcon Icon="@Icons.Material.Filled.AccessTime" Size="Size.Small" />
+                                            <MudText Typo="Typo.caption">Reported @issue.ReportedAt.ToString("MMM dd, yyyy • hh:mm tt") by @(issue.ReportedBy?.Fullname ?? "Store Head")</MudText>
+                                        </div>
                                     </div>
                                 </MudPaper>
                             }
@@ -834,6 +1017,27 @@
 </div>
 
 @code {
+    private async Task OpenGlassCalendarDialog()
+    {
+        var parameters = new DialogParameters<GlassCalendarWrapperDialog>
+        {
+            { x => x.SelectedDate, _selectedDate }
+        };
+        var options = new DialogOptions
+        {
+            NoHeader = true,
+            CloseButton = false,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+        var dialog = await DialogService.ShowAsync<GlassCalendarWrapperDialog>("", parameters, options);
+        var result = await dialog.Result;
+        if (result != null && !result.Canceled && result.Data is DateTime selectedDate)
+        {
+            await OnDateChanged(selectedDate);
+        }
+    }
+
     [Parameter] public int StoreId { get; set; }
     [Parameter][SupplyParameterFromQuery] public string? view { get; set; }
 
@@ -848,6 +1052,7 @@
     private DateTime? _derivedCheckInTime;
     private int _dailyCompleted = 0;
     private int _dailyTotal = 0;
+    private double _dailyCompletionPercentage = 0;
 
     // Period switcher
     private string _viewMode = "Daily";
@@ -863,10 +1068,21 @@
         public DateTime? CheckInTime { get; set; }
         public int CompletedTasks { get; set; }
         public int TotalTasks { get; set; }
-        public double CompletionPercentage => TotalTasks > 0 ? (CompletedTasks * 100.0 / TotalTasks) : 0;
+        public double CompletionPercentage { get; set; }
         public bool HasSession { get; set; }
-        public string StatusText => !HasSession ? "Inactive" : (CompletionPercentage >= 100 ? "Completed" : "In Progress");
-        public Color StatusColor => !HasSession ? Color.Default : (CompletionPercentage >= 100 ? Color.Success : Color.Info);
+        // Submission state carried from the session
+        public bool IsSubmitted { get; set; }
+        public bool IsCompleted { get; set; }
+        public DateTime? CompletedAt { get; set; }
+        private bool WasSubmitted => IsSubmitted || IsCompleted || CompletedAt.HasValue;
+        public string StatusText => !HasSession ? "Inactive"
+            : CompletionPercentage >= 100 ? "Completed"
+            : WasSubmitted ? "Submitted"
+            : "In Progress";
+        public Color StatusColor => !HasSession ? Color.Default
+            : CompletionPercentage >= 100 ? Color.Success
+            : WasSubmitted ? Color.Info
+            : Color.Warning;
     }
 
     protected override void OnInitialized()
@@ -951,6 +1167,7 @@
         _loadedPhotos = new();
         _dailyCompleted = 0;
         _dailyTotal = 0;
+        _dailyCompletionPercentage = 0;
 
         if (_currentSession != null)
         {
@@ -971,45 +1188,18 @@
                 .Where(p => p.StoreDailyActivityId == _currentSession.Id)
                 .ToListAsync();
 
-            // Derive Check-In time
-            var checkInCat = await db.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
-            if (checkInCat != null)
+            var progResult = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(new[] { _currentSession }, db);
+            if (progResult.TryGetValue(_currentSession.Id, out var p))
             {
-                var checkInIds = await db.ChecklistItems.AsNoTracking()
-                    .Where(i => i.CategoryId == checkInCat.Id &&
-                                (i.Frequency == "Daily" ||
-                                 (i.Frequency == "Weekly" && isMonday) ||
-                                 (i.Frequency == "Monthly" && isFirstOfMonth)))
-                    .Select(i => i.Id).ToListAsync();
-
-                if (checkInIds.Any())
-                {
-                    var done = _taskProgresses
-                        .Where(tp => checkInIds.Contains(tp.ChecklistItemId) && tp.IsCompleted && tp.CompletedAt.HasValue)
-                        .OrderBy(tp => tp.CompletedAt).ToList();
-                    if (done.Count == checkInIds.Count)
-                        _derivedCheckInTime = done.Last().CompletedAt;
-                }
+                _derivedCheckInTime = p.CheckInTime;
+                _dailyTotal = p.TotalTasks;
+                _dailyCompleted = p.CompletedTasks;
+                _dailyCompletionPercentage = p.CompletionPercentage;
             }
-
-            // Task counts (frequency-filtered)
-            var todayItems = _checklistItems.Where(i =>
-                (i.Frequency == "Daily" ||
-                (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                IsTaskAssignedToStore(i, StoreId)).ToList();
-
-            _dailyTotal = todayItems.Count;
-            _dailyCompleted = _taskProgresses.Count(p => p.IsCompleted && todayItems.Any(i => i.Id == p.ChecklistItemId));
         }
         else
         {
-            var todayItems = _checklistItems.Where(i =>
-                (i.Frequency == "Daily" ||
-                (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                IsTaskAssignedToStore(i, StoreId)).ToList();
-            _dailyTotal = todayItems.Count;
+            _dailyTotal = _checklistItems.Count(i => !i.IsDeleted && IsTaskAssignedToStore(i, StoreId));
         }
 
         _initialized = true;
@@ -1033,56 +1223,26 @@
             .Where(a => a.StoreId == StoreId && a.Date >= start && a.Date < end.AddDays(1))
             .ToListAsync();
 
-        // Fetch all task progresses for those sessions
-        var sessionIds = sessions.Select(s => s.Id).ToList();
-        var allProgresses = sessionIds.Any()
-            ? await db.TaskProgresses.AsNoTracking()
-                .Where(tp => sessionIds.Contains(tp.StoreDailyActivityId))
-                .ToListAsync()
-            : new List<TaskProgress>();
-
-        var checkInCat = await db.Categories.AsNoTracking()
-            .FirstOrDefaultAsync(c => c.Name.ToLower() == "check in");
+        var allPeriodProgress = await PDTActivityTracker.Components.Services.ActivityProgressHelper.CalculateProgressForActivitiesAsync(sessions, db);
+        var defaultTotalTasks = _checklistItems.Count(i => !i.IsDeleted && IsTaskAssignedToStore(i, StoreId));
 
         // Build a row for each day in the range (up to today)
         for (var d = start; d <= DateTime.Today && d <= end; d = d.AddDays(1))
         {
-            bool isMonday = d.DayOfWeek == DayOfWeek.Monday;
-            bool isFirstOfMonth = d.Day == 1;
-
-            var applicableItems = _checklistItems.Where(i =>
-                (i.Frequency == "Daily" ||
-                (i.Frequency == "Weekly" && isMonday) ||
-                (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                IsTaskAssignedToStore(i, StoreId)).ToList();
-
             var session = sessions.OrderByDescending(s => s.Id).FirstOrDefault(s => s.Date.Date == d.Date);
-            var progresses = session != null
-                ? allProgresses.Where(tp => tp.StoreDailyActivityId == session.Id).ToList()
-                : new List<TaskProgress>();
-
+            
             DateTime? checkIn = null;
-            if (session != null && checkInCat != null)
+            int completed = 0;
+            int total = defaultTotalTasks;
+            double percentage = 0;
+
+            if (session != null && allPeriodProgress.TryGetValue(session.Id, out var p))
             {
-                var checkInIds = _checklistItems
-                    .Where(i => i.CategoryId == checkInCat.Id &&
-                                (i.Frequency == "Daily" ||
-                                 (i.Frequency == "Weekly" && isMonday) ||
-                                 (i.Frequency == "Monthly" && isFirstOfMonth)) &&
-                                IsTaskAssignedToStore(i, StoreId))
-                    .Select(i => i.Id).ToList();
-
-                if (checkInIds.Any())
-                {
-                    var done = progresses
-                        .Where(tp => checkInIds.Contains(tp.ChecklistItemId) && tp.IsCompleted && tp.CompletedAt.HasValue)
-                        .OrderBy(tp => tp.CompletedAt).ToList();
-                    if (done.Count == checkInIds.Count)
-                        checkIn = done.Last().CompletedAt;
-                }
+                checkIn = p.CheckInTime;
+                completed = p.CompletedTasks;
+                total = p.TotalTasks;
+                percentage = p.CompletionPercentage;
             }
-
-            int completed = progresses.Count(p => p.IsCompleted && applicableItems.Any(i => i.Id == p.ChecklistItemId));
 
             rows.Add(new DayReportRow
             {
@@ -1090,7 +1250,11 @@
                 HasSession = session != null,
                 CheckInTime = checkIn,
                 CompletedTasks = completed,
-                TotalTasks = applicableItems.Count
+                TotalTasks = total,
+                CompletionPercentage = percentage,
+                IsSubmitted = session?.IsSubmitted ?? false,
+                IsCompleted = session?.IsCompleted ?? false,
+                CompletedAt = session?.CompletedAt
             });
         }
 
@@ -1194,7 +1358,7 @@
 
     private string GetCategorySummary(int categoryId)
     {
-        var tasks = _checklistItems.Where(t => t.CategoryId == categoryId && IsTaskAssignedToStore(t, StoreId)).ToList();
+        var tasks = _checklistItems.Where(t => t.CategoryId == categoryId && IsTaskAssignedToStore(t, StoreId) && (!t.IsDeleted || _taskProgresses.Any(tp => tp.ChecklistItemId == t.Id))).ToList();
         var completed = _taskProgresses.Count(tp => tasks.Any(t => t.Id == tp.ChecklistItemId) && tp.IsCompleted);
         return $"{completed} / {tasks.Count} Completed";
     }
@@ -1202,6 +1366,12 @@
     private async Task ApproveReport()
     {
         if (_currentSession == null) return;
+
+        if (GetReportProgress() < 100.0)
+        {
+            Snackbar.Add("Cannot approve report. Store tasks are still incomplete.", Severity.Warning);
+            return;
+        }
 
         using var db = await DbFactory.CreateDbContextAsync();
         var session = await db.StoreDailyActivities.FindAsync(_currentSession.Id);
@@ -1282,20 +1452,25 @@
 
     private double GetReportProgress()
     {
-        if (_dailyTotal == 0) return 0;
-        return _dailyCompleted * 100.0 / _dailyTotal;
+        return _dailyCompletionPercentage;
     }
 
     private Color GetReportStatusColor()
     {
         if (_currentSession == null) return Color.Default;
-        return GetReportProgress() >= 100 ? Color.Success : Color.Info;
+        if (GetReportProgress() >= 100) return Color.Success;
+        bool isSubmitted = _currentSession.IsSubmitted || _currentSession.SubmittedAt.HasValue || _currentSession.IsCompleted || _currentSession.CompletedAt.HasValue;
+        if (isSubmitted) return Color.Info;
+        return Color.Warning;
     }
 
     private string GetReportStatusText()
     {
         if (_currentSession == null) return "Inactive";
-        return GetReportProgress() >= 100 ? "Completed" : "In Progress";
+        if (GetReportProgress() >= 100) return "Completed";
+        bool isSubmitted = _currentSession.IsSubmitted || _currentSession.SubmittedAt.HasValue || _currentSession.IsCompleted || _currentSession.CompletedAt.HasValue;
+        if (isSubmitted) return "Submitted";
+        return "In Progress";
     }
 
     private Color GetPriorityColor(string priority) => priority switch

@@ -1,0 +1,62 @@
+@using PDTActivityTracker.Components.Services
+@inject ThemeService ThemeService
+
+<style>
+    .glass-calendar-dialog .mud-dialog-content {
+        padding: 0 !important;
+    }
+</style>
+
+<MudDialog MaxWidth="MaxWidth.Small" FullWidth="true" Class="@($"rounded-xl glass-dialog glass-calendar-dialog {GetThemeClass()}")" Style="@GetDialogStyle()">
+    <DialogContent>
+        <GlassCalendarDemoDialog Mode="GlassCalendarDemoDialog.CalendarMode.Range" 
+                                 RangeStart="_rangeStart"
+                                 RangeEnd="_rangeEnd"
+                                 RangeChanged="OnRangeChanged" />
+    </DialogContent>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+    
+    [Parameter] public DateTime? RangeStart { get; set; }
+    [Parameter] public DateTime? RangeEnd { get; set; }
+
+    private DateTime? _rangeStart;
+    private DateTime? _rangeEnd;
+
+    protected override void OnInitialized()
+    {
+        _rangeStart = RangeStart;
+        _rangeEnd = RangeEnd;
+    }
+
+    private void OnRangeChanged((DateTime? Start, DateTime? End) range)
+    {
+        _rangeStart = range.Start;
+        _rangeEnd = range.End;
+
+        if (_rangeStart.HasValue && _rangeEnd.HasValue)
+        {
+            MudDialog.Close(DialogResult.Ok(new DateRange(_rangeStart.Value, _rangeEnd.Value)));
+        }
+    }
+
+    private string GetThemeClass() => ThemeService.CurrentTheme switch
+    {
+        ThemeMode.Lightest => "lightest",
+        ThemeMode.Light => "light",
+        _ => "dark"
+    };
+
+    private string GetDialogStyle()
+    {
+        var baseStyle = "backdrop-filter: blur(15px); width: 340px; height: 350px; margin: auto; overflow: hidden;";
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.25); border: 1px solid rgba(255,255,255,0.2);",
+            _ => $"{baseStyle} background-color: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255,255,255,0.05);"
+        };
+    }
+}

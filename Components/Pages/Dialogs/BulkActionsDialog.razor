@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @inject IDbContextFactory<PDTActivityTracker.Model.AppDbContext> DbFactory
@@ -54,8 +54,10 @@
         color: #0072cf !important;
     }
 
+    
+
     .glass-dialog.lightest .mud-input-outlined-border {
-        border-color: rgba(255, 255, 255, 1) !important;
+        border-color: rgba(0, 114, 207, 0.4) !important;
     }
 
     .glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
@@ -81,8 +83,6 @@
         {
             <MudSelect T="string" Label="New Status" @bind-Value="_newStatus" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mt-3">
                 <MudSelectItem Value="@("Active")">Active</MudSelectItem>
-                <MudSelectItem Value="@("Inactive")">Inactive</MudSelectItem>
-                <MudSelectItem Value="@("Under Renovation")">Under Renovation</MudSelectItem>
                 <MudSelectItem Value="@("Closed")">Closed</MudSelectItem>
             </MudSelect>
         }
@@ -151,12 +151,12 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };

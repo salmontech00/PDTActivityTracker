@@ -1,4 +1,4 @@
-﻿@page "/login"
+@page "/login"
 @layout PDTActivityTracker.Components.Layout.LoginLayout
 
 @using PDTActivityTracker.Components.Services
@@ -20,6 +20,23 @@
 <PageTitle>Login | SMR Activity Tracker</PageTitle>
 
 <style>
+    .login-instructions {
+        display: none;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 2.5rem;
+        padding: 1.5rem;
+        max-width: 400px;
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .instruction-item {
+        display: flex;
+        align-items: flex-start;
+    }
+
     .login-wrapper {
         display: flex;
         flex-direction: column;
@@ -55,6 +72,16 @@
         margin-top: 0.5rem;
     }
 
+    .logo-version {
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+        font-size: 0.75rem;
+        letter-spacing: 0.15em;
+        margin-left: 0.3rem;
+        margin-top: 0.4rem;
+        opacity: 0.35;
+    }
+
     .login-card-container {
         flex: 1;
         display: flex;
@@ -88,6 +115,11 @@
         z-index: 1000;
     }
 
+    .theme-toggle-fixed .mud-icon-button svg {
+        width: 24px !important;
+        height: 24px !important;
+    }
+
     @@media (min-width: 960px) {
         .login-wrapper {
             flex-direction: row;
@@ -103,6 +135,10 @@
 
         .login-card-container {
             margin-right: 50px;
+        }
+
+        .login-instructions {
+            display: flex;
         }
     }
 
@@ -130,6 +166,13 @@
             font-size: 0.87rem;
             letter-spacing: 0.2em;
             margin: 0px;
+        }
+
+        .logo-version {
+            font-size: 0.65rem;
+            letter-spacing: 0.12em;
+            margin: 0.3rem 0 0 0;
+            opacity: 0.35;
         }
 
         .login-card-container {
@@ -179,6 +222,13 @@
             margin: 0px;
         }
 
+        .logo-version {
+            font-size: 0.55rem;
+            letter-spacing: 0.1em;
+            margin: 0.2rem 0 0 0;
+            opacity: 0.3;
+        }
+
         .login-card-container {
             justify-content: center;
             width: 100%;
@@ -202,6 +252,38 @@
     <div class="css-logo">
         <span class="logo-main" style="@GetLogoMainStyle()">SMR</span>
         <span class="logo-sub" style="@GetLogoSubStyle()">ACTIVITY TRACKER</span>
+        <span class="logo-version" style="@GetLogoVersionStyle()">salmontech00 · v1.0</span>
+
+        <div class="login-instructions" style="@GetInstructionStyle()">
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">Standard Login</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">Use your assigned local Username and Password.</MudText>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.Source" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">LDAP Auth (Company)</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">Use your corporate credentials (e.g. <b>user@lccgroup.com</b>).</MudText>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">Role Access</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">Need more access? Request it in <b>Request Role</b> after login.</MudText>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <MudIcon Icon="@Icons.Material.Filled.CameraEnhance" Size="Size.Small" Class="me-2" Color="Color.Primary" />
+                <div>
+                    <MudText Typo="Typo.subtitle2" Class="fw-bold" Style="line-height: 1.2;">Device Access</MudText>
+                    <MudText Typo="Typo.caption" Style="opacity: 0.8;">The system requires **Camera** and **Location** access. Please "Allow" when prompted.</MudText>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="login-card-container">
@@ -282,7 +364,7 @@
         <MudIconButton Icon="@DarkLightModeButtonIcon"
                        Color="Color.Primary"
                        OnClick="@HandleDarkModeToggle"
-                       Size="Size.Large"
+                       Size="Size.Medium"
                        Style="@GetThemeToggleStyle()"
                        Class="rounded-circle" />
     </MudTooltip>
@@ -351,6 +433,18 @@
         return $"color: {color};";
     }
 
+    private string GetLogoVersionStyle()
+    {
+        var color = ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "#0f172a",
+            ThemeMode.Light => "#ffffff",
+            ThemeMode.Dark => "#94a3b8",
+            _ => "#0f172a"
+        };
+        return $"color: {color};";
+    }
+
     private string GetInputFieldStyle()
     {
         if (ThemeService.CurrentTheme == ThemeMode.Lightest)
@@ -395,6 +489,17 @@
             ThemeMode.Light => "Switch to Dark Mode",
             ThemeMode.Dark => "Switch to Light Mode",
             _ => "Switch to Default"
+        };
+    }
+
+    private string GetInstructionStyle()
+    {
+        return ThemeService.CurrentTheme switch
+        {
+            ThemeMode.Lightest => "background-color: rgba(0, 114, 207, 0.05); border: 1px solid rgba(0,114,207,0.2); color: #0f172a;",
+            ThemeMode.Light => "background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.15); color: #ffffff;",
+            ThemeMode.Dark => "background-color: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.1); color: #ffffff;",
+            _ => "background-color: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.15); color: #ffffff;"
         };
     }
 
@@ -465,7 +570,7 @@
                 bool ldapSuccess = false;
                 try
                 {
-                    ldapSuccess = LdapService.Authenticate(Username, Password);
+                    ldapSuccess = await LdapService.AuthenticateAsync(Username, Password);
                 }
                 catch (Exception ex)
                 {
@@ -474,7 +579,7 @@
 
                 if (ldapSuccess)
                 {
-                    var ldapDetails = LdapService.GetUserDetails(Username, Password);
+                    var ldapDetails = await LdapService.GetUserDetailsAsync(Username, Password);
                     user = await db.Users.FirstOrDefaultAsync(u => u.Email == Username);
 
                     if (user == null && ldapDetails != null)
@@ -493,9 +598,11 @@
                     }
                     else if (user != null && ldapDetails != null)
                     {
-                        // Update existing user details from LDAP if they've changed
                         bool changed = false;
-                        if (user.Fullname != ldapDetails.DisplayName)
+
+                        // Only update Fullname from LDAP if it's currently empty or null
+                        // If the user already has a manually set name, preserve it
+                        if (string.IsNullOrWhiteSpace(user.Fullname) && !string.IsNullOrWhiteSpace(ldapDetails.DisplayName))
                         {
                             user.Fullname = ldapDetails.DisplayName;
                             changed = true;
@@ -600,8 +707,8 @@
             MaxWidth = MaxWidth.Small,
             FullWidth = true,
             BackdropClick = false,
-            NoHeader = false,
-            CloseButton = true
+            NoHeader = true,
+            CloseButton = false
         };
         var dialog = await DialogService.ShowAsync<OTPVerify>("Reset Password", options);
         await dialog.Result;

@@ -1,4 +1,4 @@
-﻿@using PDTActivityTracker.Components.Model
+@using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
 @inject ISnackbar Snackbar
@@ -18,7 +18,94 @@
         object-fit: contain;
         border-radius: 16px;
         background: rgba(0,0,0,0.1);
+        cursor: zoom-in;
+        transition: transform 0.15s ease, opacity 0.15s ease;
     }
+
+        .evidence-img:hover {
+            transform: scale(1.01);
+            opacity: 0.92;
+        }
+
+    .evidence-img-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .zoom-hint {
+        position: absolute;
+        bottom: 10px;
+        right: 12px;
+        font-size: 0.62rem;
+        opacity: 0.45;
+        letter-spacing: 0.05em;
+        pointer-events: none;
+        color: #ffffff;
+    }
+
+    /* LIGHTBOX OVERLAY */
+    .lightbox-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(0, 0, 0, 0.93);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+        animation: lightbox-in 0.18s ease;
+    }
+
+    @@keyframes lightbox-in {
+        from {
+            opacity: 0;
+            transform: scale(0.97);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .lightbox-img {
+        max-width: 95vw;
+        max-height: 95vh;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+        animation: lightbox-zoom 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @@keyframes lightbox-zoom {
+        from {
+            transform: scale(0.88);
+            opacity: 0;
+        }
+
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .lightbox-close {
+        position: fixed;
+        top: 18px;
+        right: 22px;
+        color: rgba(255,255,255,0.7);
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 100000;
+        user-select: none;
+        transition: color 0.15s;
+    }
+
+        .lightbox-close:hover {
+            color: #ffffff;
+        }
 
     .detail-label {
         font-size: 0.75rem;
@@ -37,7 +124,6 @@
         max-width: 200px;
     }
 
-    /* DIALOG HEADER */
     .dialog-header {
         display: flex;
         justify-content: space-between;
@@ -57,78 +143,80 @@
         hyphens: auto;
     }
 
-    /* RESPONSIVE */
     @@media (max-width: 600px) {
-        .glass-dialog .mud-dialog-actions
-
-    {
-        flex-direction: row;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 8px 16px 16px 16px !important;
-    }
-
-    .glass-dialog .mud-dialog-actions .mud-button {
-        flex: 1;
-        margin: 0 !important;
-        padding: 4px !important;
-        font-size: 0.7rem !important;
-        min-height: 32px !important;
-        height: 36px !important;
-    }
-
-    .status-select {
-        max-width: 100% !important;
-    }
-
-    .issue-actions {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        gap: 8px !important;
-    }
-
-        .issue-actions .mud-typography {
-            text-align: left;
+        .glass-dialog .mud-dialog-actions {
+            flex-direction: row;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 16px 16px 16px !important;
         }
 
-    .dialog-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
+            .glass-dialog .mud-dialog-actions .mud-button {
+                flex: 1;
+                margin: 0 !important;
+                padding: 4px !important;
+                font-size: 0.7rem !important;
+                min-height: 32px !important;
+                height: 36px !important;
+            }
+
+        .status-select {
+            max-width: 100% !important;
+        }
+
+        .issue-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 8px !important;
+        }
+
+            .issue-actions .mud-typography {
+                text-align: left;
+            }
+
+        .dialog-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .evidence-img {
+            max-height: 300px;
+        }
     }
 
-    }
-
-    /* SPECIFIC FOR NARROW MOBILE (iPhone SE 375px) */
     @@media (max-width: 375px) {
-        .dialog-header
+        .dialog-header {
+            padding-right: 20px !important;
+            gap: 12px;
+        }
 
-    {
-        padding-right: 20px !important; /* Leave room for close button */
-        gap: 12px;
-    }
+        .title-text {
+            font-size: 0.95rem !important;
+            line-height: 1.2;
+        }
 
-    .title-text {
-        font-size: 0.95rem !important;
-        line-height: 1.2;
-    }
+        .header-info .mud-typography-caption {
+            font-size: 0.7rem !important;
+        }
 
-    .header-info .mud-typography-caption {
-        font-size: 0.7rem !important;
-    }
+        .detail-label {
+            font-size: 0.65rem;
+        }
 
-    .detail-label {
-        font-size: 0.65rem;
-    }
+        .glass-dialog {
+            padding: 12px !important;
+        }
 
-    .glass-dialog {
-        padding: 12px !important;
-    }
+        .evidence-img {
+            max-height: 220px;
+        }
 
-    .evidence-img {
-        max-height: 250px;
-    }
-
+        .lightbox-close {
+            top: 12px;
+            right: 14px;
+            font-size: 1.6rem;
+        }
     }
 </style>
 
@@ -176,7 +264,7 @@
             <!-- Description -->
             <MudItem xs="12">
                 <span class="detail-label">Problem Description</span>
-                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; line-height: 1.6;">@_issue.Description</MudText>
+                <MudText Typo="Typo.body1" Style="white-space: pre-wrap; line-height: 1.6; word-break: break-word; overflow-wrap: anywhere;">@_issue.Description</MudText>
             </MudItem>
 
             <!-- Evidence Photo -->
@@ -184,8 +272,12 @@
             {
                 <MudItem xs="12">
                     <span class="detail-label">Evidence Photo</span>
-                    <div class="mt-2">
-                        <img src="@GetImageSource()" class="evidence-img" alt="Issue Evidence" />
+                    <div class="mt-2 evidence-img-wrapper">
+                        <img src="@GetImageSource()"
+                             class="evidence-img"
+                             alt="Issue Evidence"
+                             @onclick="OpenLightbox" />
+                        <span class="zoom-hint">click to enlarge</span>
                     </div>
                 </MudItem>
             }
@@ -195,7 +287,6 @@
                 <MudDivider Class="my-2" Style="opacity: 0.1;" />
                 <span class="detail-label">Area Head Resolution & Feedback</span>
 
-                @* Show reviewer info for everyone when the issue has been completely resolved *@
                 @if (_issue.Status == "Resolved" && _issue.ReviewedById.HasValue)
                 {
                     <MudPaper Class="pa-3 rounded-lg mt-2 mb-3" Elevation="0" Style="background: rgba(34, 197, 94, 0.07); border-left: 4px solid #22c55e;">
@@ -243,7 +334,7 @@
                     @if (!string.IsNullOrEmpty(_issue.AreaHeadRemark))
                     {
                         <MudPaper Class="pa-4 rounded-lg mt-2" Elevation="0" Style="background: rgba(0, 114, 207, 0.05); border-left: 4px solid #0072cf;">
-                            <MudText Typo="Typo.body2" Style="white-space: pre-wrap;">@_issue.AreaHeadRemark</MudText>
+                            <MudText Typo="Typo.body2" Style="white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere;">@_issue.AreaHeadRemark</MudText>
                         </MudPaper>
                     }
                     else
@@ -265,6 +356,18 @@
     </DialogActions>
 </MudDialog>
 
+@* LIGHTBOX — renders outside the dialog so it covers the full screen *@
+@if (_lightboxOpen && _issue.ImageData != null)
+{
+    <div class="lightbox-overlay" @onclick="CloseLightbox">
+        <span class="lightbox-close">&#x2715;</span>
+        <img src="@GetImageSource()"
+             alt="Issue Evidence"
+             class="lightbox-img"
+             @onclick:stopPropagation="true" />
+    </div>
+}
+
 @code {
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public Issue Issue { get; set; } = default!;
@@ -272,13 +375,15 @@
     [Parameter] public int CurrentUserId { get; set; }
 
     private Issue _issue = new();
+    private bool _lightboxOpen = false;
+
+    private void OpenLightbox() => _lightboxOpen = true;
+    private void CloseLightbox() => _lightboxOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Clone for initial editing
         _issue = Issue;
 
-        // Fetch fresh copy from DB to ensure all navigation properties (Reviewer, Reporter) are accurate
         using var db = await DbFactory.CreateDbContextAsync();
         var fullIssue = await db.Issues
             .Include(i => i.ReportedBy)
@@ -363,8 +468,8 @@
         var baseStyle = "backdrop-filter: blur(20px); min-width: 320px;";
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };

@@ -1,4 +1,4 @@
-﻿/* PULSE ANIMATION */
+/* PULSE ANIMATION */
 .pin-pulse {
     position: absolute;
     top: 50%;
@@ -43,11 +43,310 @@
     }
 }
 
-@media (max-width: 375px) {
-    .glass-dialog {
-        margin-left: 12px !important;
-        margin-right: 12px !important;
+@media (max-width: 480px) {
+
+    /* Bulletproof locked width on mobile: cannot expand under any circumstances */
+    .glass-dialog,
+    .mud-dialog.glass-dialog {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        min-width: calc(100vw - 24px) !important;
+        margin: 12px !important;
+        box-sizing: border-box !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Make dialog content scrollable on mobile */
+    .mud-dialog-content {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        max-width: 100% !important;
+        max-height: 70vh !important;
+    }
+
+    /* -------------------------------------------------------
+       MudSelect dropdown (popover) — width + height fix
+       The popover is a body-level portal so overflow:hidden
+       on the dialog won't clip it. We must constrain it here.
+       ------------------------------------------------------- */
+
+    /* Hard-cap width and strip MudBlazor's default min-width
+       so the list is never wider than the usable viewport */
+    .mud-popover {
+        max-width: calc(100vw - 48px) !important;
         min-width: unset !important;
         width: auto !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Cap height to ~35vh so it doesn't swallow the dialog.
+       Make the list scroll internally instead. */
+    .mud-popover .mud-list {
+        max-height: 35vh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        min-width: unset !important;
+    }
+
+    .mud-popover.mud-popover-open {
+        max-height: 35vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    /* Comfortable tap targets */
+    .mud-popover .mud-list-item {
+        padding: 8px 12px !important;
+        min-height: 40px !important;
+    }
+
+    .mud-popover .mud-list-item-text {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        word-break: break-word !important;
+        font-size: 0.875rem !important;
+    }
+}
+
+/* FOCUSED MARKER FLASH ANIMATION */
+@keyframes marker-glow-flash {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 0px rgba(33, 150, 243, 0));
+        opacity: 1;
+    }
+
+    30% {
+        filter: drop-shadow(0 0 15px rgba(33, 150, 243, 1));
+        opacity: 0.8;
+    }
+
+    70% {
+        filter: drop-shadow(0 0 8px rgba(33, 150, 243, 0.6));
+        opacity: 0.9;
+    }
+}
+
+.focused-marker-flash {
+    animation: marker-glow-flash 1.2s ease-in-out !important;
+}
+
+/* ALERT DOT - Red pulsing dot on store pin for unread notifications */
+@keyframes alertPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+    }
+
+    50% {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 5px rgba(244, 67, 54, 0);
+    }
+}
+
+.alert-dot {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    width: 10px;
+    height: 10px;
+    background: #f44336;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    z-index: 10;
+    animation: alertPulse 1.2s ease-in-out infinite;
+}
+
+/* FILTER PANEL & GLASS PANEL INPUT STYLES (Lightest & Light Themes) */
+
+/* 1. Lightest Theme */
+.glass-panel.lightest .mud-input-root,
+.filter-section.lightest .mud-input-root,
+.filter-panel.lightest .mud-input-root {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.glass-panel.lightest .mud-input-outlined-border,
+.filter-section.lightest .mud-input-outlined-border,
+.filter-panel.lightest .mud-input-outlined-border {
+    border-color: rgba(0, 114, 207, 0.4) !important;
+}
+
+.glass-panel.lightest .mud-input-root:hover .mud-input-outlined-border,
+.glass-panel.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-panel.lightest .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-section.lightest .mud-input-root:hover .mud-input-outlined-border,
+.filter-section.lightest .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-panel.lightest .mud-input-root:hover .mud-input-outlined-border,
+.filter-panel.lightest .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #0072cf !important;
+}
+
+.glass-panel.lightest .mud-input-label,
+.filter-section.lightest .mud-input-label,
+.filter-panel.lightest .mud-input-label {
+    color: #475569 !important;
+}
+
+.glass-panel.lightest .mud-input-slot,
+.glass-panel.lightest .mud-input-adornment,
+.glass-panel.lightest .mud-select-input,
+.filter-section.lightest .mud-input-slot,
+.filter-section.lightest .mud-input-adornment-start,
+.filter-section.lightest .mud-select-input,
+.filter-panel.lightest .mud-input-slot,
+.filter-panel.lightest .mud-input-adornment-start,
+.filter-panel.lightest .mud-select-input {
+    color: #0f172a !important;
+    background: transparent !important;
+}
+
+/* 2. Light Theme */
+.glass-panel.light .mud-input-root,
+.filter-section.light .mud-input-root,
+.filter-panel.light .mud-input-root {
+    background: rgba(255, 255, 255, 0.15) !important;
+}
+
+.glass-panel.light .mud-input-outlined-border,
+.filter-section.light .mud-input-outlined-border,
+.filter-panel.light .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.glass-panel.light .mud-input-root:hover .mud-input-outlined-border,
+.glass-panel.light .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-panel.light .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-section.light .mud-input-root:hover .mud-input-outlined-border,
+.filter-section.light .mud-input-root:focus-within .mud-input-outlined-border,
+.filter-panel.light .mud-input-root:hover .mud-input-outlined-border,
+.filter-panel.light .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #ffffff !important;
+}
+
+.glass-panel.light .mud-input-label,
+.filter-section.light .mud-input-label,
+.filter-panel.light .mud-input-label {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.glass-panel.light .mud-input-slot,
+.glass-panel.light .mud-input-adornment,
+.glass-panel.light .mud-select-input,
+.filter-section.light .mud-input-slot,
+.filter-section.light .mud-input-adornment-start,
+.filter-section.light .mud-select-input,
+.filter-panel.light .mud-input-slot,
+.filter-panel.light .mud-input-adornment-start,
+.filter-panel.light .mud-select-input {
+    color: #ffffff !important;
+    background: transparent !important;
+}
+
+/* Consistent input border & label colors for dialogs (Lightest & Light Themes) */
+
+/* Lightest Theme Dialogs */
+.glass-dialog.lightest .mud-input-outlined-border {
+    border-color: rgba(0, 114, 207, 0.4) !important;
+}
+
+.glass-dialog.lightest .mud-input-root:hover .mud-input-outlined-border,
+.glass-dialog.lightest .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-dialog.lightest .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #0072cf !important;
+}
+
+.glass-dialog.lightest .mud-input-label {
+    color: #475569 !important;
+}
+
+/* Light Theme Dialogs */
+.glass-dialog.light .mud-input-outlined-border {
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.glass-dialog.light .mud-input-root:hover .mud-input-outlined-border,
+.glass-dialog.light .mud-input-root.mud-input-focused .mud-input-outlined-border,
+.glass-dialog.light .mud-input-root:focus-within .mud-input-outlined-border {
+    border-color: #ffffff !important;
+}
+
+.glass-dialog.light .mud-input-label {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Force Clear Filter button icons to be white */
+.clear-filters-button .mud-button-icon-start,
+.clear-filters-button .mud-icon-root {
+    color: #ffffff !important;
+}
+
+/* =============================================
+   SNACKBAR - MOBILE: center at top (≤960px)
+   Desktop keeps default bottom-left position
+   ============================================= */
+.mud-snackbar {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+@media (max-width: 960px) {
+
+    .mud-snackbar-location-bottom-left,
+    .mud-snackbar-location-bottom-right,
+    .mud-snackbar-location-bottom-center,
+    .mud-snackbar-location-top-left,
+    .mud-snackbar-location-top-right,
+    .mud-snackbar-location-top-center {
+        left: 50% !important;
+        right: auto !important;
+        bottom: auto !important;
+        top: 12px !important;
+        transform: translateX(-50%) !important;
+        max-width: 420px !important;
+        min-width: 240px !important;
+        width: auto !important;
+    }
+}
+
+@media (max-width: 480px) {
+
+    .mud-snackbar-location-bottom-left,
+    .mud-snackbar-location-bottom-right,
+    .mud-snackbar-location-bottom-center,
+    .mud-snackbar-location-top-left,
+    .mud-snackbar-location-top-right,
+    .mud-snackbar-location-top-center {
+        top: 8px !important;
+        width: calc(100vw - 32px) !important;
+        max-width: calc(100vw - 32px) !important;
+        min-width: unset !important;
+    }
+
+    .mud-snackbar {
+        font-size: 0.8rem !important;
+        padding: 6px 12px !important;
+        min-height: 36px !important;
+        border-radius: 8px !important;
+    }
+
+    .mud-snackbar .mud-snackbar-content-message {
+        font-size: 0.8rem !important;
+        line-height: 1.3 !important;
+    }
+
+    .mud-snackbar .mud-icon-root {
+        font-size: 1rem !important;
+        width: 1rem !important;
+        height: 1rem !important;
+    }
+
+    .mud-snackbar .mud-button-root {
+        padding: 2px !important;
+        min-width: unset !important;
     }
 }

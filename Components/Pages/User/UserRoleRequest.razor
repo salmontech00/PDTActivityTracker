@@ -1,4 +1,4 @@
-﻿@page "/user/request-role"
+@page "/user/request-role"
 @using PDTActivityTracker.Components.Services
 @using MudBlazor
 @inject IEmailService EmailService
@@ -172,17 +172,31 @@
 
         try
         {
-            var adminEmail = Configuration["EmailSettings:SenderEmail"];
-            if (string.IsNullOrEmpty(adminEmail))
+            using var db = await DbFactory.CreateDbContextAsync();
+            var adminEmails = await db.Users
+                .Where(u => u.Role == "Admin" && !string.IsNullOrEmpty(u.Email))
+                .Select(u => u.Email)
+                .ToListAsync();
+
+            if (!adminEmails.Any())
             {
-                adminEmail = "015mhikebertillo@gmail.com";
+                var fallbackEmail = Configuration["EmailSettings:FromEmail"];
+                if (!string.IsNullOrEmpty(fallbackEmail))
+                {
+                    adminEmails.Add(fallbackEmail);
+                }
+                else
+                {
+                    adminEmails.Add("015mhikebertillo@gmail.com");
+                }
             }
 
-            var userName = UserState.Fullname ?? UserState.Username;
-            var userEmail = UserState.Username ?? "Unknown Email";
+            var currentUser = await db.Users.FirstOrDefaultAsync(u => u.Id == UserState.UserId);
+            var userName = currentUser?.Fullname ?? UserState.Fullname ?? UserState.Username;
+            var userEmail = currentUser?.Email ?? "Unknown Email";
 
             await EmailService.SendRoleRequestEmailAsync(
-                adminEmail: adminEmail,
+                adminEmails: adminEmails,
                 userName: userName!,
                 userEmail: userEmail,
                 requestedRole: _requestedRole!,

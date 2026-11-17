@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PDTActivityTracker.Components.Model
@@ -21,7 +21,7 @@ namespace PDTActivityTracker.Components.Model
 
         public string Status { get; set; } = "Open"; // Open, Resolved
 
-        public int ReportedById { get; set; }
+        public int? ReportedById { get; set; }
         [ForeignKey("ReportedById")]
         public User? ReportedBy { get; set; }
 

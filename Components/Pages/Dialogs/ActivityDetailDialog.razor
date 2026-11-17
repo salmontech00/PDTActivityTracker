@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
@@ -78,7 +78,8 @@
     }
 
     .filter-wrapper {
-        min-width: 200px;
+        min-width: 140px;
+        max-width: 200px;
     }
 
     .compact-select {
@@ -150,6 +151,26 @@
             display: block;
         }
 
+        /* Balance icon size with text on mobile */
+        .achievement-icon-box {
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        /* Ensure task name text is readable and balanced with icon */
+        .mobile-detail-card .mud-typography-body2 {
+            font-size: 0.85rem !important;
+            line-height: 1.3 !important;
+        }
+
+        .mobile-detail-card .mud-typography-caption {
+            font-size: 0.75rem !important;
+        }
+
+        .mobile-detail-header {
+            font-size: 0.8rem !important;
+        }
+
         .category-footer {
             display: flex;
             align-items: center;
@@ -170,6 +191,10 @@
             text-align: right;
             opacity: 0.8;
             font-style: italic;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            min-width: 0;
+            flex: 1 1 auto;
         }
 
         .time-badge {
@@ -223,14 +248,51 @@
     @@media (max-width: 375px) {
         .dialog-header {
             padding-right: 0 !important;
+            gap: 6px !important;
         }
 
         .header-info h6 {
-            font-size: 1.1rem !important;
+            font-size: 1rem !important;
+        }
+
+        .header-info .mud-typography-caption {
+            font-size: 0.7rem !important;
+        }
+
+        /* Filter wrapper: shrink to fit, don't overflow */
+        .filter-wrapper {
+            min-width: unset !important;
+            max-width: 100% !important;
+            width: 100% !important;
+            justify-content: flex-start !important;
+        }
+
+        .compact-select {
+            width: 100% !important;
         }
 
         .mobile-detail-card {
             padding: 10px !important;
+        }
+
+        /* Further tighten icon on 375px to stay proportional */
+        .achievement-icon-box {
+            width: 18px !important;
+            height: 18px !important;
+            border-radius: 5px !important;
+        }
+
+        .achievement-icon-box .mud-icon-root {
+            font-size: 0.9rem !important;
+        }
+
+        /* Keep task name at a comfortable readable size */
+        .mobile-detail-card .mud-typography-body2 {
+            font-size: 0.82rem !important;
+        }
+
+        .mobile-detail-card .mud-typography-caption {
+            font-size: 0.72rem !important;
         }
 
         .category-footer {
@@ -252,6 +314,25 @@
         .frequency-chip, .status-chip {
             max-width: none !important;
             font-size: 0.65rem !important;
+        }
+
+        /* Feedback action buttons: stack vertically, full-width */
+        .feedback-actions {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 6px !important;
+        }
+
+        .feedback-actions .mud-button-root {
+            width: 100% !important;
+            font-size: 0.72rem !important;
+            padding: 6px 10px !important;
+            justify-content: center !important;
+        }
+
+        /* Feedback section padding */
+        .feedback-section {
+            padding: 12px !important;
         }
     }
 </style>
@@ -318,10 +399,10 @@
                     </GroupHeaderTemplate>
                     <RowTemplate>
                         <MudTd DataLabel="Task Details">
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@context.ChecklistItem?.TaskName</MudText>
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">@FormatLongWords(context.ChecklistItem?.TaskName)</MudText>
                             @if (!string.IsNullOrEmpty(context.ChecklistItem?.Description))
                             {
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; line-height: 1.2;">@context.ChecklistItem.Description</MudText>
+                                <MudText Typo="Typo.caption" Style="font-size: 0.85rem !important; opacity: 0.7; display: block; line-height: 1.2;">@FormatLongWords(context.ChecklistItem.Description)</MudText>
                             }
                         </MudTd>
                         <MudTd DataLabel="Freq.">
@@ -357,16 +438,16 @@
             <div class="mobile-view">
                 @foreach (var group in _filteredTasks.GroupBy(t => _groupDefinition?.Selector?.Invoke(t) ?? "Other"))
                 {
-                    <div class="mobile-detail-header rounded-lg mb-2">@group.Key</div>
+                    <div class="mobile-detail-header rounded-lg mb-2" style="word-break: break-word; overflow-wrap: anywhere;">@group.Key</div>
                     @foreach (var task in group)
                     {
                         <MudPaper Class="@($"glass-panel mobile-detail-card pa-3 mb-3 {GetThemeClass()}")" Elevation="0">
                             <div class="d-flex justify-space-between align-start mb-2">
                                 <div style="flex-grow: 1;">
-                                    <MudText Typo="Typo.body2" Style="font-weight: 700; line-height: 1.2;">@task.ChecklistItem?.TaskName</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700; line-height: 1.2;">@FormatLongWords(task.ChecklistItem?.TaskName)</MudText>
                                     @if (!string.IsNullOrEmpty(task.ChecklistItem?.Description))
                                     {
-                                        <MudText Typo="Typo.caption" Style="opacity: 0.7; display: block; margin-top: 2px;">@task.ChecklistItem.Description</MudText>
+                                        <MudText Typo="Typo.caption" Style="font-size: 0.85rem !important; opacity: 0.7; display: block; margin-top: 2px;">@FormatLongWords(task.ChecklistItem.Description)</MudText>
                                     }
                                 </div>
                                 @if (task.IsCompleted)
@@ -395,7 +476,7 @@
                                     }
                                 </div>
                                 <div class="remarks-container">
-                                    <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
+                                    <MudText Typo="Typo.caption" Style="opacity: 0.6; font-style: italic; word-break: break-word; overflow-wrap: anywhere;">@(string.IsNullOrEmpty(task.Remarks) ? "No remarks" : task.Remarks)</MudText>
                                 </div>
                             </div>
                         </MudPaper>
@@ -407,7 +488,7 @@
         @if (Activity != null)
         {
             <MudDivider Class="my-4" Style="opacity: 0.1;" />
-            <div class="pa-4 rounded-lg" style="@GetFeedbackContainerStyle()">
+            <div class="pa-4 rounded-lg feedback-section" style="@GetFeedbackContainerStyle()">
                 <div class="feedback-header mb-3">
                     <div class="d-flex align-center">
                         <div class="achievement-icon-box mr-2" style="background: var(--mud-palette-primary); color: #ffffff;">
@@ -434,7 +515,7 @@
                                   Lines="2"
                                   Placeholder="Enter your feedback here..."
                                   Class="mb-2" />
-                    <div class="d-flex justify-end gap-2">
+                    <div class="d-flex justify-end gap-2 flex-wrap feedback-actions">
                         @if (Activity.AreaHeadReviewedAt.HasValue)
                         {
                             <MudButton Variant="Variant.Outlined"
@@ -458,7 +539,7 @@
                 }
                 else
                 {
-                    <MudText Typo="Typo.body2" Style="@(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "font-style: italic; opacity: 0.5;" : "")">
+                    <MudText Typo="Typo.body2" Style="@($"word-break: break-word; overflow-wrap: anywhere; {(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "font-style: italic; opacity: 0.5;" : "")}")">
                         @(string.IsNullOrEmpty(Activity.AreaHeadRemark) ? "No feedback provided yet." : Activity.AreaHeadRemark)
                     </MudText>
                 }
@@ -480,6 +561,30 @@
     private string _frequencyFilter = "All";
     private bool _isLoading = true;
     private string? _feedbackText;
+
+    private string FormatLongWords(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        var words = text.Split(' ');
+        for (int i = 0; i < words.Length; i++)
+        {
+            var word = words[i];
+            if (word.Length > 12)
+            {
+                var sb = new System.Text.StringBuilder();
+                for (int j = 0; j < word.Length; j++)
+                {
+                    sb.Append(word[j]);
+                    if ((j + 1) % 10 == 0 && j < word.Length - 1)
+                    {
+                        sb.Append("\u200B");
+                    }
+                }
+                words[i] = sb.ToString();
+            }
+        }
+        return string.Join(" ", words);
+    }
     private bool _isSubmitting = false;
 
     private TableGroupDefinition<TaskProgress> _groupDefinition = new()
@@ -535,11 +640,11 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.25);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };
@@ -573,6 +678,14 @@
     private async Task SubmitFeedback()
     {
         if (Activity == null || _isSubmitting) return;
+
+        var totalTasks = _allTasks.Count;
+        var completedTasks = _allTasks.Count(t => t.IsCompleted);
+        if (totalTasks == 0 || completedTasks < totalTasks)
+        {
+            Snackbar.Add("Cannot approve report. Store tasks are still incomplete.", Severity.Warning);
+            return;
+        }
 
         _isSubmitting = true;
         try

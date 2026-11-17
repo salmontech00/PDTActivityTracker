@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @using Microsoft.EntityFrameworkCore
@@ -42,13 +42,21 @@
         <MudText Typo="Typo.h6" Style="@GetTitleStyle()">@(IsEdit ? "Edit Task" : "Add New Task")</MudText>
     </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" Model="_model">
+        @if (!_initialized)
+        {
+            <div class="d-flex justify-center align-center pa-8 w-100" style="min-height: 200px;">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Medium" />
+            </div>
+        }
+        else
+        {
+            <MudForm @ref="_form" Model="_model">
             <MudGrid Spacing="2">
                 <MudItem xs="12">
                     <MudTextField T="string" Label="Task Name (Optional)" @bind-Value="_model.TaskName" Variant="Variant.Outlined" Margin="Margin.Dense" AutoFocus="true" />
                 </MudItem>
                 <MudItem xs="12">
-                    <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
+                    <MudTextField T="string" Label="Description" @bind-Value="_model.Description" Required="true" RequiredError="Description is required" Lines="2" Variant="Variant.Outlined" Margin="Margin.Dense" />
                 </MudItem>
                 <MudItem xs="12" sm="4">
                     <MudSelect T="int" Label="Category" @bind-Value="_model.CategoryId" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense">
@@ -77,14 +85,14 @@
                         <MudText Typo="Typo.subtitle2" Class="mb-2">Positions Required</MudText>
                         @foreach (var pos in _manpowerPositions)
                         {
-                            <MudGrid Spacing="2" Class="align-center mb-2">
-                                <MudItem xs="8">
+                            <MudGrid Spacing="2" Class="align-center mb-2" Style="border-bottom: 1px dashed rgba(128,128,128,0.15); padding-bottom: 8px;">
+                                <MudItem xs="12" sm="8">
                                     <MudTextField T="string" Label="Position Name" @bind-Value="pos.Name" Required="true" Variant="Variant.Outlined" Margin="Margin.Dense" />
                                 </MudItem>
-                                <MudItem xs="3">
+                                <MudItem xs="9" sm="3">
                                     <MudNumericField T="int" Label="Expected Count" @bind-Value="pos.Count" Required="true" Min="1" Variant="Variant.Outlined" Margin="Margin.Dense" />
                                 </MudItem>
-                                <MudItem xs="1" Class="d-flex justify-center">
+                                <MudItem xs="3" sm="1" Class="d-flex justify-center align-center">
                                     <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" Size="Size.Small" OnClick="@(() => RemovePosition(pos))" Disabled="@(_manpowerPositions.Count <= 1)" />
                                 </MudItem>
                             </MudGrid>
@@ -97,12 +105,14 @@
                             <MudText Typo="Typo.subtitle2" Class="mb-3" Style="@GetTitleStyle()">Assign To Specific Stores</MudText>
                             <MudTextField @bind-Value="_storeSearchTerm" Placeholder="Search stores..." Variant="Variant.Outlined" Margin="Margin.Dense" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" Class="mb-3" Style="background: rgba(255,255,255,0.05);" />
 
-                            <div class="d-flex align-center justify-space-between mb-2">
+                            <div class="d-flex justify-end mb-1">
+                                <MudText Typo="Typo.caption" Style="opacity: 0.7; font-weight: 600;">@_selectedStoreIds.Count() selected</MudText>
+                            </div>
+                            <div class="d-flex align-center mb-2">
                                 <MudCheckBox T="bool" Label="Select All Stores"
                                              Value="@(_stores.Any() && _selectedStoreIds.Count() == _stores.Count)"
                                              ValueChanged="@OnSelectAllChanged"
                                              Color="Color.Primary" Dense="true" />
-                                <MudText Typo="Typo.caption" Style="opacity: 0.7;">@_selectedStoreIds.Count() selected</MudText>
                             </div>
 
                             <MudPaper Outlined="true" Class="pa-2" Style="@(GetGlassStyle() + " max-height: 200px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1);")">
@@ -172,11 +182,12 @@
                     </MudItem>
                 }
             </MudGrid>
-        </MudForm>
+            </MudForm>
+        }
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => Submit())" Style="@GetButtonStyle()">
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => Submit())" Style="@GetButtonStyle()" Disabled="@(!_initialized)">
             @(IsEdit ? "Update Task" : "Add Task")
         </MudButton>
     </DialogActions>
@@ -195,6 +206,7 @@
     private string _storeSearchTerm = "";
     private IEnumerable<int> _selectedStoreIds = new HashSet<int>();
     private bool IsEdit => TaskToEdit != null;
+    private bool _initialized = false;
 
     private List<ManpowerPosition> _manpowerPositions = new() { new ManpowerPosition() };
 
@@ -273,6 +285,7 @@
             _model.NumberOfPhotos = 1;
             _model.TaskType = "Regular";
         }
+        _initialized = true;
     }
 
     private async Task LoadCategories()
@@ -296,7 +309,7 @@
     {
         using var db = await DbFactory.CreateDbContextAsync();
         _stores = await db.Stores
-            .Where(s => s.Status == "Active")
+            .Where(s => !s.IsDeleted && s.Status == "Active")
             .OrderBy(s => s.StoreName)
             .ToListAsync();
     }
@@ -340,11 +353,11 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };
@@ -358,7 +371,7 @@
         return ThemeService.CurrentTheme switch
         {
             ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.4); border: 1px solid rgba(255, 255, 255, 0.3);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.2);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255, 255, 255, 0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2);"
         };
@@ -407,7 +420,7 @@
             {
                 db.Entry(taskInDb).CurrentValues.SetValues(_model);
                 await db.SaveChangesAsync();
-                Snackbar.Add("Task updated", Severity.Success);
+                Snackbar.Add("Task updated successfully!", Severity.Success);
 
                 if (OnTaskSaved.HasDelegate)
                 {
@@ -424,7 +437,7 @@
                 .MaxAsync(t => (int?)t.SortOrder) ?? -1) + 1;
             db.ChecklistItems.Add(_model);
             await db.SaveChangesAsync();
-            Snackbar.Add("Task added", Severity.Success);
+            Snackbar.Add("Task added successfully!", Severity.Success);
 
             if (OnTaskSaved.HasDelegate)
             {

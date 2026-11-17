@@ -1,4 +1,4 @@
-﻿@using MudBlazor
+@using MudBlazor
 @using PDTActivityTracker.Components.Model
 @using PDTActivityTracker.Components.Services
 @inject PDTActivityTracker.Components.Services.ThemeService ThemeService
@@ -43,6 +43,72 @@
         max-height: 500px;
         border-radius: 16px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        cursor: zoom-in;
+        transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .photo-main:hover {
+        transform: scale(1.01);
+        opacity: 0.92;
+    }
+
+    /* LIGHTBOX OVERLAY */
+    .lightbox-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        background: rgba(0, 0, 0, 0.93);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: zoom-out;
+        animation: lightbox-in 0.18s ease;
+    }
+
+    @@keyframes lightbox-in {
+        from { opacity: 0; transform: scale(0.97); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+
+    .lightbox-img {
+        max-width: 95vw;
+        max-height: 95vh;
+        object-fit: contain;
+        border-radius: 8px;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.8);
+        animation: lightbox-zoom 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @@keyframes lightbox-zoom {
+        from { transform: scale(0.88); opacity: 0; }
+        to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .lightbox-close {
+        position: fixed;
+        top: 18px;
+        right: 22px;
+        color: rgba(255,255,255,0.7);
+        font-size: 2rem;
+        line-height: 1;
+        cursor: pointer;
+        z-index: 100000;
+        user-select: none;
+        transition: color 0.15s;
+    }
+
+    .lightbox-close:hover {
+        color: #ffffff;
+    }
+
+    .zoom-hint {
+        position: absolute;
+        bottom: 10px;
+        right: 12px;
+        font-size: 0.62rem;
+        opacity: 0.45;
+        letter-spacing: 0.05em;
+        pointer-events: none;
     }
 
     .photo-details {
@@ -56,10 +122,11 @@
         padding: 12px 16px;
         border-radius: 12px;
         background: rgba(0, 114, 207, 0.1);
+        min-width: 0;
     }
 
     .detail-label {
-        font-size: 0.75rem;
+        font-size: 0.8rem;
         opacity: 0.7;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -68,7 +135,9 @@
 
     .detail-value {
         font-weight: 600;
-        font-size: 0.95rem;
+        font-size: 1.05rem;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 </style>
 
@@ -81,9 +150,13 @@
         <div class="photo-container">
             @if (Photo?.ImageData != null && !string.IsNullOrEmpty(Photo.ImageMimeType))
             {
-                <img src="@($"data:{Photo.ImageMimeType};base64,{Convert.ToBase64String(Photo.ImageData)}")"
-                     alt="@(Photo.Description ?? "Photo")"
-                     class="photo-main" />
+                <div style="position: relative; display: inline-block;">
+                    <img src="@($"data:{Photo.ImageMimeType};base64,{Convert.ToBase64String(Photo.ImageData)}")"
+                         alt="@(Photo.Description ?? "Photo")"
+                         class="photo-main"
+                         @onclick="OpenLightbox" />
+                    <span class="zoom-hint">click to enlarge</span>
+                </div>
             }
             else
             {
@@ -148,6 +221,17 @@
     </DialogActions>
 </MudDialog>
 
+@if (_lightboxOpen && Photo?.ImageData != null)
+{
+    <div class="lightbox-overlay" @onclick="CloseLightbox" @onkeydown="HandleLightboxKey" tabindex="0">
+        <span class="lightbox-close" @onclick:stopPropagation="false">&#x2715;</span>
+        <img src="@($"data:{Photo.ImageMimeType};base64,{Convert.ToBase64String(Photo.ImageData)}")"
+             alt="@(Photo.Description ?? "Photo")"
+             class="lightbox-img"
+             @onclick:stopPropagation="true" />
+    </div>
+}
+
 @code {
     [Parameter] public TaskPhoto? Photo { get; set; }
 
@@ -156,12 +240,12 @@
 
     private string GetDialogStyle()
     {
-        var baseStyle = "backdrop-filter: blur(10px); min-width: 320px;";
+        var baseStyle = "backdrop-filter: blur(15px); min-width: 320px;";
 
         return ThemeService.CurrentTheme switch
         {
-            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15);",
-            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255,255,255,0.2);",
+            ThemeMode.Lightest => $"{baseStyle} background-color: rgba(255, 255, 255, 0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.1);",
+            ThemeMode.Light => $"{baseStyle} background-color: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255,255,255,0.2);",
             ThemeMode.Dark => $"{baseStyle} background-color: rgba(30, 41, 59, 0.15); border: 1px solid rgba(255,255,255,0.05);",
             _ => $"{baseStyle} background-color: rgba(255, 255, 255, 0.95);"
         };
@@ -189,6 +273,16 @@
     {
         return ThemeService.CurrentTheme == ThemeMode.Lightest ? "lightest" :
                ThemeService.CurrentTheme == ThemeMode.Dark ? "dark" : "light";
+    }
+
+    private bool _lightboxOpen = false;
+
+    private void OpenLightbox() => _lightboxOpen = true;
+    private void CloseLightbox() => _lightboxOpen = false;
+
+    private void HandleLightboxKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") _lightboxOpen = false;
     }
 
     private void Cancel() => MudDialog.Cancel();

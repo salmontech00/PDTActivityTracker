@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace PDTActivityTracker.Components.Model
 {
@@ -37,6 +37,8 @@ namespace PDTActivityTracker.Components.Model
         public string? SelectedStores { get; set; }
 
         public int SortOrder { get; set; } = 0;
+
+        public bool IsDeleted { get; set; } = false;
     }
 
     public class ManpowerPosition
